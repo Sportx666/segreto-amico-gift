@@ -11,6 +11,7 @@ import Events from "./pages/Events";
 import EventNew from "./pages/EventNew";
 import EventJoin from "./pages/EventJoin";
 import NotFound from "./pages/NotFound";
+import Ideas from "./pages/Ideas";
 
 const queryClient = new QueryClient();
 
