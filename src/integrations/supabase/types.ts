@@ -62,25 +62,34 @@ export type Database = {
       }
       event_members: {
         Row: {
+          anonymous_email: string | null
+          anonymous_name: string | null
           created_at: string | null
           event_id: string | null
           id: string
+          join_token: string | null
           participant_id: string | null
           role: string | null
           status: string | null
         }
         Insert: {
+          anonymous_email?: string | null
+          anonymous_name?: string | null
           created_at?: string | null
           event_id?: string | null
           id?: string
+          join_token?: string | null
           participant_id?: string | null
           role?: string | null
           status?: string | null
         }
         Update: {
+          anonymous_email?: string | null
+          anonymous_name?: string | null
           created_at?: string | null
           event_id?: string | null
           id?: string
+          join_token?: string | null
           participant_id?: string | null
           role?: string | null
           status?: string | null
@@ -181,6 +190,51 @@ export type Database = {
           {
             foreignKeyName: "exclusions_giver_id_fkey"
             columns: ["giver_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      join_tokens: {
+        Row: {
+          created_at: string
+          event_id: string
+          expires_at: string
+          id: string
+          participant_id: string | null
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          expires_at: string
+          id?: string
+          participant_id?: string | null
+          token: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          expires_at?: string
+          id?: string
+          participant_id?: string | null
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "join_tokens_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "join_tokens_participant_id_fkey"
+            columns: ["participant_id"]
             isOneToOne: false
             referencedRelation: "participants"
             referencedColumns: ["id"]
@@ -370,7 +424,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_join_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_join_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
