@@ -1,0 +1,154 @@
+{
+  "items": [
+    {
+      "asin": "B08N5WRWNW",
+      "title": "Echo Dot (4ª generazione) - Altoparlante intelligente con Alexa",
+      "image": "https://m.media-amazon.com/images/I/714Rq4k05UL._AC_SX466_.jpg",
+      "price": 49.99,
+      "currency": "EUR",
+      "url": "https://www.amazon.it/dp/B08N5WRWNW",
+      "category": "tech",
+      "lastUpdated": "2024-01-15T10:30:00Z"
+    },
+    {
+      "asin": "B07FZ8S74R",
+      "title": "Tazza Magica che Cambia Colore con il Calore",
+      "image": "https://m.media-amazon.com/images/I/61rPiJ-dKWL._AC_SX466_.jpg",
+      "price": 12.99,
+      "currency": "EUR",
+      "url": "https://www.amazon.it/dp/B07FZ8S74R",
+      "category": "cucina",
+      "lastUpdated": "2024-01-15T09:15:00Z"
+    },
+    {
+      "asin": "B09JQVYZD1",
+      "title": "Set di Penne Colorate per Ufficio (12 pezzi)",
+      "image": "https://m.media-amazon.com/images/I/71nMxVjbP9L._AC_SX466_.jpg",
+      "price": 8.99,
+      "currency": "EUR",
+      "url": "https://www.amazon.it/dp/B09JQVYZD1",
+      "category": "ufficio",
+      "lastUpdated": "2024-01-15T11:45:00Z"
+    },
+    {
+      "asin": "B08HLZD1J4",
+      "title": "Lampada LED da Scrivania Ricaricabile USB",
+      "image": "https://m.media-amazon.com/images/I/61oMxVjbP9L._AC_SX466_.jpg",
+      "price": 24.99,
+      "currency": "EUR",
+      "url": "https://www.amazon.it/dp/B08HLZD1J4",
+      "category": "ufficio",
+      "lastUpdated": "2024-01-15T08:20:00Z"
+    },
+    {
+      "asin": "B07VGRJDFY",
+      "title": "Puzzle 1000 Pezzi - Paesaggio Montano",
+      "image": "https://m.media-amazon.com/images/I/81rPiJ-dKWL._AC_SX466_.jpg",
+      "price": 15.99,
+      "currency": "EUR",
+      "url": "https://www.amazon.it/dp/B07VGRJDFY",
+      "category": "relax",
+      "lastUpdated": "2024-01-15T12:10:00Z"
+    },
+    {
+      "asin": "B09KQVYZD2",
+      "title": "Bottiglia Termica in Acciaio Inox 500ml",
+      "image": "https://m.media-amazon.com/images/I/71aMxVjbP9L._AC_SX466_.jpg",
+      "price": 18.99,
+      "currency": "EUR",
+      "url": "https://www.amazon.it/dp/B09KQVYZD2",
+      "category": "eco",
+      "lastUpdated": "2024-01-15T13:25:00Z"
+    },
+    {
+      "asin": "B08NQWRWNT",
+      "title": "Gioco Educativo per Bambini - Kit Scienze",
+      "image": "https://m.media-amazon.com/images/I/71bMxVjbP9L._AC_SX466_.jpg",
+      "price": 22.99,
+      "currency": "EUR",
+      "url": "https://www.amazon.it/dp/B08NQWRWNT",
+      "category": "bambini",
+      "lastUpdated": "2024-01-15T14:30:00Z"
+    },
+    {
+      "asin": "B07GZDS74S",
+      "title": "Candela Profumata Vaniglia e Lavanda",
+      "image": "https://m.media-amazon.com/images/I/61cPiJ-dKWL._AC_SX466_.jpg",
+      "price": 9.99,
+      "currency": "EUR",
+      "url": "https://www.amazon.it/dp/B07GZDS74S",
+      "category": "relax",
+      "lastUpdated": "2024-01-15T15:00:00Z"
+    },
+    {
+      "asin": "B09LQVYZD3",
+      "title": "Mouse Wireless Ergonomico",
+      "image": "https://m.media-amazon.com/images/I/71dMxVjbP9L._AC_SX466_.jpg",
+      "price": 16.99,
+      "currency": "EUR",
+      "url": "https://www.amazon.it/dp/B09LQVYZD3",
+      "category": "tech",
+      "lastUpdated": "2024-01-15T16:15:00Z"
+    },
+    {
+      "asin": "B08PQWRWNU",
+      "title": "Set Tagliere Bambù con Coltellini (3 pezzi)",
+      "image": "https://m.media-amazon.com/images/I/71eMxVjbP9L._AC_SX466_.jpg",
+      "price": 19.99,
+      "currency": "EUR",
+      "url": "https://www.amazon.it/dp/B08PQWRWNU",
+      "category": "cucina",
+      "lastUpdated": "2024-01-15T17:20:00Z"
+    },
+    {
+      "asin": "B07HZDS74T",
+      "title": "Quaderno Moleskine Copertina Rigida",
+      "image": "https://m.media-amazon.com/images/I/61fPiJ-dKWL._AC_SX466_.jpg",
+      "price": 13.99,
+      "currency": "EUR",
+      "url": "https://www.amazon.it/dp/B07HZDS74T",
+      "category": "ufficio",
+      "lastUpdated": "2024-01-15T18:00:00Z"
+    },
+    {
+      "asin": "B09MQVYZD4",
+      "title": "Borraccia per Bambini con Cannuccia",
+      "image": "https://m.media-amazon.com/images/I/71gMxVjbP9L._AC_SX466_.jpg",
+      "price": 11.99,
+      "currency": "EUR",
+      "url": "https://www.amazon.it/dp/B09MQVYZD4",
+      "category": "bambini",
+      "lastUpdated": "2024-01-15T19:10:00Z"
+    },
+    {
+      "asin": "B08RQWRWNV",
+      "title": "Diffusore di Oli Essenziali USB",
+      "image": "https://m.media-amazon.com/images/I/71hMxVjbP9L._AC_SX466_.jpg",
+      "price": 21.99,
+      "currency": "EUR",
+      "url": "https://www.amazon.it/dp/B08RQWRWNV",
+      "category": "relax",
+      "lastUpdated": "2024-01-15T20:05:00Z"
+    },
+    {
+      "asin": "B07IZDS74U",
+      "title": "Caricabatterie Wireless Stand",
+      "image": "https://m.media-amazon.com/images/I/61gPiJ-dKWL._AC_SX466_.jpg",
+      "price": 17.99,
+      "currency": "EUR",
+      "url": "https://www.amazon.it/dp/B07IZDS74U",
+      "category": "tech",
+      "lastUpdated": "2024-01-15T21:30:00Z"
+    },
+    {
+      "asin": "B09NQVYZD5",
+      "title": "Borsa Riutilizzabile Pieghevole (Set 5)",
+      "image": "https://m.media-amazon.com/images/I/71iMxVjbP9L._AC_SX466_.jpg",
+      "price": 14.99,
+      "currency": "EUR",
+      "url": "https://www.amazon.it/dp/B09NQVYZD5",
+      "category": "eco",
+      "lastUpdated": "2024-01-15T22:15:00Z"
+    }
+  ]
+}

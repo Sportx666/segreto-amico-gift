@@ -12,6 +12,7 @@ import EventNew from "./pages/EventNew";
 import EventJoin from "./pages/EventJoin";
 import NotFound from "./pages/NotFound";
 import Ideas from "./pages/Ideas";
+import Wishlist from "./pages/Wishlist";
 
 const queryClient = new QueryClient();
 
@@ -30,7 +31,8 @@ const App = () => (
               <Route path="/events" element={<Events />} />
               <Route path="/events/new" element={<EventNew />} />
               <Route path="/join/:token" element={<EventJoin />} />
-              <Route path="/idea" element={<Ideas />} />
+              <Route path="/ideas" element={<Ideas />} />
+              <Route path="/wishlist" element={<Wishlist />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
