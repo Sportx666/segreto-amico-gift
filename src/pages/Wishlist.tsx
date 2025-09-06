@@ -41,11 +41,13 @@ export default function Wishlist() {
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [manualUrl, setManualUrl] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedWishlistId, setSelectedWishlistId] = useState<string | null>(null);
+  const [selectedWishlistTitle, setSelectedWishlistTitle] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   // Fetch user's wishlist items
   const { data: wishlistItems, isLoading } = useQuery({
-    queryKey: ['wishlist-items'],
+    queryKey: ['wishlist-items', selectedWishlistId ?? 'all'],
     queryFn: async (): Promise<WishlistItem[]> => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
@@ -59,11 +61,17 @@ export default function Wishlist() {
 
       if (!participant) throw new Error("Participant not found");
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('wishlist_items')
         .select('*')
         .eq('owner_id', participant.id)
         .order('created_at', { ascending: false });
+
+      if (selectedWishlistId) {
+        query = query.eq('wishlist_id', selectedWishlistId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data || [];
@@ -131,6 +139,7 @@ export default function Wishlist() {
         .from('wishlist_items')
         .insert({
           owner_id: participant.id,
+          wishlist_id: selectedWishlistId,
           asin: asin || null,
           title,
           raw_url: manualUrl,
@@ -187,6 +196,7 @@ export default function Wishlist() {
         .from('wishlist_items')
         .insert({
           owner_id: participant.id,
+          wishlist_id: selectedWishlistId,
           asin: product.asin,
           title: product.title,
           image_url: product.image,
@@ -240,8 +250,49 @@ export default function Wishlist() {
   return (
     <div className="container mx-auto px-4 py-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">La mia lista desideri</h1>
+        <h1 className="text-2xl font-bold">{selectedWishlistTitle ?? 'La mia lista desideri'}</h1>
         <div className="flex gap-2">
+          <Button
+            variant="default"
+            onClick={async () => {
+              try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                  toast.error("Devi essere autenticato");
+                  return;
+                }
+
+                const { data: participant, error: pErr } = await supabase
+                  .from('participants')
+                  .select('id')
+                  .eq('profile_id', user.id)
+                  .single();
+                if (pErr || !participant) {
+                  toast.error("Profilo partecipante non trovato");
+                  return;
+                }
+
+                const defaultTitle = 'La mia lista';
+                const { data: inserted, error } = await supabase
+                  .from('wishlists')
+                  .insert({ owner_id: participant.id, title: defaultTitle })
+                  .select('id, title')
+                  .single();
+
+                if (error) throw error;
+
+                setSelectedWishlistId(inserted.id);
+                setSelectedWishlistTitle(inserted.title ?? defaultTitle);
+                toast.success('Nuova lista creata');
+                queryClient.invalidateQueries({ queryKey: ['wishlist-items'] });
+              } catch (err) {
+                console.error('Error creating wishlist', err);
+                toast.error('Errore nella creazione della lista');
+              }
+            }}
+          >
+            Nuova lista
+          </Button>
           <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">

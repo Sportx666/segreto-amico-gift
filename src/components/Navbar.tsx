@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
-import { Gift, Calendar, Lightbulb, User, LogOut } from "lucide-react";
+import { Gift, Calendar, Lightbulb, User, LogOut, Heart } from "lucide-react";
 import { toast } from "sonner";
 
 export const Navbar = () => {
@@ -87,6 +87,17 @@ export const Navbar = () => {
             <Lightbulb className="w-4 h-4" />
             <span>Idee</span>
           </Link>
+          <Link 
+            to="/wishlist" 
+            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
+              location.pathname === "/wishlist" 
+                ? "bg-primary/10 text-primary" 
+                : "text-foreground hover:text-primary"
+            }`}
+          >
+            <Heart className="w-4 h-4" />
+            <span>Lista Desideri</span>
+          </Link>
         </div>
 
         <div className="flex items-center gap-2">
@@ -129,6 +140,17 @@ export const Navbar = () => {
           >
             <Lightbulb className="w-4 h-4" />
             <span className="text-xs">Idee</span>
+          </Link>
+          <Link 
+            to="/wishlist" 
+            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-md transition-colors ${
+              location.pathname === "/wishlist" 
+                ? "text-primary" 
+                : "text-muted-foreground"
+            }`}
+          >
+            <Heart className="w-4 h-4" />
+            <span className="text-xs">Lista</span>
           </Link>
           <Button 
             variant="ghost" 
