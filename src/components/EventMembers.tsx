@@ -46,7 +46,7 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
 
       if (error) throw error;
       setMembers(data || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching members:', error);
       toast.error("Errore nel caricamento dei partecipanti");
     } finally {
@@ -88,7 +88,7 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
       setNewMemberEmail("");
       await fetchMembers();
       toast.success("Partecipante aggiunto!");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error adding member:', error);
       toast.error("Errore nell'aggiungere il partecipante");
     } finally {
@@ -107,7 +107,7 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
 
       await fetchMembers();
       toast.success("Partecipante rimosso");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error removing member:', error);
       toast.error("Errore nella rimozione del partecipante");
     }

@@ -70,7 +70,7 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
 
       if (exclusionsError) throw exclusionsError;
       setExclusions(exclusionsData || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching data:', error);
       toast.error("Errore nel caricamento delle esclusioni");
     } finally {
@@ -111,7 +111,7 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
       }
 
       await fetchData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error toggling exclusion:', error);
       toast.error("Errore nel modificare l'esclusione");
     }

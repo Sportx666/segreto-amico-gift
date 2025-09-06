@@ -91,7 +91,7 @@ export default function EventDetail() {
       if (error) throw error;
       
       setEvent(eventData);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching event details:', error);
       toast.error("Errore nel caricamento dell'evento");
       navigate("/events");

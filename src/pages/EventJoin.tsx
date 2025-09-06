@@ -74,7 +74,7 @@ const EventJoin = () => {
       localStorage.setItem("joinToken", token);
       setEvent(joinToken.events as EventInfo);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error validating token:", error);
       toast.error("Errore nel verificare il link");
       navigate("/");
@@ -137,10 +137,11 @@ const EventJoin = () => {
       toast.success(`Benvenuto/a ${name}! 🎉`);
       navigate(`/events/${event.id}/member/${participant.id}`);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error joining event:", error);
+      const description = error instanceof Error ? error.message : undefined;
       toast.error("Errore nell'unirsi all'evento", {
-        description: error.message
+        description
       });
     } finally {
       setJoining(false);

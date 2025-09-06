@@ -15,7 +15,7 @@ export const Navbar = () => {
       await supabase.auth.signOut();
       navigate("/auth");
       toast.success("Logout effettuato con successo");
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error("Errore durante il logout");
     }
   };

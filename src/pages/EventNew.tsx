@@ -87,10 +87,11 @@ const EventNew = () => {
 
       toast.success("Evento creato con successo! 🎉");
       navigate(`/events/${event.id}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating event:", error);
+      const description = error instanceof Error ? error.message : undefined;
       toast.error("Errore nella creazione dell'evento", {
-        description: error.message
+        description
       });
     } finally {
       setLoading(false);
