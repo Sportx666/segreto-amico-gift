@@ -14,6 +14,10 @@ import EventJoin from "./pages/EventJoin";
 import NotFound from "./pages/NotFound";
 import Ideas from "./pages/Ideas";
 import Wishlist from "./pages/Wishlist";
+import Privacy from "./pages/Privacy";
+import Cookies from "./pages/Cookies";
+import Terms from "./pages/Terms";
+import { Footer } from "@/components/Footer";
 
 const queryClient = new QueryClient();
 
@@ -35,9 +39,13 @@ const App = () => (
               <Route path="/join/:token" element={<EventJoin />} />
               <Route path="/ideas" element={<Ideas />} />
               <Route path="/wishlist" element={<Wishlist />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/cookies" element={<Cookies />} />
+              <Route path="/terms" element={<Terms />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <Footer />
           </div>
         </AuthProvider>
       </BrowserRouter>

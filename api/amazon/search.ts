@@ -1,97 +1,51 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-import mockData from './mock.json';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-interface SearchRequest {
-  q: string;
-  page?: number;
-  minPrice?: number;
-  maxPrice?: number;
-  category?: string;
-}
+type Item = {
+  asin: string; title: string; image: string;
+  price: number | null; currency: string | null;
+  url: string; lastUpdated: string;
+};
 
-interface ProductItem {
-  asin: string;
-  title: string;
-  image: string;
-  price: number;
-  currency: string;
-  url: string;
-  lastUpdated: string;
-}
+let mockCache: Item[] | null = null;
 
-interface SearchResponse {
-  items: ProductItem[];
-  page: number;
-  pageSize: number;
-  total: number;
-  mock: boolean;
-}
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse<SearchResponse | { error: string }>) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  try {
-    const { q, page = 1, minPrice, maxPrice, category }: SearchRequest = req.body;
+  const enabled = String(process.env.AMAZON_API_ENABLED || 'false').toLowerCase() === 'true';
+  const { q = '', page = 1 } = (req.body || {}) as { q?: string; page?: number };
+  const query = (q || '').trim();
+  if (!query) return res.status(400).json({ error: 'Missing q' });
 
-    if (!q || typeof q !== 'string') {
-      return res.status(400).json({ error: 'Query parameter "q" is required' });
+  // MOCK-FIRST (default) — load once via ESM dynamic import
+  if (!enabled) {
+    try {
+      if (!mockCache) {
+        const mod = await import('./mock.mjs');
+        mockCache = (mod.default ?? []) as Item[];
+      }
+    } catch {
+      // tiny fallback if import fails for any reason
+      mockCache = [{
+        asin: 'FALLBACK001',
+        title: 'Esempio regalo',
+        image: 'https://via.placeholder.com/400?text=Regalo',
+        price: 9.99, currency: 'EUR',
+        url: 'https://www.amazon.it/s?k=regalo',
+        lastUpdated: new Date().toISOString(),
+      }];
     }
-
-    const amazonApiEnabled = process.env.AMAZON_API_ENABLED === 'true';
+    const all = mockCache!;
+    const filtered = all.filter(i => i.title.toLowerCase().includes(query.toLowerCase()));
     const pageSize = 10;
-
-    if (!amazonApiEnabled) {
-      // Use mock data
-      let filteredItems = mockData.items.filter(item => {
-        const matchesQuery = item.title.toLowerCase().includes(q.toLowerCase()) ||
-                            item.category?.toLowerCase().includes(q.toLowerCase());
-        
-        const matchesPrice = (!minPrice || item.price >= minPrice) &&
-                            (!maxPrice || item.price <= maxPrice);
-        
-        const matchesCategory = !category || 
-                               item.category?.toLowerCase().includes(category.toLowerCase());
-        
-        return matchesQuery && matchesPrice && matchesCategory;
-      });
-
-      const total = filteredItems.length;
-      const startIndex = (page - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      
-      filteredItems = filteredItems.slice(startIndex, endIndex);
-
-      const response: SearchResponse = {
-        items: filteredItems.map(item => ({
-          asin: item.asin,
-          title: item.title,
-          image: item.image,
-          price: item.price,
-          currency: item.currency,
-          url: item.url,
-          lastUpdated: item.lastUpdated
-        })),
-        page,
-        pageSize,
-        total,
-        mock: true
-      };
-
-      return res.status(200).json(response);
-    }
-
-    // TODO: Implement PA-API 5.0 SearchItems when AMAZON_API_ENABLED=true
-    // This would require:
-    // - Amazon Product Advertising API credentials
-    // - Proper request signing
-    // - Mapping PA-API response to our format
-    
-    return res.status(501).json({ error: 'Amazon PA-API integration not yet implemented' });
-
-  } catch (error) {
-    console.error('Amazon search error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    const start = (Number(page) - 1) * pageSize;
+    const items = filtered.slice(start, start + pageSize);
+    return res.status(200).json({ items, total: filtered.length, page: Number(page), pageSize, mock: true });
   }
+
+  // TODO: enable PA-API 5.0 (server-side only) when AMAZON_API_ENABLED=true
+  return res.status(501).json({ error: 'PA-API integration not implemented yet' });
 }
+// import mockData from './mock.json';  // <-- Use this if using "resolveJsonModule" in tsconfig.json
