@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Events from "./pages/Events";
 import EventNew from "./pages/EventNew";
+import EventDetail from "./pages/EventDetail";
 import EventJoin from "./pages/EventJoin";
 import NotFound from "./pages/NotFound";
 import Ideas from "./pages/Ideas";
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/events" element={<Events />} />
               <Route path="/events/new" element={<EventNew />} />
+              <Route path="/events/:id" element={<EventDetail />} />
               <Route path="/join/:token" element={<EventJoin />} />
               <Route path="/ideas" element={<Ideas />} />
               <Route path="/wishlist" element={<Wishlist />} />
