@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, X } from "lucide-react";
@@ -7,14 +7,20 @@ interface SearchBarProps {
   onSearch: (query: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  initialQuery?: string;
 }
 
-export const SearchBar = ({ 
-  onSearch, 
-  placeholder = "Cerca prodotti su Amazon...", 
-  disabled = false 
+export const SearchBar = ({
+  onSearch,
+  placeholder = "Cerca prodotti su Amazon...",
+  disabled = false,
+  initialQuery = "",
 }: SearchBarProps) => {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
+
+  useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

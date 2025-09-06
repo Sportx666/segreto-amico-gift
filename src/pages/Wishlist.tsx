@@ -3,15 +3,15 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchBar } from "@/components/SearchBar";
 import { ProductsGrid } from "@/components/ProductsGrid";
-import { Plus, Search, ExternalLink, Trash2 } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { withAffiliateTag } from "@/lib/amazon";
+import WishlistItem from "@/components/WishlistItem";
 
 type Product = {
   asin: string;
@@ -23,7 +23,7 @@ type Product = {
   lastUpdated?: string;
 };
 
-interface WishlistItem {
+interface WishlistItemRow {
   id: string;
   asin: string;
   title: string;
@@ -34,21 +34,23 @@ interface WishlistItem {
   notes: string | null;
   created_at: string;
   is_purchased: boolean;
+  wishlist_id: string;
 }
 
 export default function Wishlist() {
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
-  const [manualUrl, setManualUrl] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedWishlistId, setSelectedWishlistId] = useState<string | null>(null);
   const [selectedWishlistTitle, setSelectedWishlistTitle] = useState<string | null>(null);
+  const [showEmptyManual, setShowEmptyManual] = useState(false);
+  const [emptyTitle, setEmptyTitle] = useState("");
+  const [emptyUrl, setEmptyUrl] = useState("");
   const queryClient = useQueryClient();
 
   // Fetch user's wishlist items
   const { data: wishlistItems, isLoading } = useQuery({
     queryKey: ['wishlist-items', selectedWishlistId ?? 'all'],
-    queryFn: async (): Promise<WishlistItem[]> => {
+    queryFn: async (): Promise<WishlistItemRow[]> => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
@@ -101,8 +103,8 @@ export default function Wishlist() {
     enabled: !!searchQuery && isSearchDialogOpen,
   });
 
-  const handleAddManually = async () => {
-    if (!manualUrl.trim()) {
+  const handleAddManual = async ({ title, url }: { title: string; url: string }) => {
+    if (!url.trim()) {
       toast.error("Inserisci un URL valido");
       return;
     }
@@ -114,7 +116,6 @@ export default function Wishlist() {
         return;
       }
 
-      // Get participant ID
       const { data: participant } = await supabase
         .from('participants')
         .select('id')
@@ -126,14 +127,23 @@ export default function Wishlist() {
         return;
       }
 
-      // Extract ASIN from URL if it's an Amazon URL
-      const asinMatch = manualUrl.match(/\/dp\/([A-Z0-9]{10})/);
-      const asin = asinMatch ? asinMatch[1] : '';
+      const asinMatch = url.match(/\/dp\/([A-Z0-9]{10})/);
+      const asin = asinMatch ? asinMatch[1] : null;
 
-      // Extract title from URL or use default
-      const title = manualUrl.includes('amazon.') 
-        ? "Prodotto Amazon aggiunto manualmente"
-        : "Prodotto aggiunto manualmente";
+      if (asin) {
+        const { data: existing } = await supabase
+          .from('wishlist_items')
+          .select('id')
+          .eq('wishlist_id', selectedWishlistId)
+          .eq('asin', asin)
+          .maybeSingle();
+        if (existing) {
+          toast.error("Prodotto già presente nella lista");
+          return;
+        }
+      }
+
+      const finalUrl = withAffiliateTag(url);
 
       const { error } = await supabase
         .from('wishlist_items')
@@ -142,15 +152,13 @@ export default function Wishlist() {
           wishlist_id: selectedWishlistId,
           asin: asin || null,
           title,
-          raw_url: manualUrl,
-          affiliate_url: withAffiliateTag(manualUrl)
+          raw_url: url,
+          affiliate_url: finalUrl,
         });
 
       if (error) throw error;
 
       toast.success("Prodotto aggiunto alla lista! 🎁");
-      setManualUrl("");
-      setIsAddDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ['wishlist-items'] });
     } catch (error: unknown) {
       console.error('Error adding manual item:', error);
@@ -182,7 +190,7 @@ export default function Wishlist() {
       const { data: existingItem } = await supabase
         .from('wishlist_items')
         .select('id')
-        .eq('owner_id', participant.id)
+        .eq('wishlist_id', selectedWishlistId)
         .eq('asin', product.asin)
         .maybeSingle();
 
@@ -192,6 +200,7 @@ export default function Wishlist() {
       }
 
       // Add to wishlist
+      const affiliateUrl = withAffiliateTag(product.url);
       const { error } = await supabase
         .from('wishlist_items')
         .insert({
@@ -201,13 +210,15 @@ export default function Wishlist() {
           title: product.title,
           image_url: product.image,
           price_snapshot: `${product.price} ${product.currency}`,
-          affiliate_url: product.url,
-          raw_url: product.url
+          affiliate_url: affiliateUrl,
+          raw_url: product.url,
         });
 
       if (error) throw error;
 
       toast.success("Prodotto aggiunto alla lista! 🎁");
+      setIsSearchDialogOpen(false);
+      setSearchQuery("");
       queryClient.invalidateQueries({ queryKey: ['wishlist-items'] });
     } catch (error: unknown) {
       console.error('Error adding to wishlist:', error);
@@ -232,6 +243,11 @@ export default function Wishlist() {
     }
   };
 
+  const handleOpenSearch = (initialQuery: string) => {
+    setSearchQuery(initialQuery);
+    setIsSearchDialogOpen(true);
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-6 max-w-4xl">
@@ -251,16 +267,15 @@ export default function Wishlist() {
     <div className="container mx-auto px-4 py-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">{selectedWishlistTitle ?? 'La mia lista desideri'}</h1>
-        <div className="flex gap-2">
-          <Button
-            variant="default"
-            onClick={async () => {
-              try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) {
-                  toast.error("Devi essere autenticato");
-                  return;
-                }
+        <Button
+          variant="default"
+          onClick={async () => {
+            try {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) {
+                toast.error("Devi essere autenticato");
+                return;
+              }
 
                 const { data: participant, error: pErr } = await supabase
                   .from('participants')
@@ -288,147 +303,117 @@ export default function Wishlist() {
               } catch (err) {
                 console.error('Error creating wishlist', err);
                 toast.error('Errore nella creazione della lista');
-              }
-            }}
+            }
+          }}
           >
             Nuova lista
           </Button>
-          <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
+      </div>
+
+      <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Cerca prodotti Amazon</DialogTitle>
+            <DialogDescription>
+              Trova prodotti su Amazon e aggiungili alla tua lista desideri
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <SearchBar
+              onSearch={setSearchQuery}
+              disabled={isSearchLoading}
+              initialQuery={searchQuery}
+            />
+            {searchQuery && (
+              <ProductsGrid
+                products={searchResults?.items || []}
+                loading={isSearchLoading}
+                onAddToWishlist={handleAddFromSearch}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {wishlistItems && wishlistItems.length === 0 ? (
+        <Card className="p-6 text-center">
+          {showEmptyManual ? (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                await handleAddManual({ title: emptyTitle, url: emptyUrl });
+                setEmptyTitle("");
+                setEmptyUrl("");
+                setShowEmptyManual(false);
+              }}
+              className="space-y-2"
+            >
+              <div className="space-y-1 text-left">
+                <Label htmlFor="empty-title">Titolo</Label>
+                <Input
+                  id="empty-title"
+                  value={emptyTitle}
+                  onChange={(e) => setEmptyTitle(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-1 text-left">
+                <Label htmlFor="empty-url">URL Amazon</Label>
+                <Input
+                  id="empty-url"
+                  value={emptyUrl}
+                  onChange={(e) => setEmptyUrl(e.target.value)}
+                  required
+                  placeholder="https://www.amazon.it/dp/..."
+                />
+              </div>
+              <Button type="submit" className="w-full">
+                Aggiungi
+              </Button>
+            </form>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button className="h-11" onClick={() => handleOpenSearch("")}>
                 <Search className="w-4 h-4 mr-2" />
                 Cerca su Amazon
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Cerca prodotti Amazon</DialogTitle>
-                <DialogDescription>
-                  Trova prodotti su Amazon e aggiungili alla tua lista desideri
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <SearchBar 
-                  onSearch={setSearchQuery}
-                  disabled={isSearchLoading}
-                />
-                {searchQuery && (
-                  <ProductsGrid
-                    products={searchResults?.items || []}
-                    loading={isSearchLoading}
-                    onAddToWishlist={handleAddFromSearch}
-                  />
-                )}
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
+              <Button
+                variant="outline"
+                className="h-11"
+                onClick={() => setShowEmptyManual(true)}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Aggiungi manualmente
               </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Aggiungi prodotto manualmente</DialogTitle>
-                <DialogDescription>
-                  Incolla il link di un prodotto Amazon per aggiungerlo alla lista
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="url">URL del prodotto</Label>
-                  <Input
-                    id="url"
-                    value={manualUrl}
-                    onChange={(e) => setManualUrl(e.target.value)}
-                    placeholder="https://www.amazon.it/dp/..."
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={handleAddManually} className="flex-1">
-                    Aggiungi alla lista
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsAddDialogOpen(false)}
-                  >
-                    Annulla
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      {wishlistItems && wishlistItems.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">🎁</div>
-          <h3 className="text-lg font-semibold mb-2">Lista desideri vuota</h3>
-          <p className="text-muted-foreground mb-4">
-            Inizia ad aggiungere prodotti che desideri ricevere
-          </p>
-          <Button onClick={() => setIsSearchDialogOpen(true)}>
-            <Search className="w-4 h-4 mr-2" />
-            Cerca su Amazon
-          </Button>
-        </div>
+            </div>
+          )}
+        </Card>
       ) : (
         <div className="space-y-4">
-          {wishlistItems?.map((item) => (
-            <Card key={item.id}>
-              <CardContent className="p-4">
-                <div className="flex gap-4">
-                  {item.image_url && (
-                    <img
-                      src={item.image_url}
-                      alt={item.title}
-                      className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = '/placeholder.svg';
-                      }}
-                    />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold mb-2 line-clamp-1">{item.title}</h3>
-                    {item.price_snapshot && (
-                      <Badge variant="secondary" className="mb-2">
-                        {item.price_snapshot}
-                      </Badge>
-                    )}
-                    {item.notes && (
-                      <p className="text-sm text-muted-foreground mb-2">{item.notes}</p>
-                    )}
-                    <div className="flex items-center gap-2">
-                      {item.affiliate_url && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => window.open(item.affiliate_url!, '_blank')}
-                        >
-                          <ExternalLink className="w-3 h-3 mr-1" />
-                          Vedi su Amazon
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-3 h-3 mr-1" />
-                        Rimuovi
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {wishlistItems?.map((item) => {
+            const [price, currency] = item.price_snapshot
+              ? item.price_snapshot.split(" ")
+              : [null, null];
+            return (
+              <WishlistItem
+                key={item.id}
+                item={{
+                  id: item.id,
+                  asin: item.asin,
+                  title: item.title,
+                  image: item.image_url ?? undefined,
+                  price: price ? parseFloat(price) : null,
+                  currency: currency || null,
+                  url: item.affiliate_url || item.raw_url || "",
+                  lastUpdated: null,
+                  wishlist_id: item.wishlist_id,
+                }}
+                onDelete={handleDeleteItem}
+                onAddManual={handleAddManual}
+                onOpenSearch={handleOpenSearch}
+              />
+            );
+          })}
         </div>
       )}
 
