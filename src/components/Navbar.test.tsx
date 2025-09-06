@@ -1,6 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { Navbar } from './Navbar';
+import { vi } from 'vitest';
+
+// Mock the useAuth hook
 
 vi.mock('@/components/AuthProvider', () => ({
   useAuth: vi.fn(),
