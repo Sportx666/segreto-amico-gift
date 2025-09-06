@@ -6,16 +6,18 @@ import { IdeasHeader } from "@/components/IdeasHeader";
 import { SearchBar } from "@/components/SearchBar";
 import { ProductsGrid } from "@/components/ProductsGrid";
 
+type Product = {
+  asin: string;
+  title: string;
+  image: string;
+  price: number;
+  currency: string;
+  url: string;
+  lastUpdated?: string;
+};
+
 interface SearchResult {
-  items: Array<{
-    asin: string;
-    title: string;
-    image: string;
-    price: number;
-    currency: string;
-    url: string;
-    lastUpdated?: string;
-  }>;
+  items: Product[];
   page: number;
   pageSize: number;
   total: number;
@@ -72,7 +74,7 @@ export default function Ideas() {
     handleSearch(query);
   };
 
-  const handleAddToWishlist = async (product: any) => {
+  const handleAddToWishlist = async (product: Product) => {
     try {
       // First, get the current user's participant ID
       const { data: { user } } = await supabase.auth.getUser();
@@ -122,7 +124,7 @@ export default function Ideas() {
       if (error) throw error;
 
       toast.success("Prodotto aggiunto alla lista desideri! 🎁");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error adding to wishlist:', error);
       toast.error("Errore nell'aggiungere il prodotto alla lista");
     }

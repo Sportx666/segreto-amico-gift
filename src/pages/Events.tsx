@@ -33,9 +33,10 @@ const Events = () => {
 
       if (error) throw error;
       setEvents(data || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const description = error instanceof Error ? error.message : undefined;
       toast.error("Errore nel caricamento eventi", {
-        description: error.message
+        description
       });
     } finally {
       setLoading(false);

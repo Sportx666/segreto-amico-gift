@@ -13,6 +13,16 @@ import { ProductsGrid } from "@/components/ProductsGrid";
 import { Plus, Search, ExternalLink, Trash2 } from "lucide-react";
 import { withAffiliateTag } from "@/lib/amazon";
 
+type Product = {
+  asin: string;
+  title: string;
+  image: string;
+  price: number;
+  currency: string;
+  url: string;
+  lastUpdated?: string;
+};
+
 interface WishlistItem {
   id: string;
   asin: string;
@@ -133,13 +143,13 @@ export default function Wishlist() {
       setManualUrl("");
       setIsAddDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ['wishlist-items'] });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error adding manual item:', error);
       toast.error("Errore nell'aggiungere il prodotto");
     }
   };
 
-  const handleAddFromSearch = async (product: any) => {
+  const handleAddFromSearch = async (product: Product) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -189,7 +199,7 @@ export default function Wishlist() {
 
       toast.success("Prodotto aggiunto alla lista! 🎁");
       queryClient.invalidateQueries({ queryKey: ['wishlist-items'] });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error adding to wishlist:', error);
       toast.error("Errore nell'aggiungere il prodotto");
     }
@@ -206,7 +216,7 @@ export default function Wishlist() {
 
       toast.success("Prodotto rimosso dalla lista");
       queryClient.invalidateQueries({ queryKey: ['wishlist-items'] });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting item:', error);
       toast.error("Errore nella rimozione del prodotto");
     }

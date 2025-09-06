@@ -81,7 +81,7 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
       const memberCount = membersData?.length || 0;
       setCanDraw(memberCount >= 2 && userRole === 'admin');
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching data:', error);
       toast.error("Errore nel caricamento dei dati del sorteggio");
     } finally {
@@ -162,9 +162,10 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
       await fetchData();
       onStatusChange();
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error performing draw:', error);
-      toast.error(error.message || "Errore durante il sorteggio");
+      const message = error instanceof Error ? error.message : "Errore durante il sorteggio";
+      toast.error(message);
     } finally {
       setIsDrawing(false);
     }
@@ -192,7 +193,7 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
       await fetchData();
       onStatusChange();
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error resetting draw:', error);
       toast.error("Errore nel ripristinare il sorteggio");
     }

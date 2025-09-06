@@ -34,9 +34,10 @@ const Auth = () => {
       });
 
       if (error) throw error;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const description = error instanceof Error ? error.message : undefined;
       toast.error("Errore durante l'accesso con Google", {
-        description: error.message
+        description
       });
     }
   };
@@ -60,9 +61,10 @@ const Auth = () => {
       toast.success("Link magico inviato! 📧", {
         description: "Controlla la tua email e clicca il link per accedere."
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const description = error instanceof Error ? error.message : undefined;
       toast.error("Errore durante l'invio", {
-        description: error.message
+        description
       });
     } finally {
       setLoading(false);
