@@ -12,13 +12,14 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchBar } from "@/components/SearchBar";
 import { ProductsGrid } from "@/components/ProductsGrid";
-import { Search } from "lucide-react";
+import { Search, SquarePen, Trash2 } from "lucide-react";
 import { withAffiliateTag, productUrlFromASIN } from "@/lib/amazon";
-import WishlistItem from "@/components/WishlistItem";
+import { WishlistItem } from "@/components/WishlistItem";
 
 type Product = {
   asin: string;
@@ -47,6 +48,7 @@ interface WishlistItemRow {
 interface WishlistRow {
   id: string;
   title: string | null;
+  event_id?: string | null;
 }
 
 export default function Wishlist() {
@@ -58,6 +60,14 @@ export default function Wishlist() {
   const [emptyManualOpen, setEmptyManualOpen] = useState(false);
   const [emptyManualTitle, setEmptyManualTitle] = useState("");
   const [emptyManualUrl, setEmptyManualUrl] = useState("");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newListTitle, setNewListTitle] = useState("");
+  const [newListEventId, setNewListEventId] = useState<string | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState<string>("");
+  const [editEventId, setEditEventId] = useState<string | null>(null);
+  const [isChooseWishlistOpen, setIsChooseWishlistOpen] = useState(false);
+  const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
   const queryClient = useQueryClient();
 
   const { data: wishlists } = useQuery({
@@ -78,7 +88,7 @@ export default function Wishlist() {
 
       const { data, error } = await supabase
         .from("wishlists")
-        .select("id, title")
+        .select("id, title, event_id")
         .eq("owner_id", participant.id)
         .order("created_at", { ascending: true });
 
@@ -140,6 +150,35 @@ export default function Wishlist() {
       return response.json();
     },
     enabled: !!searchQuery && isSearchDialogOpen,
+  });
+
+  // Events available to the user (member of)
+  interface EventRow { id: string; name: string }
+  const { data: events } = useQuery({
+    queryKey: ['events-for-wishlists'],
+    queryFn: async (): Promise<EventRow[]> => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data: participant } = await supabase
+        .from('participants')
+        .select('id')
+        .eq('profile_id', user.id)
+        .single();
+      if (!participant) return [];
+      const { data: memberRows, error: membersErr } = await supabase
+        .from('event_members')
+        .select('event_id')
+        .eq('participant_id', participant.id);
+      if (membersErr) throw membersErr;
+      const ids = (memberRows || []).map((r: any) => r.event_id).filter(Boolean);
+      if (ids.length === 0) return [];
+      const { data: eventsData, error: eventsErr } = await supabase
+        .from('events')
+        .select('id, name')
+        .in('id', ids);
+      if (eventsErr) throw eventsErr;
+      return (eventsData || []) as EventRow[];
+    }
   });
 
   const addManualToWishlist = async (
@@ -292,58 +331,34 @@ export default function Wishlist() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">
-          {selectedWishlistTitle ?? "La mia lista desideri"}
+          {selectedWishlistTitle ?? "Le mie liste dei desideri"}
         </h1>
         <div className="flex gap-2">
-          <Button
-            variant="default"
-            onClick={async () => {
-              try {
-                const {
-                  data: { user },
-                } = await supabase.auth.getUser();
-                if (!user) {
-                  toast.error("Devi essere autenticato");
-                  return;
-                }
-
-                const { data: participant, error: pErr } = await supabase
-                  .from("participants")
-                  .select("id")
-                  .eq("profile_id", user.id)
-                  .single();
-                if (pErr || !participant) {
-                  toast.error("Profilo partecipante non trovato");
-                  return;
-                }
-
-                const defaultTitle = "La mia lista";
-                const { data: inserted, error } = await supabase
-                  .from("wishlists")
-                  .insert({ owner_id: participant.id, title: defaultTitle })
-                  .select("id, title")
-                  .single();
-
-                if (error) throw error;
-
-                setSelectedWishlistId(inserted.id);
-                setSelectedWishlistTitle(inserted.title ?? defaultTitle);
-                toast.success("Nuova lista creata");
-                queryClient.invalidateQueries({ queryKey: ["wishlist-items"] });
-                queryClient.invalidateQueries({ queryKey: ["wishlists"] });
-              } catch (err) {
-                console.error("Error creating wishlist", err);
-                toast.error("Errore nella creazione della lista");
-              }
-            }}
-          >
+          <Button variant="default" onClick={() => setIsCreateDialogOpen(true)}>
             Nuova lista
           </Button>
         </div>
-      </div>
+      </div>      
+
+      {selectedWishlistId && emptyManualOpen && (
+        <div className="mb-6 max-w-xl space-y-3">
+          <div>
+            <Label htmlFor="header-title">Titolo</Label>
+            <Input id="header-title" value={emptyManualTitle} onChange={(e) => setEmptyManualTitle(e.target.value)} placeholder="Titolo del prodotto" />
+          </div>
+          <div>
+            <Label htmlFor="header-url">URL Amazon</Label>
+            <Input id="header-url" value={emptyManualUrl} onChange={(e) => setEmptyManualUrl(e.target.value)} placeholder="https://www.amazon.it/dp/..." />
+          </div>
+          <div className="flex gap-2">
+            <Button className="flex-1" onClick={async () => { await addManualToWishlist(selectedWishlistId, { title: emptyManualTitle, url: withAffiliateTag(emptyManualUrl) }); setEmptyManualTitle(''); setEmptyManualUrl(''); setEmptyManualOpen(false); }}>Aggiungi alla lista</Button>
+            <Button className="flex-1" variant="outline" onClick={() => setEmptyManualOpen(false)}>Annulla</Button>
+          </div>
+        </div>
+      )}
 
       {/* List selector beneath header */}
-      <div className="mb-6">
+      <div className="mb-6 flex items-center gap-2 flex-wrap">
         <Select
           value={selectedWishlistId ?? "all"}
           onValueChange={(val) => {
@@ -369,6 +384,62 @@ export default function Wishlist() {
             ))}
           </SelectContent>
         </Select>
+        {selectedWishlistId && (
+          <><Button size="sm" variant="outline" onClick={() => {
+            setEditTitle(selectedWishlistTitle ?? '');
+            setIsEditDialogOpen(true);
+          } }><SquarePen className="w-4 h-4" />
+          </Button>
+          <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" className="text-red-90 hover:text-red-50" variant="destructive"><Trash2 className="w-4 h-4" /></Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Eliminare questa lista?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Questa azione non è reversibile. La lista e i suoi elementi collegati potrebbero non essere recuperabili.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annulla</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={async () => {
+                      if (!selectedWishlistId) return;
+                      try {
+                        const { error } = await supabase
+                          .from('wishlists')
+                          .delete()
+                          .eq('id', selectedWishlistId);
+                        if (error) throw error;
+                        setIsEditDialogOpen(false);
+                        setSelectedWishlistId(null);
+                        setSelectedWishlistTitle(null);
+                        toast.success('Lista eliminata');
+                        queryClient.invalidateQueries({ queryKey: ['wishlists'] });
+                        queryClient.invalidateQueries({ queryKey: ['wishlist-items'] });
+                      } catch (e) { console.error(e); toast.error('Errore nell\'eliminare la lista'); }
+                    }}
+                  >
+                    Elimina definitivamente
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+          </AlertDialog></>          
+        )}
+      {/* Under header actions (visible when a list is selected) */}
+      {selectedWishlistId && wishlistItems.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap ml-auto">
+          <Button variant="outline" onClick={() => { setTargetWishlistIdForSearch(selectedWishlistId); setIsSearchDialogOpen(true); }}>
+            <Search className="w-4 h-4 mr-2" />
+            Cerca su Amazon
+          </Button>
+          <Button variant="default" onClick={() => setEmptyManualOpen((v) => !v)}>
+            Aggiungi manualmente
+          </Button>
+        </div>
+      )}
       </div>
 
       {/* Centralized Search Dialog */}
@@ -397,6 +468,161 @@ export default function Wishlist() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Create wishlist dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nuova lista</DialogTitle>
+            <DialogDescription>Imposta nome ed evento collegato</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="new-title">Nome</Label>
+              <Input id="new-title" value={newListTitle} onChange={(e) => setNewListTitle(e.target.value)} placeholder="Nome lista" />
+            </div>
+            <div>
+              <Label htmlFor="new-event">Evento</Label>
+              <Select value={newListEventId ?? undefined} onValueChange={(v) => setNewListEventId(v)}>
+                <SelectTrigger id="new-event"><SelectValue placeholder="Seleziona evento" /></SelectTrigger>
+                <SelectContent>
+                  {events?.map(ev => (
+                    <SelectItem key={ev.id} value={ev.id}>{ev.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button className="flex-1" onClick={async () => {
+                if (!newListTitle.trim() || !newListEventId) { toast.error('Compila nome ed evento'); return; }
+                try {
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) { toast.error('Devi essere autenticato'); return; }
+                  const { data: participant } = await supabase.from('participants').select('id').eq('profile_id', user.id).single();
+                  if (!participant) { toast.error('Profilo partecipante non trovato'); return; }
+                  const { data: inserted, error } = await supabase
+                    .from('wishlists')
+                    .insert({ owner_id: participant.id, title: newListTitle.trim(), event_id: newListEventId })
+                    .select('id,title')
+                    .single();
+                  if (error) throw error;
+                  setSelectedWishlistId(inserted.id);
+                  setSelectedWishlistTitle(inserted.title ?? newListTitle.trim());
+                  setIsCreateDialogOpen(false);
+                  setNewListTitle(''); setNewListEventId(null);
+                  toast.success('Nuova lista creata');
+                  queryClient.invalidateQueries({ queryKey: ['wishlists'] });
+                  queryClient.invalidateQueries({ queryKey: ['wishlist-items'] });
+                } catch (e) {
+                  console.error(e); toast.error('Errore nella creazione della lista');
+                }
+              }}>Crea</Button>
+              <Button className="flex-1" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>Annulla</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit wishlist dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifica lista</DialogTitle>
+            <DialogDescription>Aggiorna nome ed evento; puoi anche eliminare la lista</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="edit-title">Nome</Label>
+              <Input id="edit-title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Nome lista" />
+            </div>
+            <div>
+              <Label htmlFor="edit-event">Evento</Label>
+              <Select value={editEventId ?? undefined} onValueChange={(v) => setEditEventId(v)}>
+                <SelectTrigger id="edit-event"><SelectValue placeholder="Seleziona evento" /></SelectTrigger>
+                <SelectContent>
+                  {events?.map(ev => (
+                    <SelectItem key={ev.id} value={ev.id}>{ev.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button className="flex-1" onClick={async () => {
+                if (!selectedWishlistId) return;
+                if (!editTitle.trim()) { toast.error('Inserisci un nome'); return; }
+                try {
+                  const { error } = await supabase
+                    .from('wishlists')
+                    .update({ title: editTitle.trim(), event_id: editEventId ?? null })
+                    .eq('id', selectedWishlistId);
+                  if (error) throw error;
+                  setSelectedWishlistTitle(editTitle.trim());
+                  setIsEditDialogOpen(false);
+                  toast.success('Lista aggiornata');
+                  queryClient.invalidateQueries({ queryKey: ['wishlists'] });
+                } catch (e) {
+                  console.error(e); toast.error('Errore nell\'aggiornare la lista');
+                }
+              }}>Salva</Button>          
+              <Button className="flex-1" variant="outline" onClick={() => setIsEditDialogOpen(false)}>Annulla</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Choose wishlist dialog for adding from ideas */}
+      <Dialog open={isChooseWishlistOpen} onOpenChange={setIsChooseWishlistOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Scegli una lista</DialogTitle>
+            <DialogDescription>Seleziona la lista a cui aggiungere l'articolo</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Select value={selectedWishlistId ?? undefined} onValueChange={(v) => setSelectedWishlistId(v)}>
+              <SelectTrigger className="w-full"><SelectValue placeholder="Seleziona lista" /></SelectTrigger>
+              <SelectContent>
+                {wishlists?.map((wl) => (
+                  <SelectItem key={wl.id} value={wl.id}>{wl.title ?? 'Senza titolo'}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex gap-2">
+              <Button className="flex-1" disabled={!selectedWishlistId} onClick={() => selectedWishlistId && (async () => {
+                // Confirm add pending
+                const prod = pendingProduct; if (!prod) { setIsChooseWishlistOpen(false); return; }
+                try {
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) { toast.error('Devi essere autenticato'); return; }
+                  const { data: participant } = await supabase.from('participants').select('id').eq('profile_id', user.id).single();
+                  if (!participant) { toast.error('Profilo partecipante non trovato'); return; }
+                  const { data: existingItem } = await supabase
+                    .from('wishlist_items').select('id')
+                    .eq('wishlist_id', selectedWishlistId)
+                    .eq('asin', prod.asin)
+                    .maybeSingle();
+                  if (existingItem) { toast.error('Prodotto già presente nella lista'); return; }
+                  const { error } = await supabase.from('wishlist_items').insert({
+                    owner_id: participant.id,
+                    wishlist_id: selectedWishlistId,
+                    asin: prod.asin,
+                    title: prod.title,
+                    image_url: prod.image,
+                    price_snapshot: `${prod.price} ${prod.currency}`,
+                    affiliate_url: withAffiliateTag(prod.url),
+                    raw_url: prod.url,
+                  });
+                  if (error) throw error;
+                  toast.success('Prodotto aggiunto alla lista!');
+                  queryClient.invalidateQueries({ queryKey: ['wishlist-items'] });
+                } catch (e) { console.error(e); toast.error("Errore nell'aggiungere il prodotto"); }
+                finally { setIsChooseWishlistOpen(false); setPendingProduct(null); }
+              })()}>Conferma</Button>
+              <Button className="flex-1" variant="outline" onClick={() => { setIsChooseWishlistOpen(false); setPendingProduct(null); }}>Annulla</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Content */}
       {wishlistItems && wishlistItems.length === 0 ? (
@@ -488,6 +714,9 @@ export default function Wishlist() {
       ) : (
         <div className="space-y-4">
           {wishlistItems?.map((row) => {
+            const wl = wishlists?.find(w => w.id === row.wishlist_id);
+            const wlTitle = wl?.title ?? undefined;
+            const evName = wl?.event_id ? (events?.find(e => e.id === wl.event_id)?.name) : undefined;
             const url =
               row.affiliate_url ||
               row.raw_url ||
@@ -506,6 +735,8 @@ export default function Wishlist() {
                   lastUpdated: null,
                   wishlist_id: row.wishlist_id,
                 }}
+                wishlistTitle={wlTitle || selectedWishlistTitle || undefined}
+                eventTitle={evName}
                 onDelete={async (id) => {
                   await handleDeleteItem(id);
                 }}
@@ -532,4 +763,3 @@ export default function Wishlist() {
     </div>
   );
 }
-
