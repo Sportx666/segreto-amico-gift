@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Calendar, Users, Euro } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/components/AuthProvider";
+import { getOrCreateParticipantId } from "@/lib/participants";
+import { debugLog, isDebug } from "@/lib/debug";
 
 interface Event {
   id: string;
@@ -19,21 +22,58 @@ interface Event {
 const Events = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [diag, setDiag] = useState<any>({});
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
     fetchEvents();
-  }, []);
+  }, [authLoading, user, navigate]);
 
   const fetchEvents = async () => {
     try {
-      const { data, error } = await supabase
+      debugLog("Events.fetchEvents:start", { userId: user!.id });
+      const participantId = await getOrCreateParticipantId(user!.id);
+      debugLog("Events.participantId", { participantId });
+      setDiag((d: any) => ({ ...d, userId: user!.id, participantId }));
+
+      // Step 1: get event ids where user is a member
+      const { data: memberRows, error: membersErr } = await supabase
+        .from("event_members")
+        .select("event_id")
+        .eq("participant_id", participantId);
+      debugLog("Events.memberRows", { count: memberRows?.length, error: membersErr });
+      if (membersErr) throw membersErr;
+
+      let eventIds = (memberRows || []).map((r: any) => r.event_id).filter(Boolean);
+      debugLog("Events.eventIds", { eventIds });
+      setDiag((d: any) => ({ ...d, memberRowsCount: memberRows?.length ?? 0, eventIds }));
+
+      if (eventIds.length === 0) {
+        setEvents([]);
+        return;
+      }
+
+      // Step 2: fetch those events
+      const { data: eventsData, error: eventsErr } = await supabase
         .from("events")
         .select("*")
-        .order("created_at", { ascending: false });
+        .in("id", eventIds);
+      debugLog("Events.eventsData", { count: eventsData?.length, error: eventsErr });
+      if (eventsErr) throw eventsErr;
 
-      if (error) throw error;
-      setEvents(data || []);
+      const joinedEvents = (eventsData || []) as Event[];
+      joinedEvents.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+      setEvents(joinedEvents);
+      setDiag((d: any) => ({ ...d, eventsCount: joinedEvents.length }));
     } catch (error: unknown) {
+      debugLog("Events.fetchEvents:error", { error });
+      setDiag((d: any) => ({ ...d, error }));
       const description = error instanceof Error ? error.message : undefined;
       toast.error("Errore nel caricamento eventi", {
         description
@@ -95,6 +135,11 @@ const Events = () => {
           </Card>
         ) : (
           <div className="grid gap-4">
+            {isDebug() && (
+              <Card className="p-4">
+                <pre className="text-xs whitespace-pre-wrap break-words">{JSON.stringify(diag, null, 2)}</pre>
+              </Card>
+            )}
             {events.map((event) => (
               <Link key={event.id} to={`/events/${event.id}`}>
                 <Card className="hover:shadow-elegant transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm shadow-card">

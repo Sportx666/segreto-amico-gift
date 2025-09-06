@@ -3,6 +3,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { 
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -36,6 +43,11 @@ interface WishlistItem {
   is_purchased: boolean;
 }
 
+interface WishlistRow {
+  id: string;
+  title: string | null;
+}
+
 export default function Wishlist() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
@@ -44,6 +56,31 @@ export default function Wishlist() {
   const [selectedWishlistId, setSelectedWishlistId] = useState<string | null>(null);
   const [selectedWishlistTitle, setSelectedWishlistTitle] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  const { data: wishlists } = useQuery({
+    queryKey: ['wishlists'],
+    queryFn: async (): Promise<WishlistRow[]> => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      const { data: participant } = await supabase
+        .from('participants')
+        .select('id')
+        .eq('profile_id', user.id)
+        .single();
+
+      if (!participant) return [];
+
+      const { data, error } = await supabase
+        .from('wishlists')
+        .select('id, title')
+        .eq('owner_id', participant.id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    }
+  });
 
   // Fetch user's wishlist items
   const { data: wishlistItems, isLoading } = useQuery({
@@ -285,6 +322,7 @@ export default function Wishlist() {
                 setSelectedWishlistTitle(inserted.title ?? defaultTitle);
                 toast.success('Nuova lista creata');
                 queryClient.invalidateQueries({ queryKey: ['wishlist-items'] });
+                queryClient.invalidateQueries({ queryKey: ['wishlists'] });
               } catch (err) {
                 console.error('Error creating wishlist', err);
                 toast.error('Errore nella creazione della lista');
@@ -293,6 +331,31 @@ export default function Wishlist() {
           >
             Nuova lista
           </Button>
+          <Select
+            value={selectedWishlistId ?? 'all'}
+            onValueChange={(val) => {
+              if (val === 'all') {
+                setSelectedWishlistId(null);
+                setSelectedWishlistTitle(null);
+              } else {
+                setSelectedWishlistId(val);
+                const wl = wishlists?.find(w => w.id === val);
+                setSelectedWishlistTitle(wl?.title ?? 'La mia lista');
+              }
+            }}
+          >
+            <SelectTrigger className="w-[220px]">
+              <SelectValue placeholder="Tutte le liste" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutte le liste</SelectItem>
+              {wishlists?.map((wl) => (
+                <SelectItem key={wl.id} value={wl.id}>
+                  {wl.title ?? 'Senza titolo'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">

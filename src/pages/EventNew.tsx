@@ -48,38 +48,54 @@ const EventNew = () => {
         .rpc("generate_join_code");
       if (codeError) throw codeError;
 
-      // Create the event
+      // Create the event (stamp admin_profile_id)
       const { data: event, error } = await supabase
         .from("events")
         .insert({
           name: name.trim(),
           budget: budget || null,
           date: date || null,
-          join_code: codeData
+          join_code: codeData,
+          admin_profile_id: user.id
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Create participant for the admin
-      const { data: participant, error: participantError } = await supabase
+      // Ensure a participant row for this user (read-then-insert to avoid upsert constraints)
+      let { data: participant } = await supabase
         .from("participants")
-        .insert({
-          profile_id: user.id
-        })
-        .select()
+        .select("id")
+        .eq("profile_id", user.id)
+        .maybeSingle();
+
+      if (!participant) {
+        const inserted = await supabase
+          .from("participants")
+          .insert({ profile_id: user.id })
+          .select("id")
+          .single();
+        if (inserted.error || !inserted.data) throw inserted.error ?? new Error("Missing participant");
+        participant = inserted.data;
+      }
+
+      // Load admin display name for membership label
+      const { data: profileInfo } = await supabase
+        .from("profiles")
+        .select("display_name, email")
+        .eq("id", user.id)
         .single();
+      const adminDisplay = profileInfo?.display_name || (user.email?.split("@")[0] ?? "Admin");
 
-      if (participantError) throw participantError;
-
-      // Add admin as event member with admin role
+      // Add admin as event member with admin role and label
       const { error: memberError } = await supabase
         .from("event_members")
         .insert({
           event_id: event.id,
           participant_id: participant.id,
           role: "admin",
+          anonymous_name: adminDisplay,
           status: "joined"
         });
 
