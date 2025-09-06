@@ -7,14 +7,27 @@ interface SearchBarProps {
   onSearch: (query: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  value?: string; // controlled value (optional)
+  onChangeText?: (value: string) => void; // controlled change handler (optional)
 }
 
 export const SearchBar = ({ 
   onSearch, 
   placeholder = "Cerca prodotti su Amazon...", 
-  disabled = false 
+  disabled = false,
+  value,
+  onChangeText,
 }: SearchBarProps) => {
-  const [query, setQuery] = useState("");
+  const [inner, setInner] = useState("");
+  const isControlled = value !== undefined;
+  const query = isControlled ? (value as string) : inner;
+  const setQuery = (v: string) => {
+    if (isControlled) {
+      onChangeText?.(v);
+    } else {
+      setInner(v);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,9 +36,7 @@ export const SearchBar = ({
     }
   };
 
-  const handleClear = () => {
-    setQuery("");
-  };
+  const handleClear = () => setQuery("");
 
   return (
     <form onSubmit={handleSubmit} className="flex gap-2 mb-6">
