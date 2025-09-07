@@ -2,9 +2,6 @@ import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
 const SUPABASE_URL = "https://eociecgrdwllggcohmko.supabase.co";
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvY2llY2dyZHdsbGdnY29obWtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzODc5ODcsImV4cCI6MjAzMTk2Mzk4N30.frsU_PCHKJdz8lFv2IXqOiUVFwk28hXbZGWZAoYFfBY";
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 function generateToken(length = 22) {
   const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -17,6 +14,11 @@ function generateToken(length = 22) {
 }
 
 export default async function handler(req: any, res: any) {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return res.status(500).json({ error: 'SUPABASE_SERVICE_ROLE_KEY not defined' });
+  }
+
+  const supabase = createClient(SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

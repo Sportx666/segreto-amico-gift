@@ -72,6 +72,10 @@ To connect a domain, navigate to Project > Settings > Domains and click Connect 
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
 
+## Environment variables
+
+Set `SUPABASE_SERVICE_ROLE_KEY` to your Supabase service role key so API routes can perform privileged operations.
+
 ## Database migrations
 
 To apply the latest database changes, run the SQL file in `supabase/migrations/20250908000000_profile_images.sql` on your Supabase instance.

@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 const EventJoin = () => {
   const { token } = useParams<{ token: string }>();
-  const { user, loading } = useAuth();
+  const { session, loading } = useAuth();
   const navigate = useNavigate();
   const [status, setStatus] = useState<"loading" | "invalid" | "expired" | "used">("loading");
 
@@ -15,53 +14,36 @@ const EventJoin = () => {
     if (!token || loading) return;
 
     const run = async () => {
-      const { data: jt, error } = await supabase
-        .from("join_tokens")
-        .select("event_id, participant_id, expires_at, used_at")
-        .eq("token", token)
-        .single();
+      const resp = await fetch('/api/join/redeem', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ token }),
+      });
 
-      if (error || !jt) {
-        setStatus("invalid");
-        return;
-      }
-      if (jt.used_at) {
-        setStatus("used");
-        return;
-      }
-      if (new Date(jt.expires_at) < new Date()) {
-        setStatus("expired");
-        return;
-      }
+      const data = await resp.json().catch(() => ({}));
 
-      if (!user) {
-        localStorage.setItem("pendingJoinToken", token);
-        navigate("/auth");
+      if (resp.status === 401) {
+        localStorage.setItem('pendingJoinToken', token);
+        navigate('/auth');
         return;
       }
 
-      await supabase
-        .from("participants")
-        .update({ profile_id: user.id })
-        .eq("id", jt.participant_id)
-        .is("profile_id", null);
+      if (!resp.ok) {
+        if (data?.error === 'invalid') setStatus('invalid');
+        else if (data?.error === 'used') setStatus('used');
+        else if (data?.error === 'expired') setStatus('expired');
+        else setStatus('invalid');
+        return;
+      }
 
-      await supabase
-        .from("event_members")
-        .update({ status: "joined" })
-        .eq("event_id", jt.event_id)
-        .eq("participant_id", jt.participant_id);
-
-      await supabase
-        .from("join_tokens")
-        .update({ used_at: new Date().toISOString() })
-        .eq("token", token);
-
-      navigate(`/events/${jt.event_id}`);
+      navigate(`/events/${data.eventId}`);
     };
 
     run();
-  }, [token, user, loading, navigate]);
+  }, [token, loading, session, navigate]);
 
   const renderMessage = () => {
     switch (status) {

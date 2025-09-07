@@ -132,8 +132,14 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
         },
         body: JSON.stringify({ eventId, participantId: memberRow.participant_id }),
       });
-      const invite = await inviteResp.json();
-      setInviteLinks((prev) => ({ ...prev, [memberRow.id]: invite }));
+      if (!inviteResp.ok) {
+        const body = await inviteResp.text();
+        console.error('join/create failed', body);
+        toast.error('Errore nel generare il link');
+      } else {
+        const invite = await inviteResp.json();
+        setInviteLinks((prev) => ({ ...prev, [memberRow.id]: invite }));
+      }
 
       setNewMemberName('');
       setNewMemberEmail('');
@@ -323,6 +329,12 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
                             },
                             body: JSON.stringify({ eventId, participantId: member.participant_id }),
                           });
+                          if (!resp.ok) {
+                            const body = await resp.text();
+                            console.error('join/create failed', body);
+                            toast.error('Errore nel rigenerare il link');
+                            return;
+                          }
                           const invite = await resp.json();
                           setInviteLinks((prev) => ({ ...prev, [member.id]: invite }));
                           toast.success('Link rigenerato');
