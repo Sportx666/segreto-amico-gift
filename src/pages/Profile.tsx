@@ -51,6 +51,7 @@ const Profile = () => {
       setAvatarUrl(url);
       setFile(null);
       toast.success("Profilo aggiornato");
+      window.location.href = "/";
     } catch (err) {
       console.error(err);
       toast.error("Errore durante l'aggiornamento");
