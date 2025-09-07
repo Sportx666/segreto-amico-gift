@@ -74,7 +74,26 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-trick
 
 ## Environment variables
 
-Set `SUPABASE_SERVICE_ROLE_KEY` to your Supabase service role key so API routes can perform privileged operations.
+Set the following variables for Supabase:
+
+- `VITE_SUPABASE_URL`: Public project URL (client-side)
+- `VITE_SUPABASE_PUBLISHABLE_KEY`: Publishable anon key (client-side)
+- `SUPABASE_URL`: Project URL (server-side; same as above)
+- `SUPABASE_SERVICE_ROLE_KEY`: Service role key (server-side; privileged)
+ - `SUPABASE_ANON_KEY` (optional): Anon key for the debug API to run RLS checks using your session token.
+
+Where to find these in Supabase:
+
+- In your Supabase Dashboard: Project Settings → API
+  - Project URL → use for `VITE_SUPABASE_URL` and `SUPABASE_URL`
+  - anon public key → use for `VITE_SUPABASE_PUBLISHABLE_KEY`
+  - service_role secret → use for `SUPABASE_SERVICE_ROLE_KEY` (do not expose client-side)
+
+In deployment (e.g., Vercel), add the server-side variables in your Project → Settings → Environment Variables and redeploy.
+
+### Debugging permissions
+
+Enable debug mode by adding `?debug=1` to the URL. You can also POST to `/api/debug/rls` with your `Authorization: Bearer <access_token>` header and body `{ eventId }` to verify if your current session can insert into `participants` and `event_members` under RLS.
 
 ## Database migrations
 

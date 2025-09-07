@@ -1,13 +1,12 @@
-import { createClient } from '@supabase/supabase-js';
-
-const SUPABASE_URL = "https://eociecgrdwllggcohmko.supabase.co";
+import { createServiceClient } from '../_supabase.ts';
 
 export default async function handler(req: any, res: any) {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return res.status(500).json({ error: 'SUPABASE_SERVICE_ROLE_KEY not defined' });
+  let supabase;
+  try {
+    supabase = createServiceClient();
+  } catch (e: any) {
+    return res.status(500).json({ error: e.message || 'Server configuration error' });
   }
-
-  const supabase = createClient(SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
