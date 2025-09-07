@@ -97,68 +97,21 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
 
     setIsDrawing(true);
     try {
-      // Simple draw algorithm with exclusions
-      const availableMembers = members.filter(m => m.participant_id);
-      const memberIds = availableMembers.map(m => m.participant_id || m.id);
-      
-      // Create a simple assignment avoiding exclusions
-      const newAssignments: { giver_id: string; receiver_id: string }[] = [];
-      const availableReceivers = [...memberIds];
-      
-      for (const giverId of memberIds) {
-        // Find possible receivers (not self, not excluded)
-        const possibleReceivers = availableReceivers.filter(receiverId => 
-          receiverId !== giverId && 
-          !exclusions.some(ex => ex.giver_id === giverId && ex.blocked_id === receiverId)
-        );
-
-        if (possibleReceivers.length === 0) {
-          throw new Error("Impossibile completare il sorteggio con le esclusioni attuali");
+      // Call the server-side draw endpoint
+      const response = await fetch(`/api/draw/${eventId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         }
+      });
 
-        // Pick random receiver
-        const randomIndex = Math.floor(Math.random() * possibleReceivers.length);
-        const selectedReceiver = possibleReceivers[randomIndex];
-        
-        newAssignments.push({
-          giver_id: giverId,
-          receiver_id: selectedReceiver
-        });
+      const result = await response.json();
 
-        // Remove selected receiver from available pool
-        const receiverIndex = availableReceivers.indexOf(selectedReceiver);
-        availableReceivers.splice(receiverIndex, 1);
+      if (!response.ok || !result.assignedCount) {
+        throw new Error(result.error || "Errore durante il sorteggio");
       }
 
-      // Clear existing assignments
-      const { error: deleteError } = await supabase
-        .from('assignments')
-        .delete()
-        .eq('event_id', eventId);
-
-      if (deleteError) throw deleteError;
-
-      // Insert new assignments
-      const { error: insertError } = await supabase
-        .from('assignments')
-        .insert(
-          newAssignments.map(assignment => ({
-            ...assignment,
-            event_id: eventId
-          }))
-        );
-
-      if (insertError) throw insertError;
-
-      // Update event status
-      const { error: updateError } = await supabase
-        .from('events')
-        .update({ draw_status: 'completed' })
-        .eq('id', eventId);
-
-      if (updateError) throw updateError;
-
-      toast.success("Sorteggio completato con successo!");
+      toast.success(`Sorteggio completato! ${result.assignedCount} assegnazioni create.`);
       await fetchData();
       onStatusChange();
 
