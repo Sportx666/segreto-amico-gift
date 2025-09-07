@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Gift, Heart, Users, Sparkles, Calendar } from "lucide-react";
@@ -8,12 +9,47 @@ import { Gift, Heart, Users, Sparkles, Calendar } from "lucide-react";
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [displayName, setDisplayName] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    const fetchDisplayName = async () => {
+      if (!user) return;
+      const { data: profileInfo } = await supabase
+        .from("profiles")
+        .select("display_name, email")
+        .eq("id", user.id)
+        .single();
+      const display = profileInfo?.display_name || (user.email?.split("@")[0] ?? null);
+      setDisplayName(display);
+    };
+    fetchDisplayName();
+  }, [user]);
+
+  // Stay in sync if the profile name changes elsewhere
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel("profiles-display-name")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
+        (payload) => {
+          const next = (payload as any)?.new?.display_name ?? user.email?.split("@")[0] ?? null;
+          setDisplayName(next);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   if (loading) {
     return (
@@ -38,7 +74,7 @@ const Index = () => {
             </div>
             <div>
               <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
-                Ciao, {user.email?.split('@')[0]}! 👋
+                Ciao, {displayName ?? "Amico"}!
               </h1>
               <p className="text-xl text-white/90 mb-8">
                 Organizza il tuo scambio di regali perfetto

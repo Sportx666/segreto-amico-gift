@@ -451,7 +451,7 @@ export type Database = {
       }
     }
     Views: {
-      v_assignments_by_member: {
+      v_assignments_member: {
         Row: {
           event_id: string | null
           generated_on: string | null
@@ -469,7 +469,7 @@ export type Database = {
           },
         ]
       }
-      v_exclusions_by_member: {
+      v_exclusions_member: {
         Row: {
           blocked_member_id: string | null
           created_at: string | null
