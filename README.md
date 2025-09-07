@@ -71,3 +71,13 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+## Database migrations
+
+To apply the latest database changes, run the SQL file in `supabase/migrations/20250908000000_profile_images.sql` on your Supabase instance.
+
+```sh
+psql $SUPABASE_DB_URL -f supabase/migrations/20250908000000_profile_images.sql
+```
+
+Run this SQL after pulling the repository to ensure your database schema is up to date.

@@ -17,6 +17,7 @@ import Wishlist from "./pages/Wishlist";
 import Privacy from "./pages/Privacy";
 import Cookies from "./pages/Cookies";
 import Terms from "./pages/Terms";
+import Profile from "./pages/Profile";
 import { Footer } from "@/components/Footer";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/join/:token" element={<EventJoin />} />
               <Route path="/ideas" element={<Ideas />} />
               <Route path="/wishlist" element={<Wishlist />} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/cookies" element={<Cookies />} />
               <Route path="/terms" element={<Terms />} />

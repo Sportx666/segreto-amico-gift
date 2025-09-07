@@ -1,7 +1,9 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Gift, Calendar, Lightbulb, User, LogOut, Heart } from "lucide-react";
 import { toast } from "sonner";
 
@@ -9,6 +11,20 @@ export const Navbar = () => {
   const { user, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      if (!user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("avatar_url")
+        .eq("id", user.id)
+        .single();
+      setAvatarUrl(data?.avatar_url ?? null);
+    }
+    load();
+  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -101,10 +117,14 @@ export const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="hidden md:flex">
-            <User className="w-4 h-4 mr-2" />
-            Profilo
-          </Button>
+          <Link to="/profile" className="hidden md:flex">
+            <Avatar className="w-8 h-8">
+              <AvatarImage src={avatarUrl || undefined} />
+              <AvatarFallback>
+                <User className="w-4 h-4" />
+              </AvatarFallback>
+            </Avatar>
+          </Link>
           <Button 
             variant="outline" 
             size="sm" 
@@ -152,14 +172,18 @@ export const Navbar = () => {
             <Heart className="w-4 h-4" />
             <span className="text-xs">Lista</span>
           </Link>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Link
+            to="/profile"
             className="flex flex-col items-center gap-1 px-3 py-2 h-auto text-muted-foreground"
           >
-            <User className="w-4 h-4" />
+            <Avatar className="w-6 h-6">
+              <AvatarImage src={avatarUrl || undefined} />
+              <AvatarFallback>
+                <User className="w-4 h-4" />
+              </AvatarFallback>
+            </Avatar>
             <span className="text-xs">Profilo</span>
-          </Button>
+          </Link>
         </div>
       </div>
     </nav>
