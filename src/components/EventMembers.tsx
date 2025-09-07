@@ -189,8 +189,8 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
           <Dialog>
             <DialogTrigger asChild>
               <Button>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Aggiungi
+                <UserPlus className="w-4 h-4"/>
+                <span className="hidden sm:inline">Aggiungi</span> 
               </Button>
             </DialogTrigger>
             <DialogContent>

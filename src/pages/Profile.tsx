@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { uploadImage, resizeToWebP } from "@/lib/upload";
 import { AVATAR_PLACEHOLDER } from "@/lib/placeholder";
 import { toast } from "sonner";
+import { T } from "vitest/dist/chunks/reporters.d.BFLkQcL6.js";
+import { Trash2 } from "lucide-react";
 
 const Profile = () => {
   const { user } = useAuth();
@@ -13,6 +15,8 @@ const Profile = () => {
   const [locale, setLocale] = useState("it");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -30,6 +34,53 @@ const Profile = () => {
     }
     load();
   }, [user]);
+
+  // Update preview when a new file is selected
+  useEffect(() => {
+    if (!file) {
+      // Clear preview when no file is selected
+      setPreviewUrl(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [file]);
+
+  // Auto-save avatar to DB when a file is selected
+  useEffect(() => {
+    const uploadAndSave = async () => {
+      if (!user || !file) return;
+      try {
+        setUploadingAvatar(true);
+        const resized = await resizeToWebP(file, { max: 1024, quality: 0.85 });
+        const url = await uploadImage({
+          bucket: "avatars",
+          path: `${user.id}/avatar-${Date.now()}.webp`,
+          file: resized,
+        });
+        const { data, error } = await supabase
+          .from("profiles")
+          .update({ avatar_url: url })
+          .eq("id", user.id)
+          .select("avatar_url")
+          .single();
+        if (error) throw error;
+        setAvatarUrl(data?.avatar_url ?? url);
+        setFile(null);
+        setPreviewUrl(null);
+        toast.success("Avatar aggiornato");
+      } catch (err) {
+        console.error(err);
+        toast.error("Errore nel salvataggio dell'avatar");
+      } finally {
+        setUploadingAvatar(false);
+      }
+    };
+    uploadAndSave();
+  }, [file, user]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -58,6 +109,23 @@ const Profile = () => {
     }
   };
 
+  const handleRemoveAvatar = async () => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ avatar_url: null })
+        .eq("id", user.id);
+      if (error) throw error;
+      setAvatarUrl(null);
+      setFile(null);
+      toast.success("Avatar rimosso");
+    } catch (err) {
+      console.error(err);
+      toast.error("Errore durante la rimozione");
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -81,17 +149,24 @@ const Profile = () => {
       <div className="space-y-2">
         <label className="text-sm">Avatar</label>
         <img
-          src={avatarUrl || AVATAR_PLACEHOLDER}
+          src={previewUrl || avatarUrl || AVATAR_PLACEHOLDER}
           alt="avatar"
           className="w-24 h-24 rounded-full object-cover"
         />
-        <Input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
-        />
+        <div className="flex items-center gap-2">
+          <Input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
+          />
+          {avatarUrl && (
+            <Button type="button" variant="outline" onClick={handleRemoveAvatar}>
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
       </div>
-      <Button onClick={handleSave}>Salva</Button>
+      <Button onClick={handleSave} disabled={uploadingAvatar}>Salva</Button>
     </div>
   );
 };

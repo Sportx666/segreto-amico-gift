@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Users, Gift, Share2, Shuffle, Ban } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Gift, Share2, Shuffle, Ban, ImageUp, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { uploadImage, resizeToWebP } from "@/lib/upload";
 import { EventMembers } from "@/components/EventMembers";
 import { EventExclusions } from "@/components/EventExclusions";
 import { EventDraw } from "@/components/EventDraw";
@@ -24,6 +25,7 @@ interface Event {
   amazon_marketplace: string;
   join_code: string;
   created_at: string;
+  cover_image_url?: string | null;
 }
 
 interface EventMember {
@@ -44,6 +46,8 @@ export default function EventDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("partecipanti");
   const [diag, setDiag] = useState<any>({});
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [removingCover, setRemovingCover] = useState(false);
 
   useEffect(() => {
     // Wait for auth to resolve before deciding
@@ -107,7 +111,7 @@ export default function EventDetail() {
         const display = profileInfo?.display_name || (user!.email?.split('@')[0] ?? 'Partecipante');
         const inserted = await supabase
           .from('event_members')
-          .insert({ event_id: id as string, participant_id: participantId, role: desiredRole, status: 'joined', anonymous_name: display })
+          .insert({ event_id: id as string, participant_id: participantId, role: desiredRole, status: 'invited', anonymous_name: display })
           .select('role')
           .single();
         debugLog("EventDetail.autoJoin", { joined: inserted.data, joinErr: inserted.error, desiredRole });
@@ -166,6 +170,14 @@ export default function EventDetail() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Cover image */}
+      <div className="mb-6">
+        <img
+          src={event.cover_image_url || "/placeholder.svg"}
+          alt="cover"
+          className="w-full h-48 object-cover rounded-md border"
+        />
+      </div>
       {/* Header */}
       <div className="mb-6">
         <Button 
@@ -189,7 +201,134 @@ export default function EventDetail() {
                 {formatDate(event.date)}
               </CardDescription>
             </div>
-            {getStatusBadge(event.draw_status)}
+            <div className="flex items-center gap-2">
+              {getStatusBadge(event.draw_status)}
+              {userRole === 'admin' && (
+                <>
+                  <input
+                    id="cover-input"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file || !event) return;
+                      setUploadingCover(true);
+                      try {
+                        const resized = await resizeToWebP(file, { max: 1600, quality: 0.8 });
+                        const url = await uploadImage({
+                          bucket: "event-images",
+                          path: `${event.id}/cover.webp`,
+                          file: resized,
+                        });
+                        const { data, error } = await supabase
+                          .from('events')
+                          .update({ cover_image_url: url })
+                          .eq('id', event.id)
+                          .select()
+                          .single();
+                        if (error) throw error;
+                        setEvent(data);
+                        toast.success("Immagine evento aggiornata");
+                      } catch (err) {
+                        console.error(err);
+                        toast.error("Errore durante l'upload dell'immagine");
+                      } finally {
+                        setUploadingCover(false);
+                        (e.target as HTMLInputElement).value = '';
+                      }
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => document.getElementById('cover-input')?.click()}
+                    disabled={uploadingCover}
+                    aria-label="Cambia immagine"
+                    title="Cambia immagine"
+                  >
+                    {/* Mobile: icon, Desktop: text */}
+                    <span className="sm:hidden">
+                      <ImageUp className="w-4 h-4" />
+                    </span>
+                    <span className="hidden sm:inline">
+                      {uploadingCover ? 'Carico...' : 'Cambia immagine'}
+                    </span>
+                  </Button>
+                  {event.cover_image_url && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        if (!event?.cover_image_url) return;
+                        setRemovingCover(true);
+                        try {
+                          const url = event.cover_image_url;
+                          let path: string | null = null;
+                          try {
+                            const u = new URL(url);
+                            const marker = '/object/public/';
+                            const idx = u.pathname.indexOf(marker);
+                            if (idx !== -1) {
+                              const after = u.pathname.substring(idx + marker.length); // bucket/path
+                              const parts = after.split('/');
+                              const bucket = parts.shift();
+                              const key = parts.join('/');
+                              if (bucket === 'event-images') {
+                                path = key;
+                              } else {
+                                // Fallback: attempt to locate '/event-images/' segment
+                                const altIdx = u.pathname.indexOf('/event-images/');
+                                if (altIdx !== -1) {
+                                  path = u.pathname.substring(altIdx + '/event-images/'.length);
+                                }
+                              }
+                            }
+                          } catch {
+                            // non-URL string; naive fallback
+                            const simpleIdx = url.indexOf('/event-images/');
+                            if (simpleIdx !== -1) {
+                              path = url.substring(simpleIdx + '/event-images/'.length);
+                            }
+                          }
+                          if (!path) {
+                            toast.error("Impossibile rimuovere: percorso file non riconosciuto");
+                            return;
+                          }
+                          const { error: rmErr } = await supabase.storage.from('event-images').remove([path]);
+                          if (rmErr) throw rmErr;
+                          const { data, error } = await supabase
+                            .from('events')
+                            .update({ cover_image_url: null })
+                            .eq('id', event.id)
+                            .select()
+                            .single();
+                          if (error) throw error;
+                          setEvent(data);
+                          toast.success("Immagine evento rimossa");
+                        } catch (err) {
+                          console.error(err);
+                          toast.error("Errore nella rimozione dell'immagine");
+                        } finally {
+                          setRemovingCover(false);
+                        }
+                      }}
+                      disabled={removingCover || uploadingCover}
+                      aria-label="Rimuovi immagine"
+                      title="Rimuovi immagine"
+                    >
+                      {/* Mobile: icon, Desktop: text */}
+                      <span className="sm:hidden">
+                        <Trash2 className="w-4 h-4" />
+                      </span>
+                      <span className="hidden sm:inline">
+                        {removingCover ? 'Rimuovo...' : 'Rimuovi immagine'}
+                      </span>
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -197,7 +336,7 @@ export default function EventDetail() {
             {event.budget && (
               <div className="flex items-center gap-2">
                 <Gift className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm">Budget: �,�{event.budget}</span>
+                <span className="text-sm">Budget: €{event.budget}</span>
               </div>
             )}
             <div className="flex items-center gap-2">

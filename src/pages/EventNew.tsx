@@ -7,13 +7,16 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Euro, Gift, Users } from "lucide-react";
 import { toast } from "sonner";
+import { uploadImage, resizeToWebP } from "@/lib/upload";
 import { useAuth } from "@/components/AuthProvider";
 
 const EventNew = () => {
   const [name, setName] = useState("");
   const [budget, setBudget] = useState<number | "">("");
   const [date, setDate] = useState("");
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -101,6 +104,30 @@ const EventNew = () => {
 
       if (memberError) throw memberError;
 
+      // If a cover image is selected, upload and stamp URL
+      if (coverFile) {
+        try {
+          setCoverUploading(true);
+          const resized = await resizeToWebP(coverFile, { max: 1600, quality: 0.8 });
+          const url = await uploadImage({
+            bucket: "event-images",
+            path: `${event.id}/cover.webp`,
+            file: resized,
+          });
+          const { error: coverErr } = await supabase
+            .from("events")
+            .update({ cover_image_url: url })
+            .eq("id", event.id);
+          if (coverErr) throw coverErr;
+          toast.success("Immagine evento caricata");
+        } catch (e) {
+          console.warn("Cover upload failed", e);
+          toast.error("Caricamento immagine evento fallito");
+        } finally {
+          setCoverUploading(false);
+        }
+      }
+
       toast.success("Evento creato con successo! 🎉");
       navigate(`/events/${event.id}`);
     } catch (error: unknown) {
@@ -131,6 +158,18 @@ const EventNew = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label>Immagine evento</Label>
+                <div className="w-full">
+                  <img
+                    src={coverFile ? URL.createObjectURL(coverFile) : "/placeholder.svg"}
+                    alt="cover preview"
+                    className="w-full h-40 object-cover rounded border"
+                  />
+                </div>
+                <Input type="file" accept="image/*" onChange={(e) => setCoverFile(e.target.files?.[0] || null)} />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="name">Nome dell'evento</Label>
                 <Input
@@ -182,7 +221,7 @@ const EventNew = () => {
               <Button 
                 type="submit" 
                 className="w-full bg-gradient-primary hover:bg-primary-light transition-all duration-300 hover:shadow-glow"
-                disabled={loading}
+                disabled={loading || coverUploading}
               >
                 {loading ? (
                   "Creazione..."
