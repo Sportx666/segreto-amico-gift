@@ -29,7 +29,7 @@ const EventNew = () => {
     setLoading(true);
     try {
       // First create or get user's profile
-      let { data: profile } = await supabase
+        const { data: profile } = await supabase
         .from("profiles")
         .select("id")
         .eq("id", user.id)

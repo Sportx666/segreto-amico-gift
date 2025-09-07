@@ -50,7 +50,7 @@ const Events = () => {
       debugLog("Events.memberRows", { count: memberRows?.length, error: membersErr });
       if (membersErr) throw membersErr;
 
-      let eventIds = (memberRows || []).map((r: any) => r.event_id).filter(Boolean);
+        const eventIds = (memberRows || []).map((r: any) => r.event_id).filter(Boolean);
       debugLog("Events.eventIds", { eventIds });
       setDiag((d: any) => ({ ...d, memberRowsCount: memberRows?.length ?? 0, eventIds }));
 

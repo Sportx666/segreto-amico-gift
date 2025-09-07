@@ -1,4 +1,4 @@
-﻿import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,7 +58,7 @@ export const EventShare = ({ event }: EventShareProps) => {
           <p>1. Genera e invia link personali di invito dalla sezione Partecipanti.</p>
           <p>2. Gli invitati aprono il link, si autenticano e si uniscono all'evento.</p>
           <p>3. Quando tutti hanno aderito, configura le esclusioni ed esegui il sorteggio.</p>
-          <p>4. Ogni partecipante riceverÃ  la sua assegnazione segreta.</p>
+          <p>4. Ogni partecipante riceverà la sua assegnazione segreta.</p>
         </CardContent>
       </Card>
     </div>
