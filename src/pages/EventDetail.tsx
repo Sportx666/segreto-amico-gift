@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Users, Gift, Share2, Shuffle } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Gift, Share2, Shuffle, Ban } from "lucide-react";
 import { toast } from "sonner";
 import { EventMembers } from "@/components/EventMembers";
 import { EventExclusions } from "@/components/EventExclusions";
 import { EventDraw } from "@/components/EventDraw";
 import { EventShare } from "@/components/EventShare";
+import { getOrCreateParticipantId } from "@/lib/participants";
+import { debugLog, isDebug } from "@/lib/debug";
 
 interface Event {
   id: string;
@@ -35,66 +37,94 @@ interface EventMember {
 
 export default function EventDetail() {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [event, setEvent] = useState<Event | null>(null);
   const [userRole, setUserRole] = useState<string>('member');
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("partecipanti");
+  const [diag, setDiag] = useState<any>({});
 
   useEffect(() => {
-    if (!user || !id) {
+    // Wait for auth to resolve before deciding
+    if (loading) return;
+
+    if (!id) {
+      navigate("/events");
+      return;
+    }
+
+    if (!user) {
       navigate("/auth");
       return;
     }
-    
+    debugLog("EventDetail.mount", { eventId: id, userId: user.id });
     fetchEventDetails();
-  }, [user, id, navigate]);
+  }, [user, id, loading, navigate]);
 
   const fetchEventDetails = async () => {
     try {
-      // Get participant record
-      const { data: participant } = await supabase
-        .from('participants')
-        .select('id')
-        .eq('profile_id', user!.id)
-        .single();
+      debugLog("EventDetail.fetch:start", { eventId: id, userId: user!.id });
+      // Resolve participant id once
+      const participantId = await getOrCreateParticipantId(user!.id);
+      debugLog("EventDetail.participantId", { participantId });
+      setDiag((d: any) => ({ ...d, userId: user!.id, eventId: id, participantId }));
 
-      if (!participant) {
-        navigate("/events");
-        return;
-      }
-
-      // Check if user is member of this event
-      const { data: membership } = await supabase
-        .from('event_members')
-        .select('role')
-        .eq('event_id', id)
-        .eq('participant_id', participant.id)
-        .single();
-
-      if (!membership) {
-        toast.error("Non hai accesso a questo evento");
-        navigate("/events");
-        return;
-      }
-
-      setUserRole(membership.role);
-
-      // Fetch event details
+      // Fetch event details first (to know admin_profile_id)
       const { data: eventData, error } = await supabase
         .from('events')
         .select('*')
         .eq('id', id)
         .single();
-
+      debugLog("EventDetail.eventData", { eventData, error });
       if (error) throw error;
       
       setEvent(eventData);
+      setDiag((d: any) => ({ ...d, eventLoaded: true }));
+
+      // Now check membership via participant_id
+      const { data: membership, error: membershipError } = await supabase
+        .from('event_members')
+        .select('role')
+        .eq('event_id', id)
+        .eq('participant_id', participantId)
+        .limit(1)
+        .maybeSingle();
+      debugLog("EventDetail.membership", { membership, membershipError });
+      if (membershipError) {
+        console.warn('membership lookup error', membershipError);
+      }
+
+      if (!membership) {
+        // If you're the admin of the event, create admin membership; otherwise member
+        const desiredRole = (eventData as any).admin_profile_id === user!.id ? 'admin' : 'member';
+        // Load display name for label
+        const { data: profileInfo } = await supabase
+          .from('profiles')
+          .select('display_name, email')
+          .eq('id', user!.id)
+          .single();
+        const display = profileInfo?.display_name || (user!.email?.split('@')[0] ?? 'Partecipante');
+        const inserted = await supabase
+          .from('event_members')
+          .insert({ event_id: id as string, participant_id: participantId, role: desiredRole, status: 'joined', anonymous_name: display })
+          .select('role')
+          .single();
+        debugLog("EventDetail.autoJoin", { joined: inserted.data, joinErr: inserted.error, desiredRole });
+        const role = inserted.data?.role ?? desiredRole;
+        setUserRole(role);
+        setDiag((d: any) => ({ ...d, membershipRole: role, autoJoined: true, joinErr: inserted.error }));
+      } else {
+        const role = membership.role ?? 'member';
+        setUserRole(role);
+        setDiag((d: any) => ({ ...d, membershipRole: role, autoJoined: false }));
+      }
     } catch (error: unknown) {
+      debugLog("EventDetail.fetch:error", { error });
       console.error('Error fetching event details:', error);
       toast.error("Errore nel caricamento dell'evento");
       navigate("/events");
+      setDiag((d: any) => ({ ...d, error }));
     } finally {
       setIsLoading(false);
     }
@@ -167,7 +197,7 @@ export default function EventDetail() {
             {event.budget && (
               <div className="flex items-center gap-2">
                 <Gift className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm">Budget: €{event.budget}</span>
+                <span className="text-sm">Budget: �,�{event.budget}</span>
               </div>
             )}
             <div className="flex items-center gap-2">
@@ -184,6 +214,11 @@ export default function EventDetail() {
       </Card>
 
       {/* Tabs */}
+      {isDebug() && (
+        <Card className="mb-4 p-4">
+          <pre className="text-xs whitespace-pre-wrap break-words">{JSON.stringify(diag, null, 2)}</pre>
+        </Card>
+      )}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="partecipanti">
@@ -191,7 +226,7 @@ export default function EventDetail() {
             <span className="hidden sm:inline">Partecipanti</span>
           </TabsTrigger>
           <TabsTrigger value="esclusioni">
-            <span className="text-lg mr-2">🚫</span>
+            <Ban className="w-4 h-4 mr-2" />
             <span className="hidden sm:inline">Esclusioni</span>
           </TabsTrigger>
           <TabsTrigger value="sorteggio">

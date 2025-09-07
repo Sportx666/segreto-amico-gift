@@ -135,7 +135,7 @@ const EventJoin = () => {
       }));
 
       toast.success(`Benvenuto/a ${name}! 🎉`);
-      navigate(`/events/${event.id}/member/${participant.id}`);
+      navigate(`/events/${event.id}`);
       
     } catch (error: unknown) {
       console.error("Error joining event:", error);

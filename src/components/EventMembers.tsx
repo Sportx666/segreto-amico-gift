@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { UserPlus, Trash2, Crown, User } from "lucide-react";
 import { toast } from "sonner";
+import { getOrCreateParticipantId } from "@/lib/participants";
+import { debugLog, isDebug } from "@/lib/debug";
 
 interface EventMembersProps {
   eventId: string;
@@ -31,21 +33,55 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
+  const [diag, setDiag] = useState<any>({});
 
   useEffect(() => {
     fetchMembers();
-  }, [eventId]);
+  }, [eventId, userRole]);
 
   const fetchMembers = async () => {
     try {
+      debugLog("EventMembers.fetch:start", { eventId, userId: user?.id });
+      // Ensure the viewer has a participant id (RLS-friendly path)
+      if (user) {
+        try { 
+          const pid = await getOrCreateParticipantId(user.id);
+          debugLog("EventMembers.viewerParticipantId", { participantId: pid });
+          setDiag((d: any) => ({ ...d, viewerParticipantId: pid }));
+        } catch (e) {
+          debugLog("EventMembers.viewerParticipantId:error", { error: e });
+          setDiag((d: any) => ({ ...d, viewerParticipantIdError: String(e) }));
+        }
+      }
+
       const { data, error } = await supabase
         .from('event_members')
-        .select('*')
+        .select('id, role, anonymous_name, anonymous_email, status, participant_id')
         .eq('event_id', eventId)
         .order('created_at', { ascending: true });
+      debugLog("EventMembers.query", { count: data?.length, error });
+      if (!error && data) {
+        setMembers((data as any[] || []) as Member[]);
+        setDiag((d: any) => ({ ...d, membersCount: data?.length ?? 0 }));
+        return;
+      }
 
-      if (error) throw error;
-      setMembers(data || []);
+      // If blocked or empty, try to at least show current user's membership
+      if (user) {
+        const pid = await getOrCreateParticipantId(user.id);
+        const { data: selfRow } = await supabase
+          .from('event_members')
+          .select('id, role, anonymous_name, anonymous_email, status, participant_id')
+          .eq('event_id', eventId)
+          .eq('participant_id', pid)
+          .maybeSingle();
+        debugLog("EventMembers.selfRow", { selfRow });
+        if (selfRow) {
+          setMembers([selfRow as Member]);
+          setDiag((d: any) => ({ ...d, fallbackSelfRow: true }));
+          return;
+        }
+      }
     } catch (error: unknown) {
       console.error('Error fetching members:', error);
       toast.error("Errore nel caricamento dei partecipanti");
@@ -114,7 +150,9 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
   };
 
   const getMemberName = (member: Member) => {
-    return member.anonymous_name || `Utente ${member.participant_id?.slice(0, 8)}`;
+    if (member.anonymous_name && member.anonymous_name.trim().length > 0) return member.anonymous_name;
+    if (member.anonymous_email && member.anonymous_email.trim().length > 0) return member.anonymous_email;
+    return "Partecipante";
   };
 
   if (isLoading) {
@@ -133,6 +171,11 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
 
   return (
     <div className="space-y-6">
+      {isDebug() && (
+        <Card className="p-4">
+          <pre className="text-xs whitespace-pre-wrap break-words">{JSON.stringify({ eventId, ...diag }, null, 2)}</pre>
+        </Card>
+      )}
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
