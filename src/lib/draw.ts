@@ -182,14 +182,19 @@ export async function loadAntiRecurrenceMap(eventId: string): Promise<Map<string
   const antiRecurrence = new Map<string, string>();
 
   try {
-    // Get the current event to find previous_event_id
+    // Get the current event to find previous_event_id  
     const { data: currentEvent, error: eventError } = await supabase
       .from('events')
       .select('previous_event_id')
       .eq('id', eventId)
-      .single();
+      .maybeSingle();
 
-    if (eventError || !currentEvent?.previous_event_id) {
+    if (eventError) {
+      console.warn('Error loading event:', eventError);
+      return antiRecurrence;
+    }
+
+    if (!currentEvent?.previous_event_id) {
       return antiRecurrence; // No previous event, empty map
     }
 

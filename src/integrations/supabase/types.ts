@@ -113,6 +113,7 @@ export type Database = {
       }
       events: {
         Row: {
+          admin_profile_id: string | null
           amazon_marketplace: string | null
           budget: number | null
           created_at: string | null
@@ -121,8 +122,10 @@ export type Database = {
           id: string
           join_code: string | null
           name: string
+          previous_event_id: string | null
         }
         Insert: {
+          admin_profile_id?: string | null
           amazon_marketplace?: string | null
           budget?: number | null
           created_at?: string | null
@@ -131,8 +134,10 @@ export type Database = {
           id?: string
           join_code?: string | null
           name: string
+          previous_event_id?: string | null
         }
         Update: {
+          admin_profile_id?: string | null
           amazon_marketplace?: string | null
           budget?: number | null
           created_at?: string | null
@@ -141,8 +146,24 @@ export type Database = {
           id?: string
           join_code?: string | null
           name?: string
+          previous_event_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_admin_profile_id_fkey"
+            columns: ["admin_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_previous_event_id_fkey"
+            columns: ["previous_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       exclusions: {
         Row: {
@@ -421,7 +442,43 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_assignments_by_member: {
+        Row: {
+          event_id: string | null
+          generated_on: string | null
+          giver_member_id: string | null
+          id: string | null
+          receiver_member_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_exclusions_by_member: {
+        Row: {
+          blocked_member_id: string | null
+          created_at: string | null
+          event_id: string | null
+          giver_member_id: string | null
+          id: string | null
+          reason: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exclusions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       generate_join_code: {

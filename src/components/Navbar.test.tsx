@@ -1,10 +1,9 @@
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { Navbar } from './Navbar';
-import { vi } from 'vitest';
 
 // Mock the useAuth hook
-
 vi.mock('@/components/AuthProvider', () => ({
   useAuth: vi.fn(),
 }));
@@ -12,7 +11,7 @@ import { useAuth } from '@/components/AuthProvider';
 
 describe('Navbar', () => {
   it('renders unauthenticated navbar with login button', () => {
-    (useAuth as unknown as jest.Mock).mockReturnValue({ user: null, loading: false });
+    (useAuth as ReturnType<typeof vi.fn>).mockReturnValue({ user: null, loading: false });
     render(
       <MemoryRouter initialEntries={["/"]}>
         <Navbar />
@@ -24,7 +23,7 @@ describe('Navbar', () => {
   });
 
   it('does not render on /auth route', () => {
-    (useAuth as unknown as jest.Mock).mockReturnValue({ user: null, loading: false });
+    (useAuth as ReturnType<typeof vi.fn>).mockReturnValue({ user: null, loading: false });
     render(
       <MemoryRouter initialEntries={["/auth"]}>
         <Navbar />
@@ -35,7 +34,7 @@ describe('Navbar', () => {
   });
 
   it('renders authenticated navbar with navigation links', () => {
-    (useAuth as unknown as jest.Mock).mockReturnValue({ user: { id: 'u1' }, loading: false });
+    (useAuth as ReturnType<typeof vi.fn>).mockReturnValue({ user: { id: 'u1' }, loading: false });
     render(
       <MemoryRouter initialEntries={["/"]}>
         <Navbar />
