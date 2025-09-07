@@ -123,6 +123,7 @@ export type Database = {
           join_code: string | null
           name: string
           previous_event_id: string | null
+          cover_image_url: string | null
         }
         Insert: {
           admin_profile_id?: string | null
@@ -135,6 +136,7 @@ export type Database = {
           join_code?: string | null
           name: string
           previous_event_id?: string | null
+          cover_image_url?: string | null
         }
         Update: {
           admin_profile_id?: string | null
@@ -147,6 +149,7 @@ export type Database = {
           join_code?: string | null
           name?: string
           previous_event_id?: string | null
+          cover_image_url?: string | null
         }
         Relationships: [
           {
@@ -296,6 +299,7 @@ export type Database = {
           family_group: string | null
           id: string
           locale: string | null
+          avatar_url: string | null
         }
         Insert: {
           created_at?: string | null
@@ -304,6 +308,7 @@ export type Database = {
           family_group?: string | null
           id: string
           locale?: string | null
+          avatar_url?: string | null
         }
         Update: {
           created_at?: string | null
@@ -312,6 +317,7 @@ export type Database = {
           family_group?: string | null
           id?: string
           locale?: string | null
+          avatar_url?: string | null
         }
         Relationships: []
       }
@@ -406,6 +412,7 @@ export type Database = {
           notes: string | null
           owner_id: string | null
           title: string | null
+          cover_image_url: string | null
         }
         Insert: {
           created_at?: string | null
@@ -414,6 +421,7 @@ export type Database = {
           notes?: string | null
           owner_id?: string | null
           title?: string | null
+          cover_image_url?: string | null
         }
         Update: {
           created_at?: string | null
@@ -422,6 +430,7 @@ export type Database = {
           notes?: string | null
           owner_id?: string | null
           title?: string | null
+          cover_image_url?: string | null
         }
         Relationships: [
           {
