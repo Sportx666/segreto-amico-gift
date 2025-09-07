@@ -132,8 +132,14 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
         },
         body: JSON.stringify({ eventId, participantId: memberRow.participant_id }),
       });
-      const invite = await inviteResp.json();
-      setInviteLinks((prev) => ({ ...prev, [memberRow.id]: invite }));
+      if (!inviteResp.ok) {
+        const body = await inviteResp.text();
+        console.error('join/create failed', body);
+        toast.error('Errore nel generare il link');
+      } else {
+        const invite = await inviteResp.json();
+        setInviteLinks((prev) => ({ ...prev, [memberRow.id]: invite }));
+      }
 
       setNewMemberName('');
       setNewMemberEmail('');
@@ -146,6 +152,98 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
       setIsAddingMember(false);
     }
   };
+
+  const addMemberServer = async () => {
+    const name = newMemberName.trim();
+    const email = newMemberEmail.trim();
+    if (!name) {
+      toast.error("Il nome è obbligatorio");
+      return;
+    }
+    setIsAddingMember(true);
+    try {
+      const resp = await fetch('/api/members/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ eventId, anonymousName: name, anonymousEmail: email || null }),
+      });
+      const bodyText = await resp.text();
+      if (!resp.ok) {
+        let msg = 'Errore nell\'aggiungere il partecipante';
+        try {
+          const err = JSON.parse(bodyText);
+          if (resp.status === 409 && err?.error === 'duplicate_email') {
+            msg = 'Questa email è già stata invitata';
+          }
+        } catch {}
+        console.error('members/add failed', bodyText);
+        toast.error(msg);
+        return;
+      }
+      const body = JSON.parse(bodyText);
+      if (body?.invite && body?.memberId) {
+        setInviteLinks((prev) => ({ ...prev, [body.memberId]: body.invite }));
+      }
+      setNewMemberName('');
+      setNewMemberEmail('');
+      await fetchMembers();
+      toast.success('Partecipante aggiunto!');
+    } catch (error) {
+      console.error('Error adding member via API:', error);
+      toast.error('Errore nell\'aggiungere il partecipante');
+    } finally {
+      setIsAddingMember(false);
+    }
+  };
+
+  const debugCheckPermissions = async () => {
+    try {
+      const resp = await fetch('/api/debug/rls', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ eventId }),
+      });
+      const json = await resp.json();
+      setDiag((d: any) => ({ ...d, debugRls: json }));
+      if (!resp.ok) toast.error('Debug RLS fallito');
+      else toast.success('Debug RLS completato');
+    } catch (e) {
+      console.error('RLS debug failed', e);
+      toast.error('Debug RLS errore');
+    }
+  };
+
+  const debugAddMemberTest = async () => {
+    try {
+      const name = newMemberName.trim() || 'Test User';
+      const email = newMemberEmail.trim() || '';
+      const resp = await fetch('/api/members/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ eventId, anonymousName: name, anonymousEmail: email || null, ttlDays: 1 }),
+      });
+      const text = await resp.text();
+      setDiag((d: any) => ({ ...d, debugAddResp: { status: resp.status, body: safeJson(text) } }));
+      if (!resp.ok) toast.error('members/add 500');
+      else toast.success('members/add OK');
+    } catch (e) {
+      console.error('debug add failed', e);
+      toast.error('Debug add errore');
+    }
+  };
+
+  function safeJson(text: string) {
+    try { return JSON.parse(text); } catch { return text; }
+  }
 
   const removeMember = async (memberId: string) => {
     try {
@@ -188,6 +286,10 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
     <div className="space-y-6">
       {isDebug() && (
         <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Button variant="secondary" size="sm" onClick={debugCheckPermissions}>Verifica permessi (RLS)</Button>
+            <Button variant="secondary" size="sm" onClick={debugAddMemberTest}>Test add via API</Button>
+          </div>
           <pre className="text-xs whitespace-pre-wrap break-words">{JSON.stringify({ eventId, ...diag }, null, 2)}</pre>
         </Card>
       )}
@@ -236,7 +338,7 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
                   />
                 </div>
                 <Button 
-                  onClick={addMember} 
+                  onClick={addMemberServer} 
                   className="w-full" 
                   disabled={isAddingMember}
                 >
@@ -323,6 +425,12 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
                             },
                             body: JSON.stringify({ eventId, participantId: member.participant_id }),
                           });
+                          if (!resp.ok) {
+                            const body = await resp.text();
+                            console.error('join/create failed', body);
+                            toast.error('Errore nel rigenerare il link');
+                            return;
+                          }
                           const invite = await resp.json();
                           setInviteLinks((prev) => ({ ...prev, [member.id]: invite }));
                           toast.success('Link rigenerato');

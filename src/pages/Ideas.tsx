@@ -154,14 +154,16 @@ export default function Ideas() {
   };
 
   const handleCategoryClick = (category: string) => {
-    const categoryNames: Record<string, string> = {
-      ufficio: "ufficio lavoro",
-      cucina: "cucina casa",
-      tech: "tecnologia elettronica",
-      bambini: "bambini giochi",
-      relax: "relax benessere",
-      eco: "ecologico sostenibile"
-    };
+  const categoryNames: Record<string, string> = {
+    ufficio: "ufficio lavoro",
+    cucina: "cucina casa",
+    tech: "tecnologia elettronica",
+    bambini: "bambini giochi",
+    relax: "relax benessere",
+    eco: "ecologico sostenibile",
+    sport: "sport fitness",
+    moda: "moda accessori"
+  };
     
     const query = `idee regalo ${categoryNames[category] || category}`;
     handleSearch(query);

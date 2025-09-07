@@ -1,10 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-// Use direct values since VITE_ prefixed env vars don't work in API routes
-const SUPABASE_URL = "https://eociecgrdwllggcohmko.supabase.co";
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvY2llY2dyZHdsbGdnY29obWtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzODc5ODcsImV4cCI6MjA3MTk2Mzk4N30.frsU_PCHKJdz8lFv2IXqOiUVFwk28hXbZGWZAoYFfBY";
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+import { createServiceClient } from '../_supabase.ts';
 
 interface DrawMember {
   id: string;
@@ -124,6 +118,13 @@ export default async function handler(req: any, res: any) {
   
   if (!eventId) {
     return res.status(400).json({ error: 'Event ID required' });
+  }
+
+  let supabase;
+  try {
+    supabase = createServiceClient();
+  } catch (e: any) {
+    return res.status(500).json({ error: e.message || 'Server configuration error' });
   }
 
   try {

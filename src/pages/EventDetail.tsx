@@ -66,6 +66,23 @@ export default function EventDetail() {
     fetchEventDetails();
   }, [user, id, loading, navigate]);
 
+  const handleDeleteItem = async (eventId: string) => {
+      try {
+        const { error } = await supabase
+          .from("events")
+          .delete()
+          .eq("id", eventId);
+  
+        if (error) throw error;
+  
+        toast.success("Evento rimosso dalla lista");
+        navigate("/events");
+      } catch (error: unknown) {
+        console.error("Error deleting item:", error);
+        toast.error("Errore nella rimozione dell'evento");
+      }
+    };
+
   const fetchEventDetails = async () => {
     try {
       debugLog("EventDetail.fetch:start", { eventId: id, userId: user!.id });
@@ -339,15 +356,26 @@ export default function EventDetail() {
                 <span className="text-sm">Budget: €{event.budget}</span>
               </div>
             )}
-            <div className="flex items-center gap-2">
-              <Share2 className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm">Codice: {event.join_code}</span>
-            </div>
+            {/* Event code removed: now using personal invite links only */}
             {userRole === 'admin' && (
               <Badge variant="outline" className="w-fit">
                 Amministratore
-              </Badge>
+              </Badge>                                         
             )}
+            <div className="ml-auto">
+              {userRole === 'admin' && (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={async (id) => await handleDeleteItem(event.id)}
+                  aria-label="Rimuovi"
+                  className="min-h-[22px] text-red-90 hover:text-red-50"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                  <span className="hidden sm:inline">Rimuovi Evento</span>
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

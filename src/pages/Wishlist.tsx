@@ -432,11 +432,12 @@ export default function Wishlist() {
       {selectedWishlistId && wishlistItems.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap ml-auto">
           <Button variant="outline" onClick={() => { setTargetWishlistIdForSearch(selectedWishlistId); setIsSearchDialogOpen(true); }}>
-            <Search className="w-4 h-4 mr-2" />
-            Cerca su Amazon
+            <Search className="w-4 h-4" />
+            <span className="hidden md:inline">Cerca su Amazon</span>
           </Button>
           <Button variant="default" onClick={() => setEmptyManualOpen((v) => !v)}>
-            Aggiungi manualmente
+            <SquarePen className="w-4 h-4 inline-flex md:hidden" />
+            <span className="hidden md:inline">Aggiungi manualmente</span>
           </Button>
         </div>
       )}
