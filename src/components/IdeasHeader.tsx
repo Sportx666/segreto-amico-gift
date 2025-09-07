@@ -13,7 +13,9 @@ const CATEGORIES = [
   { id: "tech", name: "Tech" },
   { id: "bambini", name: "Bambini" },
   { id: "relax", name: "Relax" },
-  { id: "eco", name: "Eco" }
+  { id: "eco", name: "Eco" },
+  { id: "sport", name: "Sport" },
+  { id: "moda", name: "Moda" },
 ];
 
 export const IdeasHeader = ({ onBucketClick, onCategoryClick }: IdeasHeaderProps) => {
@@ -29,7 +31,7 @@ export const IdeasHeader = ({ onBucketClick, onCategoryClick }: IdeasHeaderProps
       </div>
 
       {/* Price Buckets */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 justify-center">
         {PRICE_BUCKETS.map((budget) => (
           <Button
             key={budget}
@@ -43,7 +45,7 @@ export const IdeasHeader = ({ onBucketClick, onCategoryClick }: IdeasHeaderProps
       </div>
 
       {/* Category Chips */}
-      <div className="flex flex-wrap gap-2 justify-center">
+      <div className="grid grid-rows-2 grid-flow-col auto-cols-max gap-2 justify-center md:flex md:flex-wrap">
         {CATEGORIES.map((category) => (
           <Button
             key={category.id}

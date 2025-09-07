@@ -107,7 +107,7 @@ export function WishlistItem({ item, onDelete, onAddManual, onOpenSearch, wishli
                 className="min-h-[44px] text-red-90 hover:text-red-50"
               >
                 <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                Rimuovi
+                <span className="hidden sm:inline">Rimuovi</span>
               </Button>
               </div>
             </div>

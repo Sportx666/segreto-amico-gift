@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { uploadImage, resizeToWebP } from "@/lib/upload";
 import { AVATAR_PLACEHOLDER } from "@/lib/placeholder";
 import { toast } from "sonner";
-import { T } from "vitest/dist/chunks/reporters.d.BFLkQcL6.js";
 import { Trash2 } from "lucide-react";
 
 const Profile = () => {

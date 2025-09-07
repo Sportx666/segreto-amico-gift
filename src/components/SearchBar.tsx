@@ -66,8 +66,8 @@ export const SearchBar = ({
         disabled={disabled || !query.trim()}
         className="px-6"
       >
-        <Search className="w-4 h-4 mr-2" />
-        Cerca
+        <Search className="w-4 h-4" />
+        <span className="hidden md:inline">Cerca</span>
       </Button>
     </form>
   );
