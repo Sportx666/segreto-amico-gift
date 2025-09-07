@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { UserPlus, Trash2, Crown, User } from "lucide-react";
+import { UserPlus, Trash2, Crown, User, Copy, RefreshCw, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { getOrCreateParticipantId } from "@/lib/participants";
 import { debugLog, isDebug } from "@/lib/debug";
+import { StatusChip } from "@/components/StatusChip";
+import { copyToClipboard, shareViaWhatsApp } from "@/lib/whatsapp";
 
 interface EventMembersProps {
   eventId: string;
@@ -27,13 +29,14 @@ interface Member {
 }
 
 export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [diag, setDiag] = useState<any>({});
+  const [inviteLinks, setInviteLinks] = useState<Record<string, any>>({});
 
   useEffect(() => {
     fetchMembers();
@@ -98,35 +101,47 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
 
     setIsAddingMember(true);
     try {
-      // First get current user's participant ID to ensure they're admin
       const { data: participant } = await supabase
         .from('participants')
+        .insert({ profile_id: null })
         .select('id')
-        .eq('profile_id', user!.id)
         .single();
 
-      if (!participant) throw new Error("Participant not found");
+      if (!participant) throw new Error('Participant creation failed');
 
-      // Create anonymous member
-      const { error } = await supabase
+      const { data: memberRow, error: memberError } = await supabase
         .from('event_members')
         .insert({
           event_id: eventId,
-          participant_id: null, // Anonymous member
+          participant_id: participant.id,
           anonymous_name: newMemberName.trim(),
           anonymous_email: newMemberEmail.trim() || null,
-          role: 'member'
-        });
+          role: 'member',
+          status: 'invited'
+        })
+        .select('id, participant_id')
+        .single();
 
-      if (error) throw error;
+      if (memberError) throw memberError;
 
-      setNewMemberName("");
-      setNewMemberEmail("");
+      const inviteResp = await fetch('/api/join/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ eventId, participantId: memberRow.participant_id }),
+      });
+      const invite = await inviteResp.json();
+      setInviteLinks((prev) => ({ ...prev, [memberRow.id]: invite }));
+
+      setNewMemberName('');
+      setNewMemberEmail('');
       await fetchMembers();
-      toast.success("Partecipante aggiunto!");
+      toast.success('Partecipante aggiunto!');
     } catch (error: unknown) {
       console.error('Error adding member:', error);
-      toast.error("Errore nell'aggiungere il partecipante");
+      toast.error('Errore nell\'aggiungere il partecipante');
     } finally {
       setIsAddingMember(false);
     }
@@ -189,8 +204,8 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
           <Dialog>
             <DialogTrigger asChild>
               <Button>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Aggiungi
+                <UserPlus className="w-4 h-4"/>
+                <span className="hidden sm:inline">Aggiungi</span> 
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -257,11 +272,12 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
+                  <StatusChip status={member.status} />
                   {member.role === 'admin' && (
                     <Badge variant="secondary">Admin</Badge>
                   )}
-                  
+
                   {userRole === 'admin' && member.role !== 'admin' && (
                     <Button
                       variant="ghost"
@@ -271,11 +287,58 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
                       <Trash2 className="w-4 h-4 text-destructive" />
                     </Button>
                   )}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                {inviteLinks[member.id] && (
+                  <div className="mt-3 flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        await copyToClipboard(inviteLinks[member.id].url);
+                        toast.success('Link copiato');
+                      }}
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copia Link
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-[#25D366] hover:bg-[#20BD5A] text-white"
+                      onClick={() => shareViaWhatsApp(inviteLinks[member.id].url)}
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      WhatsApp
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          const resp = await fetch('/api/join/create', {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              Authorization: `Bearer ${session?.access_token}`,
+                            },
+                            body: JSON.stringify({ eventId, participantId: member.participant_id }),
+                          });
+                          const invite = await resp.json();
+                          setInviteLinks((prev) => ({ ...prev, [member.id]: invite }));
+                          toast.success('Link rigenerato');
+                        } catch {
+                          toast.error('Errore nel rigenerare il link');
+                        }
+                      }}
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Rigenera
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
       </div>
 
       {members.length === 0 && (

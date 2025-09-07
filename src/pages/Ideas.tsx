@@ -5,6 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { IdeasHeader } from "@/components/IdeasHeader";
 import { SearchBar } from "@/components/SearchBar";
 import { ProductsGrid } from "@/components/ProductsGrid";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 type Product = {
   asin: string;
@@ -27,6 +30,96 @@ interface SearchResult {
 export default function Ideas() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [chooseOpen, setChooseOpen] = useState(false);
+  const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
+  const [wishlists, setWishlists] = useState<Array<{ id: string; title: string | null }>>([]);
+  const [selectedWishlistId, setSelectedWishlistId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const addProductToWishlist = async (ownerId: string, wishlistId: string, product: Product) => {
+    // Check duplicate in selected wishlist
+    const { data: existingItem } = await supabase
+      .from('wishlist_items')
+      .select('id')
+      .eq('owner_id', ownerId)
+      .eq('wishlist_id', wishlistId)
+      .eq('asin', product.asin)
+      .maybeSingle();
+    if (existingItem) {
+      toast.error('Prodotto già presente in questa lista');
+      return;
+    }
+    const { error } = await supabase
+      .from('wishlist_items')
+      .insert({
+        owner_id: ownerId,
+        wishlist_id: wishlistId,
+        asin: product.asin,
+        title: product.title,
+        image_url: product.image,
+        price_snapshot: `${product.price} ${product.currency}`,
+        affiliate_url: product.url,
+        raw_url: product.url,
+      });
+    if (error) throw error;
+    toast.success('Prodotto aggiunto alla lista!');
+  };
+
+  const handleAddToWishlistSelect = async (product: Product) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Devi essere autenticato per aggiungere prodotti alla lista");
+        return;
+      }
+      // Resolve participant id
+      const { data: participant } = await supabase
+        .from('participants')
+        .select('id')
+        .eq('profile_id', user.id)
+        .single();
+      if (!participant) {
+        toast.error("Profilo partecipante non trovato");
+        return;
+      }
+
+      // Load user's wishlists
+      const { data: lists, error: wlErr } = await supabase
+        .from('wishlists')
+        .select('id, title')
+        .eq('owner_id', participant.id)
+        .order('created_at', { ascending: true });
+      if (wlErr) throw wlErr;
+
+      const all = lists ?? [];
+      if (all.length === 0) {
+        const { data: created, error: createErr } = await supabase
+          .from('wishlists')
+          .insert({ owner_id: participant.id, title: 'La mia lista' })
+          .select('id, title')
+          .single();
+        if (createErr || !created) throw createErr ?? new Error('Creazione lista fallita');
+        setWishlists([created]);
+        setSelectedWishlistId(created.id);
+        setPendingProduct(product);
+        setChooseOpen(true);
+        return;
+      }
+
+      if (all.length === 1) {
+        await addProductToWishlist(participant.id, all[0].id, product);
+        return;
+      }
+
+      setWishlists(all);
+      setSelectedWishlistId(all[0].id);
+      setPendingProduct(product);
+      setChooseOpen(true);
+    } catch (error: unknown) {
+      console.error('Error adding to wishlist:', error);
+      toast.error("Errore nell'aggiungere il prodotto alla lista");
+    }
+  };
 
   const { data: searchResults, isLoading } = useQuery({
     queryKey: ['amazon-search', searchQuery],
@@ -131,6 +224,7 @@ export default function Ideas() {
   };
 
   return (
+    <>
     <div className="container mx-auto px-4 py-6 max-w-6xl">
       <IdeasHeader 
         onBucketClick={handleBucketClick}
@@ -156,7 +250,7 @@ export default function Ideas() {
           <ProductsGrid
             products={searchResults?.items || []}
             loading={isLoading}
-            onAddToWishlist={handleAddToWishlist}
+            onAddToWishlist={handleAddToWishlistSelect}
           />
         </div>
       )}
@@ -168,5 +262,58 @@ export default function Ideas() {
         </p>
       </div>
     </div>
+    <Dialog open={chooseOpen} onOpenChange={setChooseOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Scegli una lista</DialogTitle>
+          <DialogDescription>
+            Seleziona la lista desideri dove aggiungere il prodotto.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <Select value={selectedWishlistId ?? undefined} onValueChange={(v) => setSelectedWishlistId(v)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Scegli lista" />
+            </SelectTrigger>
+            <SelectContent>
+              {wishlists.map(w => (
+                <SelectItem key={w.id} value={w.id}>{w.title || 'Senza titolo'}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setChooseOpen(false)}>Annulla</Button>
+          <Button
+            disabled={!selectedWishlistId || !pendingProduct || saving}
+            onClick={async () => {
+              if (!selectedWishlistId || !pendingProduct) return;
+              try {
+                setSaving(true);
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) throw new Error('Non autenticato');
+                const { data: participant } = await supabase
+                  .from('participants')
+                  .select('id')
+                  .eq('profile_id', user.id)
+                  .single();
+                if (!participant) throw new Error('Partecipante non trovato');
+                await addProductToWishlist(participant.id, selectedWishlistId, pendingProduct);
+                setChooseOpen(false);
+                setPendingProduct(null);
+              } catch (e) {
+                console.error(e);
+                toast.error("Errore nell'aggiunta alla lista");
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            Aggiungi
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

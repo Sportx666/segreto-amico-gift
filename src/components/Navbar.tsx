@@ -41,7 +41,7 @@ export const Navbar = () => {
 
   if (loading) {
     return (
-      <nav className="bg-white/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
+      <nav className="bg-white/95 backdrop-blur-sm border-b border-border md:sticky md:top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="h-6 w-32 bg-muted animate-pulse rounded"></div>
           <div className="h-8 w-20 bg-muted animate-pulse rounded"></div>
@@ -52,7 +52,7 @@ export const Navbar = () => {
 
   if (!user) {
     return (
-      <nav className="bg-white/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
+      <nav className="bg-white/95 backdrop-blur-sm border-b border-border md:sticky md:top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <Gift className="w-6 h-6 text-primary" />
@@ -71,7 +71,7 @@ export const Navbar = () => {
   }
 
   return (
-    <nav className="bg-white/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
+    <nav className="bg-white/95 backdrop-blur-sm border-b border-border md:sticky md:top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <Gift className="w-6 h-6 text-primary" />
@@ -136,8 +136,8 @@ export const Navbar = () => {
         </div>
       </div>
       
-      {/* Mobile navigation */}
-      <div className="md:hidden border-t border-border bg-white/95 backdrop-blur-sm">
+      {/* Mobile navigation (fixed bottom) */}
+      <div className="md:hidden border-t border-border bg-white/95 backdrop-blur-sm fixed bottom-0 left-0 right-0 z-50">
         <div className="flex justify-around py-2">
           <Link 
             to="/events" 
