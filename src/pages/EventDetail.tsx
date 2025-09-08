@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 import { ArrowLeft, Calendar, Users, Gift, Share2, Shuffle, Ban, ImageUp, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { uploadImage, resizeToWebP } from "@/lib/upload";
@@ -173,11 +174,14 @@ export default function EventDetail() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-muted rounded w-1/3"></div>
-          <div className="h-32 bg-muted rounded"></div>
-          <div className="h-96 bg-muted rounded"></div>
+      <div className="min-h-screen bg-gradient-subtle py-6">
+        <div className="container max-w-6xl">
+          <div className="animate-pulse space-y-6">
+            <div className="aspect-16-9 bg-muted rounded-xl"></div>
+            <div className="h-8 bg-muted rounded w-1/3"></div>
+            <div className="h-32 bg-muted rounded-xl"></div>
+            <div className="h-96 bg-muted rounded-xl"></div>
+          </div>
         </div>
       </div>
     );
@@ -186,242 +190,212 @@ export default function EventDetail() {
   if (!event) return null;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Cover image */}
-      <div className="mb-6">
-        <img
-          src={event.cover_image_url || "/placeholder.svg"}
-          alt="cover"
-          className="w-full h-48 object-cover rounded-md border"
-        />
+    <div className="min-h-screen bg-gradient-subtle">
+      {/* Hero Section with Cover Image */}
+      <div className="relative">
+        <div className="aspect-16-9 md:aspect-[3/1] lg:aspect-[4/1] overflow-hidden bg-gradient-primary">
+          {event.cover_image_url ? (
+            <img
+              src={event.cover_image_url}
+              alt={event.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-hero flex items-center justify-center">
+              <Calendar className="w-16 h-16 md:w-24 md:h-24 text-white/80" />
+            </div>
+          )}
+          {/* Overlay gradient for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+        </div>
+        
+        {/* Title overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
+          <div className="container max-w-6xl">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div className="space-y-2">
+                <h1 className="text-2xl md:text-4xl font-bold text-white">
+                  {event.name}
+                </h1>
+                <div className="flex items-center gap-2 text-white/90">
+                  <Calendar className="w-4 h-4" />
+                  <span className="text-sm md:text-base">
+                    {formatDate(event.date)}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {getStatusBadge(event.draw_status)}
+                {userRole === 'admin' && (
+                  <Badge variant="outline" className="bg-white/10 border-white/20 text-white">
+                    Amministratore
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      {/* Header */}
-      <div className="mb-6">
+
+      <div className="container max-w-6xl py-6">
+        {/* Back Button */}
         <Button 
           variant="ghost" 
           onClick={() => navigate("/events")}
-          className="mb-4"
+          className="mb-6 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Torna agli eventi
         </Button>
-      </div>
 
-      {/* Event Info Card */}
-      <Card className="mb-6">
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div>
-              <CardTitle className="text-2xl">{event.name}</CardTitle>
-              <CardDescription className="flex items-center gap-2 mt-2">
-                <Calendar className="w-4 h-4" />
-                {formatDate(event.date)}
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              {getStatusBadge(event.draw_status)}
-              {userRole === 'admin' && (
-                <>
-                  <input
-                    id="cover-input"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file || !event) return;
-                      setUploadingCover(true);
-                      try {
-                        const resized = await resizeToWebP(file, { max: 1600, quality: 0.8 });
-                        const url = await uploadImage({
-                          bucket: "event-images",
-                          path: `${event.id}/cover.webp`,
-                          file: resized,
-                        });
-                        const { data, error } = await supabase
-                          .from('events')
-                          .update({ cover_image_url: url })
-                          .eq('id', event.id)
-                          .select()
-                          .single();
-                        if (error) throw error;
-                        setEvent(data);
-                        toast.success("Immagine evento aggiornata");
-                      } catch (err) {
-                        console.error(err);
-                        toast.error("Errore durante l'upload dell'immagine");
-                      } finally {
-                        setUploadingCover(false);
-                        (e.target as HTMLInputElement).value = '';
-                      }
-                    }}
-                  />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => document.getElementById('cover-input')?.click()}
-                    disabled={uploadingCover}
-                    aria-label="Cambia immagine"
-                    title="Cambia immagine"
-                  >
-                    {/* Mobile: icon, Desktop: text */}
-                    <span className="sm:hidden">
-                      <ImageUp className="w-4 h-4" />
-                    </span>
-                    <span className="hidden sm:inline">
-                      {uploadingCover ? 'Carico...' : 'Cambia immagine'}
-                    </span>
-                  </Button>
-                  {event.cover_image_url && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={async () => {
-                        if (!event?.cover_image_url) return;
-                        setRemovingCover(true);
+        {/* Event Info Card */}
+        <Card className="mb-6 shadow-card border-0 bg-white/80 backdrop-blur-sm">
+          <CardContent className="p-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
+                {event.budget && (
+                  <div className="flex items-center gap-2">
+                    <Gift className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm">Budget: €{event.budget}</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Admin Controls */}
+              <div className="flex items-center gap-2">
+                {userRole === 'admin' && (
+                  <>
+                    <input
+                      id="cover-input"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !event) return;
+                        setUploadingCover(true);
                         try {
-                          const url = event.cover_image_url;
-                          let path: string | null = null;
-                          try {
-                            const u = new URL(url);
-                            const marker = '/object/public/';
-                            const idx = u.pathname.indexOf(marker);
-                            if (idx !== -1) {
-                              const after = u.pathname.substring(idx + marker.length); // bucket/path
-                              const parts = after.split('/');
-                              const bucket = parts.shift();
-                              const key = parts.join('/');
-                              if (bucket === 'event-images') {
-                                path = key;
-                              } else {
-                                // Fallback: attempt to locate '/event-images/' segment
-                                const altIdx = u.pathname.indexOf('/event-images/');
-                                if (altIdx !== -1) {
-                                  path = u.pathname.substring(altIdx + '/event-images/'.length);
-                                }
-                              }
-                            }
-                          } catch {
-                            // non-URL string; naive fallback
-                            const simpleIdx = url.indexOf('/event-images/');
-                            if (simpleIdx !== -1) {
-                              path = url.substring(simpleIdx + '/event-images/'.length);
-                            }
-                          }
-                          if (!path) {
-                            toast.error("Impossibile rimuovere: percorso file non riconosciuto");
-                            return;
-                          }
-                          const { error: rmErr } = await supabase.storage.from('event-images').remove([path]);
-                          if (rmErr) throw rmErr;
+                          const resized = await resizeToWebP(file, { max: 1600, quality: 0.8 });
+                          const url = await uploadImage({
+                            bucket: "event-images",
+                            path: `${event.id}/cover.webp`,
+                            file: resized,
+                          });
                           const { data, error } = await supabase
                             .from('events')
-                            .update({ cover_image_url: null })
+                            .update({ cover_image_url: url })
                             .eq('id', event.id)
                             .select()
                             .single();
                           if (error) throw error;
                           setEvent(data);
-                          toast.success("Immagine evento rimossa");
+                          toast.success("Immagine evento aggiornata");
                         } catch (err) {
                           console.error(err);
-                          toast.error("Errore nella rimozione dell'immagine");
+                          toast.error("Errore durante l'upload dell'immagine");
                         } finally {
-                          setRemovingCover(false);
+                          setUploadingCover(false);
+                          (e.target as HTMLInputElement).value = '';
                         }
                       }}
-                      disabled={removingCover || uploadingCover}
-                      aria-label="Rimuovi immagine"
-                      title="Rimuovi immagine"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => document.getElementById('cover-input')?.click()}
+                      disabled={uploadingCover}
+                      className="hidden sm:flex"
                     >
-                      {/* Mobile: icon, Desktop: text */}
-                      <span className="sm:hidden">
-                        <Trash2 className="w-4 h-4" />
-                      </span>
-                      <span className="hidden sm:inline">
-                        {removingCover ? 'Rimuovo...' : 'Rimuovi immagine'}
-                      </span>
+                      <ImageUp className="w-4 h-4 mr-2" />
+                      {uploadingCover ? 'Carico...' : 'Cambia immagine'}
                     </Button>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {event.budget && (
-              <div className="flex items-center gap-2">
-                <Gift className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm">Budget: €{event.budget}</span>
+                    
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={async () => await handleDeleteItem(event.id)}
+                      className="hidden sm:flex"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Rimuovi Evento
+                    </Button>
+                    
+                    {/* Mobile buttons */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => document.getElementById('cover-input')?.click()}
+                      disabled={uploadingCover}
+                      className="sm:hidden"
+                    >
+                      <ImageUp className="w-4 h-4" />
+                    </Button>
+                    
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={async () => await handleDeleteItem(event.id)}
+                      className="sm:hidden"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
               </div>
-            )}
-            {/* Event code removed: now using personal invite links only */}
-            {userRole === 'admin' && (
-              <Badge variant="outline" className="w-fit">
-                Amministratore
-              </Badge>                                         
-            )}
-            <div className="ml-auto">
-              {userRole === 'admin' && (
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={async (id) => await handleDeleteItem(event.id)}
-                  aria-label="Rimuovi"
-                  className="min-h-[22px] text-red-90 hover:text-red-50"
-                >
-                  <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                  <span className="hidden sm:inline">Rimuovi Evento</span>
-                </Button>
-              )}
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tabs */}
-      {isDebug() && (
-        <Card className="mb-4 p-4">
-          <pre className="text-xs whitespace-pre-wrap break-words">{JSON.stringify(diag, null, 2)}</pre>
+          </CardContent>
         </Card>
-      )}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="partecipanti">
-            <Users className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">Partecipanti</span>
-          </TabsTrigger>
-          <TabsTrigger value="esclusioni">
-            <Ban className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">Esclusioni</span>
-          </TabsTrigger>
-          <TabsTrigger value="sorteggio">
-            <Shuffle className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">Sorteggio</span>
-          </TabsTrigger>
-          <TabsTrigger value="condividi">
-            <Share2 className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">Condividi</span>
-          </TabsTrigger>
-        </TabsList>
 
-        <TabsContent value="partecipanti" className="mt-6">
-          <EventMembers eventId={event.id} userRole={userRole} />
-        </TabsContent>
+        {/* Debug Info */}
+        {isDebug() && (
+          <Card className="mb-6 p-4">
+            <pre className="text-xs whitespace-pre-wrap break-words">{JSON.stringify(diag, null, 2)}</pre>
+          </Card>
+        )}
 
-        <TabsContent value="esclusioni" className="mt-6">
-          <EventExclusions eventId={event.id} userRole={userRole} />
-        </TabsContent>
+        {/* Sticky Tabs */}
+        <div className="sticky top-0 z-40 bg-gradient-subtle/80 backdrop-blur-sm pb-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-4 bg-white/80 backdrop-blur-sm shadow-card">
+              <TabsTrigger value="partecipanti" className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                <span className="hidden sm:inline">Partecipanti</span>
+              </TabsTrigger>
+              <TabsTrigger value="esclusioni" className="flex items-center gap-2">
+                <Ban className="w-4 h-4" />
+                <span className="hidden sm:inline">Esclusioni</span>
+              </TabsTrigger>
+              <TabsTrigger value="sorteggio" className="flex items-center gap-2">
+                <Shuffle className="w-4 h-4" />
+                <span className="hidden sm:inline">Sorteggio</span>
+              </TabsTrigger>
+              <TabsTrigger value="condividi" className="flex items-center gap-2">
+                <Share2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Condividi</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
 
-        <TabsContent value="sorteggio" className="mt-6">
-          <EventDraw eventId={event.id} userRole={userRole} event={event} onStatusChange={fetchEventDetails} />
-        </TabsContent>
+        {/* Tab Content */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsContent value="partecipanti">
+            <EventMembers eventId={event.id} userRole={userRole} />
+          </TabsContent>
 
-        <TabsContent value="condividi" className="mt-6">
-          <EventShare event={event} />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="esclusioni">
+            <EventExclusions eventId={event.id} userRole={userRole} />
+          </TabsContent>
+
+          <TabsContent value="sorteggio">
+            <EventDraw eventId={event.id} userRole={userRole} event={event} onStatusChange={fetchEventDetails} />
+          </TabsContent>
+
+          <TabsContent value="condividi">
+            <EventShare event={event} />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }

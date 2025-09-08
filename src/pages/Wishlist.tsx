@@ -3,13 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -17,7 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchBar } from "@/components/SearchBar";
 import { ProductsGrid } from "@/components/ProductsGrid";
-import { Search, SquarePen, Trash2 } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SkeletonGrid } from "@/components/ui/skeleton-grid";
+import { Search, SquarePen, Trash2, Plus, ExternalLink, Heart } from "lucide-react";
 import { withAffiliateTag, productUrlFromASIN } from "@/lib/amazon";
 import { WishlistItem } from "@/components/WishlistItem";
 
@@ -57,9 +54,8 @@ export default function Wishlist() {
   const [selectedWishlistId, setSelectedWishlistId] = useState<string | null>(null);
   const [selectedWishlistTitle, setSelectedWishlistTitle] = useState<string | null>(null);
   const [targetWishlistIdForSearch, setTargetWishlistIdForSearch] = useState<string | null>(null);
-  const [emptyManualOpen, setEmptyManualOpen] = useState(false);
-  const [emptyManualTitle, setEmptyManualTitle] = useState("");
-  const [emptyManualUrl, setEmptyManualUrl] = useState("");
+  const [activeItemId, setActiveItemId] = useState<string | null>(null);
+  const [manualFormData, setManualFormData] = useState({ title: "", url: "" });
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newListTitle, setNewListTitle] = useState("");
   const [newListEventId, setNewListEventId] = useState<string | null>(null);
@@ -313,134 +309,349 @@ export default function Wishlist() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/3" />
-          <div className="space-y-3">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded" />
-            ))}
+      <div className="min-h-screen bg-gradient-subtle py-6">
+        <div className="container max-w-4xl">
+          <div className="mb-8">
+            <div className="h-8 bg-muted rounded w-1/3 mb-2"></div>
+            <div className="h-4 bg-muted rounded w-1/2"></div>
           </div>
+          <SkeletonGrid count={6} columns="2" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-4xl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">
-          {selectedWishlistTitle ?? "Le mie liste dei desideri"}
-        </h1>
-        <div className="flex gap-2">
-          <Button variant="default" onClick={() => setIsCreateDialogOpen(true)}>
+    <div className="min-h-screen bg-gradient-subtle py-6">
+      <div className="container max-w-4xl">
+        {/* Clean Header - Only "Nuova lista" button */}
+        <PageHeader
+          title={selectedWishlistTitle ?? "Le mie liste dei desideri"}
+          description="Gestisci i tuoi prodotti desiderati"
+        >
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
             Nuova lista
           </Button>
-        </div>
-      </div>      
+        </PageHeader>
 
-      {selectedWishlistId && emptyManualOpen && (
-        <div className="mb-6 max-w-xl space-y-3">
-          <div>
-            <Label htmlFor="header-title">Titolo</Label>
-            <Input id="header-title" value={emptyManualTitle} onChange={(e) => setEmptyManualTitle(e.target.value)} placeholder="Titolo del prodotto" />
-          </div>
-          <div>
-            <Label htmlFor="header-url">URL Amazon</Label>
-            <Input id="header-url" value={emptyManualUrl} onChange={(e) => setEmptyManualUrl(e.target.value)} placeholder="https://www.amazon.it/dp/..." />
-          </div>
-          <div className="flex gap-2">
-            <Button className="flex-1" onClick={async () => { await addManualToWishlist(selectedWishlistId, { title: emptyManualTitle, url: withAffiliateTag(emptyManualUrl) }); setEmptyManualTitle(''); setEmptyManualUrl(''); setEmptyManualOpen(false); }}>Aggiungi alla lista</Button>
-            <Button className="flex-1" variant="outline" onClick={() => setEmptyManualOpen(false)}>Annulla</Button>
-          </div>
+        {/* List selector */}
+        <div className="mb-6 flex items-center gap-2 flex-wrap">
+          <Select
+            value={selectedWishlistId ?? "all"}
+            onValueChange={(val) => {
+              if (val === "all") {
+                setSelectedWishlistId(null);
+                setSelectedWishlistTitle(null);
+              } else {
+                setSelectedWishlistId(val);
+                const wl = wishlists?.find((w) => w.id === val);
+                setSelectedWishlistTitle(wl?.title ?? "La mia lista");
+              }
+            }}
+          >
+            <SelectTrigger className="w-[220px]">
+              <SelectValue placeholder="Tutte le liste" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutte le liste</SelectItem>
+              {wishlists?.map((wl) => (
+                <SelectItem key={wl.id} value={wl.id}>
+                  {wl.title ?? "Senza titolo"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          {/* List management buttons */}
+          {selectedWishlistId && (
+            <>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => {
+                  setEditTitle(selectedWishlistTitle ?? '');
+                  setIsEditDialogOpen(true);
+                }}
+              >
+                <SquarePen className="w-4 h-4" />
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="destructive">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Eliminare questa lista?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Questa azione non è reversibile. La lista e i suoi elementi collegati potrebbero non essere recuperabili.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annulla</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={async () => {
+                        if (!selectedWishlistId) return;
+                        try {
+                          const { error } = await supabase
+                            .from('wishlists')
+                            .delete()
+                            .eq('id', selectedWishlistId);
+                          if (error) throw error;
+                          setIsEditDialogOpen(false);
+                          setSelectedWishlistId(null);
+                          setSelectedWishlistTitle(null);
+                          toast.success('Lista eliminata');
+                          queryClient.invalidateQueries({ queryKey: ['wishlists'] });
+                          queryClient.invalidateQueries({ queryKey: ['wishlist-items'] });
+                        } catch (e) { 
+                          console.error(e); 
+                          toast.error('Errore nell\'eliminare la lista'); 
+                        }
+                      }}
+                    >
+                      Elimina definitivamente
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          )}
         </div>
-      )}
 
-      {/* List selector beneath header */}
-      <div className="mb-6 flex items-center gap-2 flex-wrap">
-        <Select
-          value={selectedWishlistId ?? "all"}
-          onValueChange={(val) => {
-            if (val === "all") {
-              setSelectedWishlistId(null);
-              setSelectedWishlistTitle(null);
-            } else {
-              setSelectedWishlistId(val);
-              const wl = wishlists?.find((w) => w.id === val);
-              setSelectedWishlistTitle(wl?.title ?? "La mia lista");
-            }
-          }}
-        >
-          <SelectTrigger className="w-[220px]">
-            <SelectValue placeholder="Tutte le liste" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tutte le liste</SelectItem>
-            {wishlists?.map((wl) => (
-              <SelectItem key={wl.id} value={wl.id}>
-                {wl.title ?? "Senza titolo"}
-              </SelectItem>
+        {/* Main Content */}
+        {!wishlistItems?.length ? (
+          <EmptyState
+            icon={<Heart className="w-8 h-8 text-white" />}
+            title="Nessun prodotto nella lista"
+            description="Aggiungi prodotti alla tua lista desideri"
+          >
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button 
+                onClick={() => {
+                  if (!selectedWishlistId && wishlists?.length) {
+                    setSelectedWishlistId(wishlists[0].id);
+                    setTargetWishlistIdForSearch(wishlists[0].id);
+                  } else {
+                    setTargetWishlistIdForSearch(selectedWishlistId);
+                  }
+                  setIsSearchDialogOpen(true);
+                }}
+              >
+                <Search className="w-4 h-4 mr-2" />
+                Cerca su Amazon
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  if (!selectedWishlistId && wishlists?.length) {
+                    setSelectedWishlistId(wishlists[0].id);
+                  }
+                  setActiveItemId("manual-add");
+                }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Aggiungi manualmente
+              </Button>
+            </div>
+          </EmptyState>
+        ) : (
+          <div className="space-y-4">
+            {/* Manual add form (when active) */}
+            {activeItemId === "manual-add" && (
+              <Card className="p-4 border-dashed border-2">
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="manual-title">Titolo</Label>
+                    <Input 
+                      id="manual-title" 
+                      value={manualFormData.title} 
+                      onChange={(e) => setManualFormData(prev => ({ ...prev, title: e.target.value }))} 
+                      placeholder="Titolo del prodotto" 
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="manual-url">URL Amazon</Label>
+                    <Input 
+                      id="manual-url" 
+                      value={manualFormData.url} 
+                      onChange={(e) => setManualFormData(prev => ({ ...prev, url: e.target.value }))} 
+                      placeholder="https://www.amazon.it/dp/..." 
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      className="flex-1" 
+                      onClick={async () => { 
+                        if (!selectedWishlistId) return;
+                        await addManualToWishlist(selectedWishlistId, manualFormData); 
+                        setManualFormData({ title: '', url: '' }); 
+                        setActiveItemId(null); 
+                      }}
+                      disabled={!manualFormData.url.trim()}
+                    >
+                      Aggiungi alla lista
+                    </Button>
+                    <Button 
+                      className="flex-1" 
+                      variant="outline" 
+                      onClick={() => {
+                        setActiveItemId(null);
+                        setManualFormData({ title: '', url: '' });
+                      }}
+                    >
+                      Annulla
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* Wishlist Items with Per-Item Actions */}
+            {wishlistItems.map((item) => (
+              <Card key={item.id} className="overflow-hidden shadow-card border-0 bg-white/80 backdrop-blur-sm">
+                <CardContent className="p-4">
+                  <div className="flex gap-4">
+                    {/* Item Image */}
+                    <div className="flex-shrink-0">
+                      <div className="w-20 h-20 rounded-lg overflow-hidden bg-muted">
+                        {item.image_url ? (
+                          <img 
+                            src={item.image_url} 
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Heart className="w-8 h-8 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Item Details */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium line-clamp-2 mb-2">{item.title}</h3>
+                      {item.price_snapshot && (
+                        <p className="text-sm text-muted-foreground mb-3">
+                          {item.price_snapshot}
+                        </p>
+                      )}
+
+                      {/* Per-Item Actions Cluster */}
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setTargetWishlistIdForSearch(item.wishlist_id);
+                            setSearchQuery(item.title.split(' ').slice(0, 3).join(' '));
+                            setIsSearchDialogOpen(true);
+                          }}
+                        >
+                          <Search className="w-4 h-4 mr-1" />
+                          <span className="hidden sm:inline">Cerca su Amazon</span>
+                        </Button>
+                        
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setActiveItemId(item.id === activeItemId ? null : item.id)}
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          <span className="hidden sm:inline">Aggiungi manualmente</span>
+                        </Button>
+
+                        {(item.affiliate_url || item.raw_url) && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            asChild
+                          >
+                            <a 
+                              href={item.affiliate_url || item.raw_url || '#'} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-xs"
+                            >
+                              <ExternalLink className="w-4 h-4 mr-1" />
+                              <span className="hidden sm:inline">Vedi su Amazon</span>
+                            </a>
+                          </Button>
+                        )}
+
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteItem(item.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+
+                      {/* Inline Manual Add Form */}
+                      {activeItemId === item.id && (
+                        <div className="mt-4 p-3 bg-muted/50 rounded-lg space-y-3">
+                          <div>
+                            <Label htmlFor={`manual-title-${item.id}`}>Titolo</Label>
+                            <Input 
+                              id={`manual-title-${item.id}`}
+                              value={manualFormData.title} 
+                              onChange={(e) => setManualFormData(prev => ({ ...prev, title: e.target.value }))} 
+                              placeholder="Titolo del prodotto" 
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`manual-url-${item.id}`}>URL Amazon</Label>
+                            <Input 
+                              id={`manual-url-${item.id}`}
+                              value={manualFormData.url} 
+                              onChange={(e) => setManualFormData(prev => ({ ...prev, url: e.target.value }))} 
+                              placeholder="https://www.amazon.it/dp/..." 
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm"
+                              onClick={async () => { 
+                                await addManualToWishlist(item.wishlist_id, manualFormData); 
+                                setManualFormData({ title: '', url: '' }); 
+                                setActiveItemId(null); 
+                              }}
+                              disabled={!manualFormData.url.trim()}
+                            >
+                              Aggiungi
+                            </Button>
+                            <Button 
+                              size="sm"
+                              variant="outline" 
+                              onClick={() => {
+                                setActiveItemId(null);
+                                setManualFormData({ title: '', url: '' });
+                              }}
+                            >
+                              Annulla
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
-          </SelectContent>
-        </Select>
-        {selectedWishlistId && (
-          <><Button size="sm" variant="outline" onClick={() => {
-            setEditTitle(selectedWishlistTitle ?? '');
-            setIsEditDialogOpen(true);
-          } }><SquarePen className="w-4 h-4" />
-          </Button>
-          <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="sm" className="text-red-90 hover:text-red-50" variant="destructive"><Trash2 className="w-4 h-4" /></Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Eliminare questa lista?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Questa azione non è reversibile. La lista e i suoi elementi collegati potrebbero non essere recuperabili.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Annulla</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={async () => {
-                      if (!selectedWishlistId) return;
-                      try {
-                        const { error } = await supabase
-                          .from('wishlists')
-                          .delete()
-                          .eq('id', selectedWishlistId);
-                        if (error) throw error;
-                        setIsEditDialogOpen(false);
-                        setSelectedWishlistId(null);
-                        setSelectedWishlistTitle(null);
-                        toast.success('Lista eliminata');
-                        queryClient.invalidateQueries({ queryKey: ['wishlists'] });
-                        queryClient.invalidateQueries({ queryKey: ['wishlist-items'] });
-                      } catch (e) { console.error(e); toast.error('Errore nell\'eliminare la lista'); }
-                    }}
-                  >
-                    Elimina definitivamente
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-          </AlertDialog></>          
+          </div>
         )}
-      {/* Under header actions (visible when a list is selected) */}
-      {selectedWishlistId && wishlistItems.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap ml-auto">
-          <Button variant="outline" onClick={() => { setTargetWishlistIdForSearch(selectedWishlistId); setIsSearchDialogOpen(true); }}>
-            <Search className="w-4 h-4" />
-            <span className="hidden md:inline">Cerca su Amazon</span>
-          </Button>
-          <Button variant="default" onClick={() => setEmptyManualOpen((v) => !v)}>
-            <SquarePen className="w-4 h-4 inline-flex md:hidden" />
-            <span className="hidden md:inline">Aggiungi manualmente</span>
-          </Button>
+
+        {/* Disclosure Footer */}
+        <div className="mt-16 pt-8 border-t border-border/50 text-center">
+          <p className="text-xs text-muted-foreground">
+            Come affiliato Amazon, guadagniamo da acquisti idonei.
+          </p>
         </div>
-      )}
       </div>
 
       {/* Centralized Search Dialog */}

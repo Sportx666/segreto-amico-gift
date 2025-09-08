@@ -5,9 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { IdeasHeader } from "@/components/IdeasHeader";
 import { SearchBar } from "@/components/SearchBar";
 import { ProductsGrid } from "@/components/ProductsGrid";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SectionHeader } from "@/components/ui/section-header";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Lightbulb, Search } from "lucide-react";
 
 type Product = {
   asin: string;
@@ -226,96 +230,109 @@ export default function Ideas() {
   };
 
   return (
-    <>
-    <div className="container mx-auto px-4 py-6 max-w-6xl">
-      <IdeasHeader 
-        onBucketClick={handleBucketClick}
-        onCategoryClick={handleCategoryClick}
-      />
+    <div className="min-h-screen bg-gradient-subtle py-6">
+      <div className="container max-w-6xl">
+        <PageHeader
+          title="Idee Regalo"
+          description="Trova il regalo perfetto cercando su Amazon"
+        />
+        
+        <IdeasHeader 
+          onBucketClick={handleBucketClick}
+          onCategoryClick={handleCategoryClick}
+        />
 
-      <SearchBar 
-        onSearch={handleSearch}
-        disabled={isLoading}
-      />
-
-      {isSearching && searchQuery && (
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-4">
-            Risultati per "{searchQuery}"
-            {searchResults && (
-              <span className="text-muted-foreground font-normal ml-2">
-                ({searchResults.total} prodotti{searchResults.mock ? ' - dati di esempio' : ''})
-              </span>
-            )}
-          </h2>
-          
-          <ProductsGrid
-            products={searchResults?.items || []}
-            loading={isLoading}
-            onAddToWishlist={handleAddToWishlistSelect}
+        <div className="mb-8">
+          <SearchBar 
+            onSearch={handleSearch}
+            disabled={isLoading}
           />
         </div>
-      )}
 
-      {/* Disclosure Footer */}
-      <div className="mt-12 pt-6 border-t text-center">
-        <p className="text-xs text-muted-foreground">
-          Come affiliato Amazon, guadagniamo da acquisti idonei.
-        </p>
-      </div>
-    </div>
-    <Dialog open={chooseOpen} onOpenChange={setChooseOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Scegli una lista</DialogTitle>
-          <DialogDescription>
-            Seleziona la lista desideri dove aggiungere il prodotto.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          <Select value={selectedWishlistId ?? undefined} onValueChange={(v) => setSelectedWishlistId(v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Scegli lista" />
-            </SelectTrigger>
-            <SelectContent>
-              {wishlists.map(w => (
-                <SelectItem key={w.id} value={w.id}>{w.title || 'Senza titolo'}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {!searchQuery ? (
+          <EmptyState
+            icon={<Search className="w-8 h-8 text-white" />}
+            title="Inizia la ricerca"
+            description="Usa le categorie sopra o cerca qualcosa di specifico per trovare idee regalo"
+          />
+        ) : (
+          <div className="space-y-6">
+            <SectionHeader
+              title={`Risultati per "${searchQuery}"`}
+              description={searchResults ? `${searchResults.total} prodotti${searchResults.mock ? ' - dati di esempio' : ''}` : undefined}
+            />
+            
+            <ProductsGrid
+              products={searchResults?.items || []}
+              loading={isLoading}
+              onAddToWishlist={handleAddToWishlistSelect}
+            />
+          </div>
+        )}
+
+        {/* Disclosure Footer */}
+        <div className="mt-16 pt-8 border-t border-border/50 text-center">
+          <p className="text-xs text-muted-foreground">
+            Come affiliato Amazon, guadagniamo da acquisti idonei.
+          </p>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setChooseOpen(false)}>Annulla</Button>
-          <Button
-            disabled={!selectedWishlistId || !pendingProduct || saving}
-            onClick={async () => {
-              if (!selectedWishlistId || !pendingProduct) return;
-              try {
-                setSaving(true);
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) throw new Error('Non autenticato');
-                const { data: participant } = await supabase
-                  .from('participants')
-                  .select('id')
-                  .eq('profile_id', user.id)
-                  .single();
-                if (!participant) throw new Error('Partecipante non trovato');
-                await addProductToWishlist(participant.id, selectedWishlistId, pendingProduct);
-                setChooseOpen(false);
-                setPendingProduct(null);
-              } catch (e) {
-                console.error(e);
-                toast.error("Errore nell'aggiunta alla lista");
-              } finally {
-                setSaving(false);
-              }
-            }}
-          >
-            Aggiungi
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-    </>
+      </div>
+
+      {/* Wishlist Selection Dialog */}
+      <Dialog open={chooseOpen} onOpenChange={setChooseOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Scegli una lista</DialogTitle>
+            <DialogDescription>
+              Seleziona la lista desideri dove aggiungere il prodotto.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Select value={selectedWishlistId ?? undefined} onValueChange={(v) => setSelectedWishlistId(v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Scegli lista" />
+              </SelectTrigger>
+              <SelectContent>
+                {wishlists.map(w => (
+                  <SelectItem key={w.id} value={w.id}>{w.title || 'Senza titolo'}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setChooseOpen(false)}>
+              Annulla
+            </Button>
+            <Button
+              disabled={!selectedWishlistId || !pendingProduct || saving}
+              onClick={async () => {
+                if (!selectedWishlistId || !pendingProduct) return;
+                try {
+                  setSaving(true);
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) throw new Error('Non autenticato');
+                  const { data: participant } = await supabase
+                    .from('participants')
+                    .select('id')
+                    .eq('profile_id', user.id)
+                    .single();
+                  if (!participant) throw new Error('Partecipante non trovato');
+                  await addProductToWishlist(participant.id, selectedWishlistId, pendingProduct);
+                  setChooseOpen(false);
+                  setPendingProduct(null);
+                } catch (e) {
+                  console.error(e);
+                  toast.error("Errore nell'aggiunta alla lista");
+                } finally {
+                  setSaving(false);
+                }
+              }}
+            >
+              {saving ? 'Aggiungendo...' : 'Aggiungi'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
