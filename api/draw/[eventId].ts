@@ -1,121 +1,11 @@
 import { createServiceClient } from '../_supabase.ts';
-
-interface DrawMember {
-  id: string;
-  participant_id: string;
-  anonymous_name: string | null;
-}
-
-interface DrawExclusion {
-  giver_id: string;
-  blocked_id: string;
-}
-
-interface DrawAssignment {
-  giver_id: string;
-  receiver_id: string;
-}
-
-interface DrawConstraints {
-  members: DrawMember[];
-  exclusions: DrawExclusion[];
-  antiRecurrence: Map<string, string>;
-}
-
-function isValidAssignment(
-  giverId: string,
-  receiverId: string,
-  constraints: DrawConstraints
-): boolean {
-  if (giverId === receiverId) return false;
-  
-  if (constraints.exclusions.some(ex => 
-    ex.giver_id === giverId && ex.blocked_id === receiverId
-  )) {
-    return false;
-  }
-  
-  if (constraints.antiRecurrence.get(giverId) === receiverId) {
-    return false;
-  }
-  
-  return true;
-}
-
-function tryShuffleAssignment(constraints: DrawConstraints, maxAttempts = 500): DrawAssignment[] | null {
-  const memberIds = constraints.members.map(m => m.participant_id);
-  
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const receivers = [...memberIds];
-    const assignments: DrawAssignment[] = [];
-    let success = true;
-
-    for (let i = receivers.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [receivers[i], receivers[j]] = [receivers[j], receivers[i]];
-    }
-
-    for (let i = 0; i < memberIds.length; i++) {
-      const giverId = memberIds[i];
-      const receiverId = receivers[i];
-
-      if (!isValidAssignment(giverId, receiverId, constraints)) {
-        success = false;
-        break;
-      }
-
-      assignments.push({ giver_id: giverId, receiver_id: receiverId });
-    }
-
-    if (success) {
-      return assignments;
-    }
-  }
-
-  return null;
-}
-
-function findPerfectMatching(constraints: DrawConstraints): DrawAssignment[] | null {
-  const memberIds = constraints.members.map(m => m.participant_id);
-  const assignments: DrawAssignment[] = [];
-  const usedReceivers = new Set<string>();
-
-  function backtrack(giverIndex: number): boolean {
-    if (giverIndex === memberIds.length) {
-      return true;
-    }
-
-    const giverId = memberIds[giverIndex];
-
-    for (const receiverId of memberIds) {
-      if (usedReceivers.has(receiverId)) continue;
-      
-      if (isValidAssignment(giverId, receiverId, constraints)) {
-        assignments.push({ giver_id: giverId, receiver_id: receiverId });
-        usedReceivers.add(receiverId);
-
-        if (backtrack(giverIndex + 1)) {
-          return true;
-        }
-
-        assignments.pop();
-        usedReceivers.delete(receiverId);
-      }
-    }
-
-    return false;
-  }
-
-  return backtrack(0) ? assignments : null;
-}
+import { computePairs, type Member, type Pair } from '../../src/lib/draw.ts';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
-
   const { eventId } = req.query;
-  
   if (!eventId) {
     return res.status(400).json({ error: 'Event ID required' });
   }
@@ -128,126 +18,82 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    // Verify event exists and get admin info
-    const { data: event, error: eventError } = await supabase
-      .from('events')
-      .select('id, admin_profile_id, previous_event_id')
-      .eq('id', eventId)
-      .single();
-
-    if (eventError || !event) {
-      return res.status(404).json({ error: 'Event not found' });
-    }
-
     // Load members
     const { data: members, error: membersError } = await supabase
       .from('event_members')
-      .select('id, participant_id, anonymous_name')
+      .select('id, participant_id')
       .eq('event_id', eventId)
       .eq('status', 'joined');
-
-    if (membersError) {
-      throw membersError;
-    }
-
+    if (membersError) throw membersError;
     if (!members || members.length < 2) {
-      return res.status(400).json({ 
-        error: 'Servono almeno 2 partecipanti per il sorteggio',
-        assignedCount: 0,
-        skipped: []
-      });
+      return res.status(400).json({ error: 'Servono almeno 2 partecipanti per il sorteggio' });
     }
+    const giverArr: Member[] = members.map(m => ({ id: m.id, participantId: m.participant_id }));
+    const receiverArr: Member[] = giverArr;
+    const memberToParticipant = new Map<string, string>();
+    giverArr.forEach(m => memberToParticipant.set(m.id, m.participantId));
 
     // Load exclusions
-    const { data: exclusions, error: exclusionsError } = await supabase
+    const { data: exclusions } = await supabase
       .from('exclusions')
       .select('giver_id, blocked_id')
       .eq('event_id', eventId)
       .eq('active', true);
+    const exclusionSet = new Set<string>();
+    (exclusions || []).forEach(ex => {
+      const g = memberToParticipant.get(ex.giver_id);
+      const r = memberToParticipant.get(ex.blocked_id);
+      if (g && r) exclusionSet.add(`${g}|${r}`);
+    });
 
-    if (exclusionsError) {
-      throw exclusionsError;
-    }
-
-    // Load anti-recurrence data
-    const antiRecurrence = new Map<string, string>();
-    if (event.previous_event_id) {
-      const { data: previousAssignments } = await supabase
+    // Anti-recurrence
+    const antiSet = new Set<string>();
+    const { data: event } = await supabase
+      .from('events')
+      .select('previous_event_id')
+      .eq('id', eventId)
+      .maybeSingle();
+    if (event?.previous_event_id) {
+      const { data: prevMembers } = await supabase
+        .from('event_members')
+        .select('id, participant_id')
+        .eq('event_id', event.previous_event_id);
+      const prevMap = new Map<string, string>();
+      (prevMembers || []).forEach(m => prevMap.set(m.id, m.participant_id));
+      const { data: prevAssign } = await supabase
         .from('assignments')
         .select('giver_id, receiver_id')
         .eq('event_id', event.previous_event_id);
-
-      for (const assignment of previousAssignments || []) {
-        antiRecurrence.set(assignment.giver_id, assignment.receiver_id);
-      }
-    }
-
-    // Prepare constraints
-    const constraints: DrawConstraints = {
-      members: members as DrawMember[],
-      exclusions: (exclusions || []) as DrawExclusion[],
-      antiRecurrence
-    };
-
-    // Try shuffle first, then perfect matching
-    let assignments = tryShuffleAssignment(constraints, 500);
-    
-    if (!assignments) {
-      assignments = findPerfectMatching(constraints);
-    }
-
-    if (!assignments) {
-      return res.status(400).json({ 
-        error: 'Impossibile completare il sorteggio con le esclusioni e vincoli attuali',
-        assignedCount: 0,
-        skipped: members.map(m => m.id)
+      (prevAssign || []).forEach(a => {
+        const g = prevMap.get(a.giver_id);
+        const r = prevMap.get(a.receiver_id);
+        if (g && r) antiSet.add(`${g}|${r}`);
       });
     }
 
-    // Atomic transaction: delete old assignments and insert new ones
-    const { error: deleteError } = await supabase
-      .from('assignments')
-      .delete()
-      .eq('event_id', eventId);
-
-    if (deleteError) {
-      throw deleteError;
+    let pairs: Pair[];
+    try {
+      pairs = computePairs(giverArr, receiverArr, {
+        exclusions: exclusionSet,
+        antiRecurrence: antiSet
+      });
+    } catch (err: any) {
+      if (err.message === 'IMPOSSIBLE') {
+        return res.status(400).json({ error: 'Impossibile rispettare i vincoli' });
+      }
+      throw err;
     }
 
-    const { error: insertError } = await supabase
-      .from('assignments')
-      .insert(
-        assignments.map(assignment => ({
-          ...assignment,
-          event_id: eventId
-        }))
-      );
-
-    if (insertError) {
-      throw insertError;
-    }
-
-    // Update event status
-    const { error: updateError } = await supabase
-      .from('events')
-      .update({ draw_status: 'completed' })
-      .eq('id', eventId);
-
-    if (updateError) {
-      throw updateError;
-    }
-
-    return res.status(200).json({
-      assignedCount: assignments.length,
-      skipped: []
+    // Atomic write via RPC
+    const { error: applyError } = await supabase.rpc('apply_assignments', {
+      event_id: eventId,
+      pairs
     });
+    if (applyError) throw applyError;
 
+    return res.status(200).json({ assignedCount: pairs.length });
   } catch (error: any) {
-    console.error('Draw API error:', error);
-    return res.status(500).json({ 
-      error: error.message || 'Errore interno del server',
-      assignedCount: 0,
-      skipped: []
-    });
+    console.error('draw error', error);
+    return res.status(500).json({ error: error.message || 'Errore interno del server' });
   }
 }

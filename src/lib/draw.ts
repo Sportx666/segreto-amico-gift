@@ -1,222 +1,82 @@
-import { supabase } from "@/integrations/supabase/client";
+export type Member = { id: string; participantId: string };
+export type Pair = { giver: string; receiver: string }; // participantIds
 
-export interface DrawMember {
-  id: string;
-  participant_id: string;
-  anonymous_name: string | null;
+function shuffle<T>(arr: T[]): void {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
 }
 
-export interface DrawExclusion {
-  giver_id: string;
-  blocked_id: string;
-}
+export function computePairs(
+  givers: Member[],
+  receivers: Member[],
+  opts: {
+    exclusions: Set<string>; // key: `${giverParticipantId}|${blockedParticipantId}`
+    antiRecurrence?: Set<string>; // key: `${giverParticipantId}|${receiverParticipantId}`
+    maxTries?: number; // default 500
+  }
+): Pair[] {
+  const n = givers.length;
+  if (n !== receivers.length) throw new Error('IMPOSSIBLE');
+  const maxTries = opts.maxTries ?? 500;
 
-export interface DrawAssignment {
-  giver_id: string;
-  receiver_id: string;
-}
+  const rIds = receivers.map(r => r.participantId);
+  const gIds = givers.map(g => g.participantId);
 
-export interface DrawConstraints {
-  members: DrawMember[];
-  exclusions: DrawExclusion[];
-  antiRecurrence: Map<string, string>; // giver_id -> previous_receiver_id
-}
-
-export interface DrawResult {
-  success: boolean;
-  assignments?: DrawAssignment[];
-  error?: string;
-}
-
-/**
- * Validates if a potential assignment violates any constraints
- */
-function isValidAssignment(
-  giverId: string,
-  receiverId: string,
-  constraints: DrawConstraints
-): boolean {
-  // No self-assignment
-  if (giverId === receiverId) return false;
-
-  // Check exclusions
-  if (constraints.exclusions.some(ex => 
-    ex.giver_id === giverId && ex.blocked_id === receiverId
-  )) {
-    return false;
+  // Build adjacency
+  const adj: number[][] = [];
+  for (let i = 0; i < n; i++) {
+    const giverId = gIds[i];
+    const allowed: number[] = [];
+    for (let j = 0; j < rIds.length; j++) {
+      const recvId = rIds[j];
+      if (giverId === recvId) continue; // no self
+      if (opts.exclusions.has(`${giverId}|${recvId}`)) continue;
+      if (opts.antiRecurrence && opts.antiRecurrence.has(`${giverId}|${recvId}`)) continue;
+      allowed.push(j);
+    }
+    if (allowed.length === 0) {
+      throw new Error('IMPOSSIBLE');
+    }
+    adj.push(allowed);
   }
 
-  // Check anti-recurrence (avoid same assignment as last year)
-  if (constraints.antiRecurrence.get(giverId) === receiverId) {
-    return false;
-  }
-
-  return true;
-}
-
-/**
- * Attempts to create a valid assignment using shuffle algorithm
- */
-function tryShuffleAssignment(constraints: DrawConstraints, maxAttempts = 500): DrawAssignment[] | null {
-  const memberIds = constraints.members.map(m => m.participant_id);
-  
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const receivers = [...memberIds];
-    const assignments: DrawAssignment[] = [];
-    let success = true;
-
-    // Shuffle receivers
-    for (let i = receivers.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [receivers[i], receivers[j]] = [receivers[j], receivers[i]];
+  const order = Array.from({ length: rIds.length }, (_, i) => i);
+  for (let t = 0; t < maxTries; t++) {
+    shuffle(order);
+    let ok = true;
+    for (let i = 0; i < n; i++) {
+      if (!adj[i].includes(order[i])) { ok = false; break; }
     }
-
-    // Try to assign each giver to a receiver
-    for (let i = 0; i < memberIds.length; i++) {
-      const giverId = memberIds[i];
-      const receiverId = receivers[i];
-
-      if (!isValidAssignment(giverId, receiverId, constraints)) {
-        success = false;
-        break;
-      }
-
-      assignments.push({ giver_id: giverId, receiver_id: receiverId });
-    }
-
-    if (success) {
-      return assignments;
+    if (ok) {
+      return givers.map((g, i) => ({ giver: g.participantId, receiver: rIds[order[i]] }));
     }
   }
 
-  return null;
-}
-
-/**
- * Backtracking algorithm to find a perfect matching
- */
-function findPerfectMatching(constraints: DrawConstraints): DrawAssignment[] | null {
-  const memberIds = constraints.members.map(m => m.participant_id);
-  const assignments: DrawAssignment[] = [];
-  const usedReceivers = new Set<string>();
-
-  function backtrack(giverIndex: number): boolean {
-    if (giverIndex === memberIds.length) {
-      return true; // All givers have been assigned
-    }
-
-    const giverId = memberIds[giverIndex];
-
-    for (const receiverId of memberIds) {
-      if (usedReceivers.has(receiverId)) continue;
-      
-      if (isValidAssignment(giverId, receiverId, constraints)) {
-        // Try this assignment
-        assignments.push({ giver_id: giverId, receiver_id: receiverId });
-        usedReceivers.add(receiverId);
-
-        if (backtrack(giverIndex + 1)) {
-          return true;
-        }
-
-        // Backtrack
-        assignments.pop();
-        usedReceivers.delete(receiverId);
+  // Kuhn algorithm for perfect matching
+  const matchR = new Array<number>(rIds.length).fill(-1);
+  const seen = new Array<boolean>(rIds.length).fill(false);
+  const dfs = (u: number): boolean => {
+    for (const v of adj[u]) {
+      if (seen[v]) continue;
+      seen[v] = true;
+      if (matchR[v] === -1 || dfs(matchR[v])) {
+        matchR[v] = u;
+        return true;
       }
     }
-
     return false;
-  }
-
-  return backtrack(0) ? assignments : null;
-}
-
-/**
- * Main draw function that tries shuffle first, then falls back to perfect matching
- */
-export function performDraw(constraints: DrawConstraints): DrawResult {
-  const memberIds = constraints.members.map(m => m.participant_id);
-  
-  // Validate minimum requirements
-  if (memberIds.length < 2) {
-    return {
-      success: false,
-      error: "Servono almeno 2 partecipanti per il sorteggio"
-    };
-  }
-
-  // Check if a perfect matching is theoretically possible
-  // This is a simplified check - we'll let the algorithms determine feasibility
-  if (memberIds.length !== new Set(memberIds).size) {
-    return {
-      success: false,
-      error: "IDs partecipanti duplicati rilevati"
-    };
-  }
-
-  // Try shuffle algorithm first (fast)
-  let assignments = tryShuffleAssignment(constraints, 500);
-
-  if (!assignments) {
-    // Fall back to perfect matching algorithm
-    assignments = findPerfectMatching(constraints);
-  }
-
-  if (!assignments) {
-    return {
-      success: false,
-      error: "Impossibile completare il sorteggio con le esclusioni e vincoli attuali. Rimuovi alcune esclusioni o contatta il supporto."
-    };
-  }
-
-  return {
-    success: true,
-    assignments
   };
-}
-
-/**
- * Loads anti-recurrence data from the previous year's event
- */
-export async function loadAntiRecurrenceMap(eventId: string): Promise<Map<string, string>> {
-  const antiRecurrence = new Map<string, string>();
-
-  try {
-    // Get the current event to find previous_event_id  
-    const { data: currentEvent, error: eventError } = await supabase
-      .from('events')
-      .select('previous_event_id')
-      .eq('id', eventId)
-      .maybeSingle();
-
-    if (eventError) {
-      console.warn('Error loading event:', eventError);
-      return antiRecurrence;
-    }
-
-    if (!currentEvent?.previous_event_id) {
-      return antiRecurrence; // No previous event, empty map
-    }
-
-    // Load assignments from previous event
-    const { data: previousAssignments, error: assignmentsError } = await supabase
-      .from('assignments')
-      .select('giver_id, receiver_id')
-      .eq('event_id', currentEvent.previous_event_id);
-
-    if (assignmentsError) {
-      console.warn('Error loading previous assignments:', assignmentsError);
-      return antiRecurrence;
-    }
-
-    // Build the map
-    for (const assignment of previousAssignments || []) {
-      antiRecurrence.set(assignment.giver_id, assignment.receiver_id);
-    }
-
-  } catch (error) {
-    console.warn('Error loading anti-recurrence data:', error);
+  for (let u = 0; u < n; u++) {
+    seen.fill(false);
+    if (!dfs(u)) throw new Error('IMPOSSIBLE');
   }
-
-  return antiRecurrence;
+  const pairs: Pair[] = [];
+  for (let v = 0; v < rIds.length; v++) {
+    const u = matchR[v];
+    if (u === -1) throw new Error('IMPOSSIBLE');
+    pairs.push({ giver: gIds[u], receiver: rIds[v] });
+  }
+  return pairs;
 }
