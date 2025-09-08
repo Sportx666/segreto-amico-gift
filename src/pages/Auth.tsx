@@ -12,24 +12,26 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const params = new URLSearchParams(window.location.search);
+  const next = params.get("next") || "/";
 
   useEffect(() => {
     // Check if user is already logged in
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/");
+        navigate(next);
       }
     };
     checkAuth();
-  }, [navigate]);
+  }, [navigate, next]);
 
   const handleGoogleLogin = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`
+          redirectTo: `${window.location.origin}/auth?next=${encodeURIComponent(next)}`
         }
       });
 
@@ -52,7 +54,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/`
+          emailRedirectTo: `${window.location.origin}/auth?next=${encodeURIComponent(next)}`
         }
       });
 
