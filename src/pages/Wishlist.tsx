@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,6 +64,10 @@ export default function Wishlist() {
   const [editEventId, setEditEventId] = useState<string | null>(null);
   const [isChooseWishlistOpen, setIsChooseWishlistOpen] = useState(false);
   const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
+  // Empty-state manual add form state
+  const [emptyManualOpen, setEmptyManualOpen] = useState(false);
+  const [emptyManualTitle, setEmptyManualTitle] = useState("");
+  const [emptyManualUrl, setEmptyManualUrl] = useState("");
   const queryClient = useQueryClient();
 
   const { data: wishlists } = useQuery({
@@ -230,6 +234,67 @@ export default function Wishlist() {
       toast.error("Errore nell'aggiungere il prodotto");
     }
   };
+
+  const handleEmptyManualSubmit = useCallback(async () => {
+    if (!selectedWishlistId) {
+      toast.error("Seleziona o crea una lista");
+      return;
+    }
+
+    const raw = emptyManualUrl.trim();
+    if (!raw) {
+      toast.error("Inserisci un URL valido");
+      return;
+    }
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Devi essere autenticato");
+        return;
+      }
+
+      const { data: participant } = await supabase
+        .from("participants")
+        .select("id")
+        .eq("profile_id", user.id)
+        .single();
+      if (!participant) {
+        toast.error("Profilo partecipante non trovato");
+        return;
+      }
+
+      const normalized = withAffiliateTag(raw);
+
+      const { error } = await supabase.from("wishlist_items").insert({
+        owner_id: participant.id,
+        wishlist_id: selectedWishlistId,
+        title: emptyManualTitle.trim() || (raw.includes("amazon.") ? "Prodotto Amazon aggiunto manualmente" : "Prodotto aggiunto manualmente"),
+        raw_url: raw,
+        affiliate_url: normalized,
+      });
+
+      if (error) {
+        // Handle unique violation (e.g. duplicate link)
+        if ((error as any)?.code === "23505") {
+          toast.error("Questo articolo è già presente nella lista");
+          return;
+        }
+        throw error;
+      }
+
+      toast.success("Prodotto aggiunto alla lista!");
+      setEmptyManualTitle("");
+      setEmptyManualUrl("");
+      setEmptyManualOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["wishlist-items"] });
+    } catch (e) {
+      console.error("handleEmptyManualSubmit error", e);
+      toast.error("Errore nell'aggiungere il prodotto");
+    }
+  }, [selectedWishlistId, emptyManualTitle, emptyManualUrl]);
 
   const handleAddFromSearch = async (product: Product) => {
     try {
@@ -894,19 +959,7 @@ export default function Wishlist() {
                   <div className="flex gap-2">
                     <Button
                       className="flex-1"
-                      onClick={async () => {
-                        if (!selectedWishlistId) {
-                          toast.error("Seleziona o crea una lista");
-                          return;
-                        }
-                        await addManualToWishlist(selectedWishlistId, {
-                          title: emptyManualTitle,
-                          url: withAffiliateTag(emptyManualUrl),
-                        });
-                        setEmptyManualTitle("");
-                        setEmptyManualUrl("");
-                        setEmptyManualOpen(false);
-                      }}
+                      onClick={handleEmptyManualSubmit}
                     >
                       Aggiungi alla lista
                     </Button>
