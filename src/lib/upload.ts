@@ -1,40 +1,90 @@
 import { supabase } from "@/integrations/supabase/client";
 
-interface UploadArgs {
+export interface UploadOptions {
   bucket: string;
   path: string;
   file: File;
 }
 
-export async function uploadImage({ bucket, path, file }: UploadArgs): Promise<string> {
-  const { error } = await supabase.storage
-    .from(bucket)
-    .upload(path, file, { upsert: true, contentType: file.type });
-  if (error) throw error;
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
-}
-
-interface ResizeOpts {
+export interface ResizeOptions {
   max?: number;
   quality?: number;
 }
 
-export async function resizeToWebP(file: File, opts: ResizeOpts = {}): Promise<File> {
-  const { max = 1024, quality = 0.85 } = opts;
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas not supported");
-  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  const blob: Blob | null = await new Promise((resolve) =>
-    canvas.toBlob(resolve, "image/webp", quality)
-  );
-  if (!blob) throw new Error("Unable to convert image");
-  return new File([blob], file.name.replace(/\.[^.]+$/, ".webp"), {
-    type: "image/webp",
+/**
+ * Upload an image to Supabase storage and return the public URL
+ */
+export async function uploadImage({ bucket, path, file }: UploadOptions): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .upload(path, file, {
+      cacheControl: '3600',
+      upsert: true
+    });
+
+  if (error) throw error;
+
+  const { data: publicUrl } = supabase.storage
+    .from(bucket)
+    .getPublicUrl(data.path);
+
+  return publicUrl.publicUrl;
+}
+
+/**
+ * Resize an image and convert to WebP format
+ */
+export async function resizeToWebP(
+  file: File, 
+  options: ResizeOptions = {}
+): Promise<File> {
+  const { max = 1024, quality = 0.85 } = options;
+
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.onload = () => {
+      // Calculate new dimensions
+      let { width, height } = img;
+      
+      if (width > max || height > max) {
+        if (width > height) {
+          height = (height * max) / width;
+          width = max;
+        } else {
+          width = (width * max) / height;
+          height = max;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      // Draw and compress
+      ctx?.drawImage(img, 0, 0, width, height);
+      
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error('Failed to resize image'));
+            return;
+          }
+          
+          const resizedFile = new File([blob], 'image.webp', {
+            type: 'image/webp',
+            lastModified: Date.now()
+          });
+          
+          resolve(resizedFile);
+        },
+        'image/webp',
+        quality
+      );
+    };
+
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = URL.createObjectURL(file);
   });
 }

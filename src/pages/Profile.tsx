@@ -3,10 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { PageHeader } from "@/components/ui/page-header";
 import { uploadImage, resizeToWebP } from "@/lib/upload";
 import { AVATAR_PLACEHOLDER } from "@/lib/placeholder";
 import { toast } from "sonner";
-import { Trash2 } from "lucide-react";
+import { Trash2, Upload, User } from "lucide-react";
 
 const Profile = () => {
   const { user } = useAuth();
@@ -128,44 +132,123 @@ const Profile = () => {
   if (!user) return null;
 
   return (
-    <div className="max-w-xl mx-auto p-4 space-y-4">
-      <h1 className="text-2xl font-bold">Profilo</h1>
-      <div className="space-y-2">
-        <label className="text-sm">Email</label>
-        <Input value={user.email ?? ""} disabled />
-      </div>
-      <div className="space-y-2">
-        <label className="text-sm">Nome</label>
-        <Input
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-        />
-      </div>
-      <div className="space-y-2">
-        <label className="text-sm">Locale</label>
-        <Input value={locale} onChange={(e) => setLocale(e.target.value)} />
-      </div>
-      <div className="space-y-2">
-        <label className="text-sm">Avatar</label>
-        <img
-          src={previewUrl || avatarUrl || AVATAR_PLACEHOLDER}
-          alt="avatar"
-          className="w-24 h-24 rounded-full object-cover"
-        />
-        <div className="flex items-center gap-2">
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-          />
-          {avatarUrl && (
-            <Button type="button" variant="outline" onClick={handleRemoveAvatar}>
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          )}
+    <div className="container mx-auto px-4 md:px-6 py-4 md:py-6">
+      <PageHeader 
+        title="Profilo" 
+        description="Gestisci le tue informazioni personali"
+      />
+      
+      <div className="grid gap-6 md:gap-8 md:grid-cols-3">
+        {/* Profile Form */}
+        <div className="md:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Informazioni Personali</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input 
+                  id="email"
+                  value={user.email ?? ""} 
+                  disabled 
+                  className="bg-muted"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="displayName">Nome Visualizzato</Label>
+                <Input
+                  id="displayName"
+                  placeholder="Come ti chiami?"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="locale">Lingua</Label>
+                <Input 
+                  id="locale"
+                  placeholder="it"
+                  value={locale} 
+                  onChange={(e) => setLocale(e.target.value)} 
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Avatar Section */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Avatar</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-center">
+                <Avatar className="w-24 h-24 md:w-32 md:h-32">
+                  <AvatarImage 
+                    src={previewUrl || avatarUrl || undefined}
+                    alt="Avatar profilo"
+                  />
+                  <AvatarFallback className="text-lg md:text-xl">
+                    <User className="w-8 h-8 md:w-12 md:h-12" />
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="relative">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                    id="avatar-upload"
+                  />
+                  <Label 
+                    htmlFor="avatar-upload"
+                    className="flex items-center justify-center gap-2 h-10 px-4 py-2 bg-primary text-primary-foreground rounded-md cursor-pointer hover:bg-primary/90 transition-colors"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Carica Immagine
+                  </Label>
+                </div>
+                
+                {avatarUrl && (
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleRemoveAvatar}
+                    className="w-full"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Rimuovi Avatar
+                  </Button>
+                )}
+              </div>
+              
+              {uploadingAvatar && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Caricamento in corso...
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
-      <Button onClick={handleSave} disabled={uploadingAvatar}>Salva</Button>
+      
+      <div className="flex justify-end mt-6">
+        <Button 
+          onClick={handleSave} 
+          disabled={uploadingAvatar}
+          size="lg"
+        >
+          {uploadingAvatar ? "Salvando..." : "Salva Modifiche"}
+        </Button>
+      </div>
     </div>
   );
 };

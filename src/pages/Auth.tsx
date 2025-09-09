@@ -75,65 +75,75 @@ const Auth = () => {
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <Card className="shadow-elegant border-0 bg-white/95 backdrop-blur-sm">
-          <CardHeader className="text-center space-y-4">
-            <div className="mx-auto w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center">
+          <CardHeader className="text-center space-y-6 pb-6">
+            <div className="mx-auto w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center shadow-glow">
               <Gift className="w-8 h-8 text-white" />
             </div>
-            <div>
-              <CardTitle className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            <div className="space-y-2">
+              <CardTitle className="text-2xl md:text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                 Amico Segreto
               </CardTitle>
-              <CardDescription className="text-base mt-2">
+              <CardDescription className="text-base text-muted-foreground">
                 Entra per organizzare il tuo scambio di regali
               </CardDescription>
             </div>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
+          
+          <CardContent className="pt-0">
+            <form onSubmit={handleLogin} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-sm font-medium">
+                  Indirizzo Email
+                </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="la.tua@email.com"
-                    className="pl-10"
+                    className="pl-10 h-12 text-base focus-visible:ring-primary"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    aria-describedby="email-help"
                   />
                 </div>
               </div>
+              
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-primary hover:bg-primary-light transition-all duration-300 hover:shadow-glow"
+                size="lg"
+                className="w-full bg-gradient-primary hover:bg-primary/90 transition-all duration-300 hover:shadow-glow font-medium"
                 disabled={loading}
               >
-                {loading ? "Invio in corso..." : "Invia Link Magico"}
+                {loading ? "Invio in corso..." : "Invia Link Magico ✨"}
               </Button>
             </form>
             
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center" aria-hidden="true">
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-muted-foreground">O continua con</span>
+                <span className="bg-white px-3 text-muted-foreground font-medium">
+                  O continua con
+                </span>
               </div>
             </div>
             
             <Button 
               onClick={handleGoogleLogin}
               variant="outline"
-              className="w-full"
+              size="lg"
+              className="w-full border-border hover:bg-accent transition-colors"
             >
               <Chrome className="w-4 h-4 mr-2" />
               Accedi con Google
             </Button>
             
-            <p className="text-xs text-muted-foreground text-center mt-4">
-              Ti invieremo un link sicuro per accedere senza password
+            <p id="email-help" className="text-xs text-muted-foreground text-center mt-6 leading-relaxed">
+              Ti invieremo un link sicuro per accedere senza password. 
+              Controlla anche la cartella spam! 📧
             </p>
           </CardContent>
         </Card>
