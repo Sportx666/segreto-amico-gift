@@ -13,7 +13,11 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const params = new URLSearchParams(window.location.search);
-  const next = params.get("next") || "/";
+  const nextParam = params.get("next");
+  const next =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
+      ? nextParam
+      : "/";
 
   useEffect(() => {
     // Check if user is already logged in

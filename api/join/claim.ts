@@ -123,5 +123,5 @@ export default async function handler(req: any, res: any) {
     .update({ used_at: new Date().toISOString() })
     .eq('token', token);
 
-  return res.status(200).json({ redirect: `/events/${jt.event_id}/me/${memberId}` });
+  return res.status(200).json({ redirect: `/events/${jt.event_id}` });
 }
