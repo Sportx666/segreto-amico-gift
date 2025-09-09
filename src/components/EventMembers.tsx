@@ -13,6 +13,7 @@ import { getOrCreateParticipantId } from "@/lib/participants";
 import { debugLog, isDebug } from "@/lib/debug";
 import { StatusChip } from "@/components/StatusChip";
 import { copyToClipboard, shareViaWhatsApp } from "@/lib/whatsapp";
+import { absUrl } from "@/lib/url";
 
 interface EventMembersProps {
   eventId: string;
@@ -138,7 +139,7 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
         toast.error('Errore nel generare il link');
       } else {
         const invite = await inviteResp.json();
-        setInviteLinks((prev) => ({ ...prev, [memberRow.id]: invite }));
+        setInviteLinks((prev) => ({ ...prev, [memberRow.id]: { ...invite, url: absUrl(`/join/${invite.token}`) } }));
       }
 
       setNewMemberName('');
@@ -185,7 +186,8 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
       }
       const body = JSON.parse(bodyText);
       if (body?.invite && body?.memberId) {
-        setInviteLinks((prev) => ({ ...prev, [body.memberId]: body.invite }));
+        const invite = { ...body.invite, url: absUrl(`/join/${body.invite.token}`) };
+        setInviteLinks((prev) => ({ ...prev, [body.memberId]: invite }));
       }
       setNewMemberName('');
       setNewMemberEmail('');
@@ -397,7 +399,8 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
                       variant="outline"
                       size="sm"
                       onClick={async () => {
-                        await copyToClipboard(inviteLinks[member.id].url);
+                        const link = inviteLinks[member.id].url || absUrl(`/join/${inviteLinks[member.id].token}`);
+                        await copyToClipboard(link);
                         toast.success('Link copiato');
                       }}
                     >
@@ -407,7 +410,10 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
                     <Button
                       size="sm"
                       className="bg-[#25D366] hover:bg-[#20BD5A] text-white"
-                      onClick={() => shareViaWhatsApp(inviteLinks[member.id].url)}
+                      onClick={() => {
+                        const link = inviteLinks[member.id].url || absUrl(`/join/${inviteLinks[member.id].token}`);
+                        shareViaWhatsApp(link);
+                      }}
                     >
                       <MessageCircle className="w-4 h-4 mr-2" />
                       WhatsApp
@@ -432,7 +438,7 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
                             return;
                           }
                           const invite = await resp.json();
-                          setInviteLinks((prev) => ({ ...prev, [member.id]: invite }));
+                          setInviteLinks((prev) => ({ ...prev, [member.id]: { ...invite, url: absUrl(`/join/${invite.token}`) } }));
                           toast.success('Link rigenerato');
                         } catch {
                           toast.error('Errore nel rigenerare il link');

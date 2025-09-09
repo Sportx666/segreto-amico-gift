@@ -160,7 +160,7 @@ export default async function handler(req: any, res: any) {
       throw tokenErr;
     }
 
-    const origin = req.headers.origin || `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`;
+    const origin = (process.env.PUBLIC_BASE_URL || req.headers.origin || `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`).replace(/\/$/, "");
     const url = `${origin}/join/${token}`;
 
     return res.status(200).json({

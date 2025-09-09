@@ -91,6 +91,13 @@ Where to find these in Supabase:
 
 In deployment (e.g., Vercel), add the server-side variables in your Project → Settings → Environment Variables and redeploy.
 
+### Localhost caveat
+
+WhatsApp on a phone will not open `localhost` links generated from your desktop. To test invite links from a mobile device, either:
+
+- set `VITE_PUBLIC_BASE_URL` (and `PUBLIC_BASE_URL`) to a Vercel Preview URL, or
+- use a tunnel like ngrok and configure the environment variables accordingly.
+
 ### Debugging permissions
 
 Enable debug mode by adding `?debug=1` to the URL. You can also POST to `/api/debug/rls` with your `Authorization: Bearer <access_token>` header and body `{ eventId }` to verify if your current session can insert into `participants` and `event_members` under RLS.

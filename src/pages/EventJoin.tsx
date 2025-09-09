@@ -13,33 +13,34 @@ const EventJoin = () => {
   useEffect(() => {
     if (!token || loading) return;
 
+    if (!session) {
+      navigate(`/auth?next=/join/${token}`);
+      return;
+    }
+
     const run = async () => {
-      const resp = await fetch('/api/join/redeem', {
+      const resp = await fetch('/api/join/claim', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ token }),
       });
 
       const data = await resp.json().catch(() => ({}));
 
-      if (resp.status === 401) {
-        localStorage.setItem('pendingJoinToken', token);
-        navigate('/auth');
-        return;
-      }
-
       if (!resp.ok) {
         if (data?.error === 'invalid') setStatus('invalid');
         else if (data?.error === 'used') setStatus('used');
         else if (data?.error === 'expired') setStatus('expired');
+        else if (resp.status === 403) setStatus('invalid');
         else setStatus('invalid');
         return;
       }
 
-      navigate(`/events/${data.eventId}`);
+      if (data?.redirect) navigate(data.redirect);
+      else setStatus('invalid');
     };
 
     run();
