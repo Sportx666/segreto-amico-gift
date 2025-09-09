@@ -18,6 +18,7 @@ import { absUrl } from "@/lib/url";
 interface EventMembersProps {
   eventId: string;
   userRole: string;
+  eventStatus?: string; // draw_status from event (e.g., 'pending', 'completed')
 }
 
 interface Member {
@@ -29,7 +30,7 @@ interface Member {
   participant_id: string;
 }
 
-export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
+export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersProps) => {
   const { user, session } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -248,6 +249,11 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
   }
 
   const removeMember = async (memberId: string) => {
+    // Guard: allow deletion only for admins when draw is pending
+    if (!(userRole === 'admin' && eventStatus === 'pending')) {
+      toast.error("Non puoi rimuovere partecipanti dopo il sorteggio");
+      return;
+    }
     try {
       const { error } = await supabase
         .from('event_members')
@@ -382,7 +388,7 @@ export const EventMembers = ({ eventId, userRole }: EventMembersProps) => {
                     <Badge variant="secondary">Admin</Badge>
                   )}
 
-                  {userRole === 'admin' && member.role !== 'admin' && (
+                  {userRole === 'admin' && eventStatus === 'pending' && member.role !== 'admin' && (
                     <Button
                       variant="ghost"
                       size="sm"

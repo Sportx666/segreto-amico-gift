@@ -29,15 +29,6 @@ interface Event {
   cover_image_url?: string | null;
 }
 
-interface EventMember {
-  id: string;
-  role: string;
-  anonymous_name: string | null;
-  anonymous_email: string | null;
-  status: string;
-  participant_id: string;
-}
-
 export default function EventDetail() {
   const { id } = useParams();
   const { user, loading } = useAuth();
@@ -380,7 +371,7 @@ export default function EventDetail() {
         {/* Tab Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsContent value="partecipanti">
-            <EventMembers eventId={event.id} userRole={userRole} />
+            <EventMembers eventId={event.id} userRole={userRole} eventStatus={event.draw_status} />
           </TabsContent>
 
           <TabsContent value="esclusioni">

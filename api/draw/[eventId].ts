@@ -96,6 +96,12 @@ export default async function handler(req: any, res: any) {
       );
     if (insertError) throw insertError;
 
+    const { error: updateEventError } = await supabase
+      .from('events')
+      .update({draw_status: 'completed' })
+      .eq('id', eventId);
+    if (updateEventError) throw updateEventError;
+
     return res.status(200).json({ assignedCount: pairs.length });
   } catch (error: any) {
     console.error('draw error', error);
