@@ -53,21 +53,15 @@ export default async function handler(req: any, res: any) {
       .select('previous_event_id')
       .eq('id', eventId)
       .maybeSingle();
-    if (event?.previous_event_id) {
-      const { data: prevMembers } = await supabase
-        .from('event_members')
-        .select('id, participant_id')
-        .eq('event_id', event.previous_event_id);
-      const prevMap = new Map<string, string>();
-      (prevMembers || []).forEach(m => prevMap.set(m.id, m.participant_id));
+    if (event?.previous_event_id) {      
       const { data: prevAssign } = await supabase
         .from('assignments')
         .select('giver_id, receiver_id')
         .eq('event_id', event.previous_event_id);
       (prevAssign || []).forEach(a => {
-        const g = prevMap.get(a.giver_id);
-        const r = prevMap.get(a.receiver_id);
-        if (g && r) antiSet.add(`${g}|${r}`);
+        if (a.giver_id && a.receiver_id) {
+          antiSet.add(`${a.giver_id}|${a.receiver_id}`);
+        }
       });
     }
 
@@ -84,12 +78,23 @@ export default async function handler(req: any, res: any) {
       throw err;
     }
 
-    // Atomic write via RPC
-    const { error: applyError } = await supabase.rpc('apply_assignments', {
-      event_id: eventId,
-      pairs
-    });
-    if (applyError) throw applyError;
+    // Persist assignments
+    const { error: deleteError } = await supabase
+      .from('assignments')
+      .delete()
+      .eq('event_id', eventId);
+    if (deleteError) throw deleteError;
+
+    const { error: insertError } = await supabase
+      .from('assignments')
+      .insert(
+        pairs.map(p => ({
+          event_id: eventId,
+          giver_id: p.giver,
+          receiver_id: p.receiver
+        }))
+      );
+    if (insertError) throw insertError;
 
     return res.status(200).json({ assignedCount: pairs.length });
   } catch (error: any) {
