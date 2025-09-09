@@ -233,6 +233,7 @@ export default function Ideas() {
     <div className="min-h-screen bg-gradient-subtle py-6">
       <div className="container max-w-6xl">
         <PageHeader
+          className="hidden"
           title="Idee Regalo"
           description="Trova il regalo perfetto cercando su Amazon"
         />

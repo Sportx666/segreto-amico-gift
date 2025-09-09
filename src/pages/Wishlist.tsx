@@ -64,6 +64,7 @@ export default function Wishlist() {
   const [editEventId, setEditEventId] = useState<string | null>(null);
   const [isChooseWishlistOpen, setIsChooseWishlistOpen] = useState(false);
   const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
+  const [currentEventId, setCurrentEventId] = useState<string | null>(null);
   // Empty-state manual add form state
   const [emptyManualOpen, setEmptyManualOpen] = useState(false);
   const [emptyManualTitle, setEmptyManualTitle] = useState("");
@@ -386,6 +387,8 @@ export default function Wishlist() {
     );
   }
 
+  const hasWishlists = wishlists && wishlists.length > 0;
+
   return (
     <div className="min-h-screen bg-gradient-subtle py-6">
       <div className="container max-w-4xl">
@@ -401,101 +404,97 @@ export default function Wishlist() {
         </PageHeader>
 
         {/* List selector */}
-        <div className="mb-6 flex items-center gap-2 flex-wrap">
-          <Select
-            value={selectedWishlistId ?? "all"}
-            onValueChange={(val) => {
-              if (val === "all") {
-                setSelectedWishlistId(null);
-                setSelectedWishlistTitle(null);
-              } else {
-                setSelectedWishlistId(val);
-                const wl = wishlists?.find((w) => w.id === val);
-                setSelectedWishlistTitle(wl?.title ?? "La mia lista");
-              }
-            }}
-          >
-            <SelectTrigger className="w-[220px]">
-              <SelectValue placeholder="Tutte le liste" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tutte le liste</SelectItem>
-              {wishlists?.map((wl) => (
-                <SelectItem key={wl.id} value={wl.id}>
-                  {wl.title ?? "Senza titolo"}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          {/* List management buttons */}
-          {selectedWishlistId && (
-            <>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={() => {
-                  setEditTitle(selectedWishlistTitle ?? '');
-                  setIsEditDialogOpen(true);
+        {hasWishlists && (
+          <div className="mb-6">
+            <Label htmlFor="wishlist-select" className="text-sm font-medium mb-2 block">
+              Lista attiva
+            </Label>
+
+            <div className="flex items-center gap-1 sm:gap-2 flex-nowrap overflow-x-auto sm:overflow-visible">
+              <Select
+                value={selectedWishlistId || ""}
+                onValueChange={(value) => {
+                  setSelectedWishlistId(value);
+                  const wishlist = wishlists?.find((w) => w.id === value);
+                  setSelectedWishlistTitle(wishlist?.title || null);
+
+                  // Set current event for create-then-add flow
+                  setCurrentEventId(wishlist?.event_id || null);
                 }}
               >
-                <SquarePen className="w-4 h-4" />
-              </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button size="sm" variant="destructive">
-                    <Trash2 className="w-4 h-4" />
+                <SelectTrigger id="wishlist-select" className="w-full sm:w-80">
+                  <SelectValue placeholder="Seleziona una lista" />
+                </SelectTrigger>
+                <SelectContent>
+                  {wishlists?.map((wishlist) => {
+                    const eventName = events?.find((e) => e.id === wishlist.event_id)?.name;
+                    return (
+                      <SelectItem key={wishlist.id} value={wishlist.id}>
+                        {wishlist.title || "Lista senza titolo"}
+                        {eventName && (
+                          <span className="text-muted-foreground ml-2">• {eventName}</span>
+                        )}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+
+              {selectedWishlistId && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="shrink-0"
+                    onClick={() => setIsSearchDialogOpen(true)}
+                  >
+                    <Search className="w-4 h-4 mr-1" />
+                    <span className="hidden sm:inline">Cerca su Amazon</span>
                   </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Eliminare questa lista?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Questa azione non è reversibile. La lista e i suoi elementi collegati potrebbero non essere recuperabili.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Annulla</AlertDialogCancel>
-                    <AlertDialogAction
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      onClick={async () => {
-                        if (!selectedWishlistId) return;
-                        try {
-                          const { error } = await supabase
-                            .from('wishlists')
-                            .delete()
-                            .eq('id', selectedWishlistId);
-                          if (error) throw error;
-                          setIsEditDialogOpen(false);
-                          setSelectedWishlistId(null);
-                          setSelectedWishlistTitle(null);
-                          toast.success('Lista eliminata');
-                          queryClient.invalidateQueries({ queryKey: ['wishlists'] });
-                          queryClient.invalidateQueries({ queryKey: ['wishlist-items'] });
-                        } catch (e) { 
-                          console.error(e); 
-                          toast.error('Errore nell\'eliminare la lista'); 
-                        }
-                      }}
-                    >
-                      Elimina definitivamente
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </>
-          )}
-        </div>
+
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="shrink-0"
+                  // onClick={() => setIsManualAddOpen(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    <span className="hidden sm:inline">Aggiungi manualmente</span>
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
 
         {/* Main Content */}
-        {!wishlistItems?.length ? (
+        {!hasWishlists ? (
+          <EmptyState
+            title="Nessuna lista presente"
+            description="Crea una nuova lista per iniziare ad aggiungere i tuoi regali desiderati"
+
+          >
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Crea la tua prima lista
+            </Button>
+          </EmptyState>
+        ) : !selectedWishlistId ? (
+          <EmptyState
+            title="Seleziona una lista"
+            description="Scegli una lista dalle opzioni sopra per visualizzare i prodotti"
+          />
+        ) : isLoading ? (
+          <SkeletonGrid />
+        ) : !wishlistItems?.length ? (
           <EmptyState
             icon={<Heart className="w-8 h-8 text-white" />}
             title="Nessun prodotto nella lista"
             description="Aggiungi prodotti alla tua lista desideri"
           >
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button 
+              <Button
                 onClick={() => {
                   if (!selectedWishlistId && wishlists?.length) {
                     setSelectedWishlistId(wishlists[0].id);
@@ -509,7 +508,7 @@ export default function Wishlist() {
                 <Search className="w-4 h-4 mr-2" />
                 Cerca su Amazon
               </Button>
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => {
                   if (!selectedWishlistId && wishlists?.length) {
@@ -531,38 +530,38 @@ export default function Wishlist() {
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="manual-title">Titolo</Label>
-                    <Input 
-                      id="manual-title" 
-                      value={manualFormData.title} 
-                      onChange={(e) => setManualFormData(prev => ({ ...prev, title: e.target.value }))} 
-                      placeholder="Titolo del prodotto" 
+                    <Input
+                      id="manual-title"
+                      value={manualFormData.title}
+                      onChange={(e) => setManualFormData(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Titolo del prodotto"
                     />
                   </div>
                   <div>
                     <Label htmlFor="manual-url">URL Amazon</Label>
-                    <Input 
-                      id="manual-url" 
-                      value={manualFormData.url} 
-                      onChange={(e) => setManualFormData(prev => ({ ...prev, url: e.target.value }))} 
-                      placeholder="https://www.amazon.it/dp/..." 
+                    <Input
+                      id="manual-url"
+                      value={manualFormData.url}
+                      onChange={(e) => setManualFormData(prev => ({ ...prev, url: e.target.value }))}
+                      placeholder="https://www.amazon.it/dp/..."
                     />
                   </div>
                   <div className="flex gap-2">
-                    <Button 
-                      className="flex-1" 
-                      onClick={async () => { 
+                    <Button
+                      className="flex-1"
+                      onClick={async () => {
                         if (!selectedWishlistId) return;
-                        await addManualToWishlist(selectedWishlistId, manualFormData); 
-                        setManualFormData({ title: '', url: '' }); 
-                        setActiveItemId(null); 
+                        await addManualToWishlist(selectedWishlistId, manualFormData);
+                        setManualFormData({ title: '', url: '' });
+                        setActiveItemId(null);
                       }}
                       disabled={!manualFormData.url.trim()}
                     >
                       Aggiungi alla lista
                     </Button>
-                    <Button 
-                      className="flex-1" 
-                      variant="outline" 
+                    <Button
+                      className="flex-1"
+                      variant="outline"
                       onClick={() => {
                         setActiveItemId(null);
                         setManualFormData({ title: '', url: '' });
@@ -584,8 +583,8 @@ export default function Wishlist() {
                     <div className="flex-shrink-0">
                       <div className="w-20 h-20 rounded-lg overflow-hidden bg-muted">
                         {item.image_url ? (
-                          <img 
-                            src={item.image_url} 
+                          <img
+                            src={item.image_url}
                             alt={item.title}
                             className="w-full h-full object-cover"
                           />
@@ -608,37 +607,15 @@ export default function Wishlist() {
 
                       {/* Per-Item Actions Cluster */}
                       <div className="flex flex-wrap gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setTargetWishlistIdForSearch(item.wishlist_id);
-                            setSearchQuery(item.title.split(' ').slice(0, 3).join(' '));
-                            setIsSearchDialogOpen(true);
-                          }}
-                        >
-                          <Search className="w-4 h-4 mr-1" />
-                          <span className="hidden sm:inline">Cerca su Amazon</span>
-                        </Button>
-                        
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setActiveItemId(item.id === activeItemId ? null : item.id)}
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          <span className="hidden sm:inline">Aggiungi manualmente</span>
-                        </Button>
-
                         {(item.affiliate_url || item.raw_url) && (
                           <Button
                             size="sm"
                             variant="ghost"
                             asChild
                           >
-                            <a 
-                              href={item.affiliate_url || item.raw_url || '#'} 
-                              target="_blank" 
+                            <a
+                              href={item.affiliate_url || item.raw_url || '#'}
+                              target="_blank"
                               rel="noopener noreferrer"
                               className="text-xs"
                             >
@@ -662,37 +639,37 @@ export default function Wishlist() {
                         <div className="mt-4 p-3 bg-muted/50 rounded-lg space-y-3">
                           <div>
                             <Label htmlFor={`manual-title-${item.id}`}>Titolo</Label>
-                            <Input 
+                            <Input
                               id={`manual-title-${item.id}`}
-                              value={manualFormData.title} 
-                              onChange={(e) => setManualFormData(prev => ({ ...prev, title: e.target.value }))} 
-                              placeholder="Titolo del prodotto" 
+                              value={manualFormData.title}
+                              onChange={(e) => setManualFormData(prev => ({ ...prev, title: e.target.value }))}
+                              placeholder="Titolo del prodotto"
                             />
                           </div>
                           <div>
                             <Label htmlFor={`manual-url-${item.id}`}>URL Amazon</Label>
-                            <Input 
+                            <Input
                               id={`manual-url-${item.id}`}
-                              value={manualFormData.url} 
-                              onChange={(e) => setManualFormData(prev => ({ ...prev, url: e.target.value }))} 
-                              placeholder="https://www.amazon.it/dp/..." 
+                              value={manualFormData.url}
+                              onChange={(e) => setManualFormData(prev => ({ ...prev, url: e.target.value }))}
+                              placeholder="https://www.amazon.it/dp/..."
                             />
                           </div>
                           <div className="flex gap-2">
-                            <Button 
+                            <Button
                               size="sm"
-                              onClick={async () => { 
-                                await addManualToWishlist(item.wishlist_id, manualFormData); 
-                                setManualFormData({ title: '', url: '' }); 
-                                setActiveItemId(null); 
+                              onClick={async () => {
+                                await addManualToWishlist(item.wishlist_id, manualFormData);
+                                setManualFormData({ title: '', url: '' });
+                                setActiveItemId(null);
                               }}
                               disabled={!manualFormData.url.trim()}
                             >
                               Aggiungi
                             </Button>
-                            <Button 
+                            <Button
                               size="sm"
-                              variant="outline" 
+                              variant="outline"
                               onClick={() => {
                                 setActiveItemId(null);
                                 setManualFormData({ title: '', url: '' });
@@ -840,7 +817,7 @@ export default function Wishlist() {
                 } catch (e) {
                   console.error(e); toast.error('Errore nell\'aggiornare la lista');
                 }
-              }}>Salva</Button>          
+              }}>Salva</Button>
               <Button className="flex-1" variant="outline" onClick={() => setIsEditDialogOpen(false)}>Annulla</Button>
             </div>
           </div>
@@ -900,131 +877,6 @@ export default function Wishlist() {
         </DialogContent>
       </Dialog>
 
-
-      {/* Content */}
-      {wishlistItems && wishlistItems.length === 0 ? (
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <div className="text-6xl mb-4">🎁</div>
-              <h3 className="text-lg font-semibold mb-2">Lista desideri vuota</h3>
-              <p className="text-muted-foreground mb-6">
-                Inizia ad aggiungere prodotti che desideri ricevere
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button
-                  onClick={() => {
-                    if (!selectedWishlistId) {
-                      toast.error("Seleziona o crea una lista");
-                      return;
-                    }
-                    setTargetWishlistIdForSearch(selectedWishlistId);
-                    setSearchQuery("");
-                    setIsSearchDialogOpen(true);
-                  }}
-                  className="min-h-[44px]"
-                >
-                  <Search className="w-4 h-4 mr-2" />
-                  Cerca su Amazon
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setEmptyManualOpen((v) => !v)}
-                  className="min-h-[44px]"
-                >
-                  Aggiungi manualmente
-                </Button>
-              </div>
-
-              {emptyManualOpen && (
-                <div className="mt-6 max-w-xl mx-auto space-y-3 text-left">
-                  <div>
-                    <Label htmlFor="empty-title">Titolo</Label>
-                    <Input
-                      id="empty-title"
-                      value={emptyManualTitle}
-                      onChange={(e) => setEmptyManualTitle(e.target.value)}
-                      placeholder="Titolo del prodotto"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="empty-url">URL Amazon</Label>
-                    <Input
-                      id="empty-url"
-                      value={emptyManualUrl}
-                      onChange={(e) => setEmptyManualUrl(e.target.value)}
-                      placeholder="https://www.amazon.it/dp/..."
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      className="flex-1"
-                      onClick={handleEmptyManualSubmit}
-                    >
-                      Aggiungi alla lista
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => setEmptyManualOpen(false)}
-                    >
-                      Annulla
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {wishlistItems?.map((row) => {
-            const wl = wishlists?.find(w => w.id === row.wishlist_id);
-            const wlTitle = wl?.title ?? undefined;
-            const evName = wl?.event_id ? (events?.find(e => e.id === wl.event_id)?.name) : undefined;
-            const url =
-              row.affiliate_url ||
-              row.raw_url ||
-              (row.asin ? productUrlFromASIN(row.asin, row.title) : "");
-            return (
-              <WishlistItem
-                key={row.id}
-                item={{
-                  id: row.id,
-                  asin: row.asin,
-                  title: row.title,
-                  image: row.image_url || undefined,
-                  price: null,
-                  currency: null,
-                  url,
-                  lastUpdated: null,
-                  wishlist_id: row.wishlist_id,
-                }}
-                wishlistTitle={wlTitle || selectedWishlistTitle || undefined}
-                eventTitle={evName}
-                onDelete={async (id) => {
-                  await handleDeleteItem(id);
-                }}
-                onAddManual={async (payload) => {
-                  await addManualToWishlist(row.wishlist_id, payload);
-                }}
-                onOpenSearch={(initialQuery) => {
-                  setTargetWishlistIdForSearch(row.wishlist_id);
-                  setSearchQuery(initialQuery || "");
-                  setIsSearchDialogOpen(true);
-                }}
-              />
-            );
-          })}
-        </div>
-      )}
-
-      {/* Disclosure Footer */}
-      <div className="mt-12 pt-6 border-t text-center">
-        <p className="text-xs text-muted-foreground">
-          Come affiliato Amazon, guadagniamo da acquisti idonei.
-        </p>
-      </div>
     </div>
   );
 }
