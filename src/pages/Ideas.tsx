@@ -175,155 +175,58 @@ export default function Ideas() {
 
   const handleAddToWishlist = async (product: Product) => {
     try {
+      // First, get the current user's participant ID
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error("Devi essere autenticato per aggiungere prodotti alla lista");
         return;
       }
 
-      // Use safe add function - will create participant/wishlist if needed
-      await safeAddWishlistItem({
-        profileId: user.id,
-        item: {
-          title: product.title,
+      // Get participant ID
+      const { data: participant } = await supabase
+        .from('participants')
+        .select('id')
+        .eq('profile_id', user.id)
+        .single();
+
+      if (!participant) {
+        toast.error("Profilo partecipante non trovato");
+        return;
+      }
+
+      // Check if product already exists in wishlist
+      const { data: existingItem } = await supabase
+        .from('wishlist_items')
+        .select('id')
+        .eq('owner_id', participant.id)
+        .eq('asin', product.asin)
+        .maybeSingle();
+
+      if (existingItem) {
+        toast.error("Prodotto già presente nella tua lista desideri");
+        return;
+      }
+
+      // Add to wishlist
+      const { error } = await supabase
+        .from('wishlist_items')
+        .insert({
+          owner_id: participant.id,
           asin: product.asin,
+          title: product.title,
           image_url: product.image,
           price_snapshot: `${product.price} ${product.currency}`,
           affiliate_url: product.url,
-          raw_url: product.url,
-        }
-      });
+          raw_url: product.url
+        });
+
+      if (error) throw error;
+
+      toast.success("Prodotto aggiunto alla lista desideri! 🎁");
     } catch (error: unknown) {
       console.error('Error adding to wishlist:', error);
       toast.error("Errore nell'aggiungere il prodotto alla lista");
     }
-  };
-
-  // Safe helper for create-then-add flow
-  const safeAddWishlistItem = async (params: {
-    profileId: string;
-    item: {
-      title: string;
-      asin?: string;
-      affiliate_url?: string;
-      raw_url?: string;
-      image_url?: string;
-      price_snapshot?: string;
-    };
-  }) => {
-    const { withDbTrace, classifyDbError } = await import('@/lib/dbTrace');
-    
-    try {
-      const participantId = await getOrCreateParticipant(params.profileId);
-      
-      // Check if already exists to avoid duplicates
-      if (params.item.asin) {
-        const { data: existing } = await supabase
-          .from('wishlist_items')
-          .select('id')
-          .eq('owner_id', participantId)
-          .eq('asin', params.item.asin)
-          .maybeSingle();
-
-        if (existing) {
-          toast.error("Prodotto già presente nella tua lista desideri");
-          return;
-        }
-      }
-
-      // For /ideas, we add to the first available wishlist or create a default one
-      let wishlistId: string | null = null;
-      
-      await withDbTrace('wishlist:find-or-create', async () => {
-        // Try to find existing wishlist
-        const { data: wishlists } = await supabase
-          .from('wishlists')
-          .select('id')
-          .eq('owner_id', participantId)
-          .limit(1);
-
-        if (wishlists && wishlists.length > 0) {
-          wishlistId = wishlists[0].id;
-        } else {
-          // Create a default wishlist
-          const { data: newWishlist, error } = await supabase
-            .from('wishlists')
-            .insert({
-              owner_id: participantId,
-              title: 'La mia lista',
-            })
-            .select('id')
-            .single();
-
-          if (error) throw error;
-          wishlistId = newWishlist.id;
-        }
-      }, { table: 'wishlists', op: 'find-or-create', participantId });
-
-      if (!wishlistId) {
-        toast.error("Errore nella creazione della lista");
-        return;
-      }
-
-      await withDbTrace('wishlist:item-insert', async () => {
-        const { error } = await supabase
-          .from('wishlist_items')
-          .insert({
-            owner_id: participantId,
-            wishlist_id: wishlistId,
-            asin: params.item.asin || null,
-            title: params.item.title,
-            affiliate_url: params.item.affiliate_url || null,
-            raw_url: params.item.raw_url || null,
-            image_url: params.item.image_url || null,
-            price_snapshot: params.item.price_snapshot || null,
-          });
-
-        if (error) {
-          const kind = classifyDbError(error);
-          if (kind.type === 'unique') {
-            toast.error("Questo prodotto è già presente nella lista");
-            return;
-          }
-          if (kind.type === 'rls' || kind.type === 'permission') {
-            toast.error("Non hai i permessi per aggiungere prodotti a questa lista");
-            return;
-          }
-          throw error;
-        }
-
-        toast.success("Prodotto aggiunto alla lista desideri! 🎁");
-      }, { table: 'wishlist_items', op: 'insert', wishlistId });
-
-    } catch (error) {
-      console.error('Error in safeAddWishlistItem:', error);
-      toast.error("Errore nell'aggiungere il prodotto alla lista");
-    }
-  };
-
-  const getOrCreateParticipant = async (profileId: string): Promise<string> => {
-    const { withDbTrace } = await import('@/lib/dbTrace');
-    
-    return await withDbTrace('participant:ensure', async () => {
-      // Check if participant exists
-      const { data: existing } = await supabase
-        .from('participants')
-        .select('id')
-        .eq('profile_id', profileId)
-        .maybeSingle();
-
-      if (existing) return existing.id;
-
-      // Create participant
-      const { data: newParticipant, error } = await supabase
-        .from('participants')
-        .insert({ profile_id: profileId })
-        .select('id')
-        .single();
-
-      if (error) throw error;
-      return newParticipant.id;
-    }, { table: 'participants', op: 'upsert', profileId });
   };
 
   return (
