@@ -30,7 +30,7 @@ export function useChat(eventId?: string, channel: 'event' | 'pair' = 'event', r
     try {
       const currentOffset = isLoadMore ? offset : 0;
       
-      const url = `/api/chat/list?eventId=${eventId}&channel=${channel}&offset=${currentOffset}&limit=25${recipientId ? `&recipientId=${recipientId}` : ''}`;
+      const url = `https://eociecgrdwllggcohmko.supabase.co/functions/v1/chat-list?eventId=${eventId}&channel=${channel}&offset=${currentOffset}&limit=25${recipientId ? `&recipientId=${recipientId}` : ''}`;
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -40,7 +40,7 @@ export function useChat(eventId?: string, channel: 'event' | 'pair' = 'event', r
       if (!response.ok) throw new Error('Failed to fetch messages');
       
       const data = await response.json();
-      
+
       if (isLoadMore) {
         setMessages(prev => [...prev, ...data.messages]);
       } else {
@@ -64,7 +64,7 @@ export function useChat(eventId?: string, channel: 'event' | 'pair' = 'event', r
     
     setSending(true);
     try {
-      const response = await fetch('/api/chat/send', {
+      const response = await fetch('https://eociecgrdwllggcohmko.supabase.co/functions/v1/chat-send', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
