@@ -417,7 +417,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                   </div>
                 </div>
                 
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
                   <StatusChip status={member.status} />
                   {member.role === 'admin' && (
                     <Badge variant="secondary">Admin</Badge>
@@ -432,9 +432,10 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                       <Trash2 className="w-4 h-4 text-destructive" />
                     </Button>
                   )}
-                  </div>
                 </div>
-                {inviteLinks[member.id] && (
+              </div>
+              
+              {inviteLinks[member.id] && (
                   <div className="mt-3 flex gap-2">
                     <Button
                       variant="outline"
