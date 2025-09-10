@@ -65,7 +65,7 @@ export function ChatRecipientSelector({ eventId, onChatStart, isOpen, onOpenChan
         `)
         .eq('event_id', eventId)
         .neq('participant_id', currentParticipant?.id)
-        .eq('status', 'confirmed');
+        .eq('status', 'joined');
 
       if (error) throw error;
 
