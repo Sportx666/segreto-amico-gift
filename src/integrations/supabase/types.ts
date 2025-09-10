@@ -116,6 +116,7 @@ export type Database = {
           created_at: string | null
           event_id: string
           id: string
+          recipient_participant_id: string | null
         }
         Insert: {
           alias_snapshot: string
@@ -127,6 +128,7 @@ export type Database = {
           created_at?: string | null
           event_id: string
           id?: string
+          recipient_participant_id?: string | null
         }
         Update: {
           alias_snapshot?: string
@@ -138,6 +140,7 @@ export type Database = {
           created_at?: string | null
           event_id?: string
           id?: string
+          recipient_participant_id?: string | null
         }
         Relationships: [
           {
@@ -166,6 +169,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_recipient_participant_id_fkey"
+            columns: ["recipient_participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
             referencedColumns: ["id"]
           },
         ]

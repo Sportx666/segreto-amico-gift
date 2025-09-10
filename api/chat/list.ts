@@ -22,6 +22,7 @@ export default async function handler(req: Request): Promise<Response> {
     const url = new URL(req.url);
     const eventId = url.searchParams.get('eventId');
     const channel = url.searchParams.get('channel');
+    const recipientId = url.searchParams.get('recipientId');
     const offset = parseInt(url.searchParams.get('offset') || '0');
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100);
 
@@ -61,6 +62,20 @@ export default async function handler(req: Request): Promise<Response> {
       );
     }
 
+    // Get user's participant ID
+    const { data: userParticipant, error: participantError } = await supabase
+      .from('participants')
+      .select('id')
+      .eq('profile_id', user.id)
+      .single();
+
+    if (participantError || !userParticipant) {
+      return new Response(
+        JSON.stringify({ error: 'User participant not found' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Build query based on channel type
     let query = supabase
       .from('chat_messages')
@@ -72,10 +87,20 @@ export default async function handler(req: Request): Promise<Response> {
         created_at,
         author_participant_id,
         channel,
-        assignment_id
+        assignment_id,
+        recipient_participant_id
       `)
       .eq('event_id', eventId)
-      .eq('channel', channel)
+      .eq('channel', channel);
+
+    // For pair channel with recipient, filter messages between user and recipient
+    if (channel === 'pair' && recipientId) {
+      query = query.or(
+        `and(author_participant_id.eq.${userParticipant.id},recipient_participant_id.eq.${recipientId}),and(author_participant_id.eq.${recipientId},recipient_participant_id.eq.${userParticipant.id})`
+      );
+    }
+
+    query = query
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 

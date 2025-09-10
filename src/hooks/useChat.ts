@@ -12,9 +12,10 @@ interface ChatMessage {
   author_participant_id: string;
   channel: string;
   assignment_id?: string;
+  recipient_participant_id?: string;
 }
 
-export function useChat(eventId?: string, channel: 'event' | 'pair' = 'event') {
+export function useChat(eventId?: string, channel: 'event' | 'pair' = 'event', recipientId?: string) {
   const { session } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -29,7 +30,8 @@ export function useChat(eventId?: string, channel: 'event' | 'pair' = 'event') {
     try {
       const currentOffset = isLoadMore ? offset : 0;
       
-      const response = await fetch(`/api/chat/list?eventId=${eventId}&channel=${channel}&offset=${currentOffset}&limit=25`, {
+      const url = `/api/chat/list?eventId=${eventId}&channel=${channel}&offset=${currentOffset}&limit=25${recipientId ? `&recipientId=${recipientId}` : ''}`;
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
         },
@@ -53,9 +55,9 @@ export function useChat(eventId?: string, channel: 'event' | 'pair' = 'event') {
     } finally {
       setLoading(false);
     }
-  }, [eventId, channel, session, offset]);
+  }, [eventId, channel, session, recipientId]);
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = useCallback(async (content: string) => {
     if (!eventId || !session?.access_token || !content.trim()) return false;
     
     setSending(true);
@@ -70,6 +72,7 @@ export function useChat(eventId?: string, channel: 'event' | 'pair' = 'event') {
           eventId,
           channel,
           content: content.trim(),
+          recipientId,
         }),
       });
 
@@ -88,7 +91,7 @@ export function useChat(eventId?: string, channel: 'event' | 'pair' = 'event') {
     } finally {
       setSending(false);
     }
-  };
+  }, [eventId, channel, session, recipientId]);
 
   const loadMore = () => {
     if (!loading && hasMore) {
@@ -101,13 +104,13 @@ export function useChat(eventId?: string, channel: 'event' | 'pair' = 'event') {
       setOffset(0);
       fetchMessages(false);
     }
-  }, [eventId, channel]);
+  }, [eventId, channel, recipientId]);
 
   // Set up real-time subscription
   useEffect(() => {
     if (!eventId) return;
 
-    const channel_name = `chat_messages_${eventId}_${channel}`;
+    const channel_name = recipientId ? `chat_messages_${eventId}_${channel}_${recipientId}` : `chat_messages_${eventId}_${channel}`;
     
     const subscription = supabase
       .channel(channel_name)
@@ -122,7 +125,14 @@ export function useChat(eventId?: string, channel: 'event' | 'pair' = 'event') {
         (payload) => {
           const newMessage = payload.new as ChatMessage;
           if (newMessage.channel === channel) {
-            setMessages(prev => [...prev, newMessage]);
+            // For pair channel with recipient, only show messages involving the recipient
+            if (channel === 'pair' && recipientId) {
+              if (newMessage.recipient_participant_id === recipientId || newMessage.author_participant_id === recipientId) {
+                setMessages(prev => [...prev, newMessage]);
+              }
+            } else {
+              setMessages(prev => [...prev, newMessage]);
+            }
           }
         }
       )
@@ -131,7 +141,7 @@ export function useChat(eventId?: string, channel: 'event' | 'pair' = 'event') {
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, [eventId, channel]);
+  }, [eventId, channel, recipientId]);
 
   return {
     messages,

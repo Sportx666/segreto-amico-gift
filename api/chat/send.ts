@@ -19,7 +19,7 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    const { eventId, channel, content } = await req.json();
+    const { eventId, channel, content, recipientId } = await req.json();
 
     if (!eventId || !channel || !content?.trim()) {
       return new Response(
@@ -96,23 +96,31 @@ export default async function handler(req: Request): Promise<Response> {
       aliasSnapshot = alias?.nickname || profile?.display_name || 'Anonimo';
     }
 
-    // Resolve assignment_id if channel is 'pair'
+    // Resolve assignment_id and recipient_participant_id based on channel and recipientId
     let assignmentId = null;
+    let recipientParticipantId = null;
+    
     if (channel === 'pair') {
-      const { data: assignment } = await supabase
-        .from('assignments')
-        .select('id')
-        .eq('event_id', eventId)
-        .or(`giver_id.eq.${participant.id},receiver_id.eq.${participant.id}`)
-        .single();
+      if (recipientId) {
+        // Direct messaging - use recipientId
+        recipientParticipantId = recipientId;
+      } else {
+        // Legacy assignment-based messaging
+        const { data: assignment } = await supabase
+          .from('assignments')
+          .select('id')
+          .eq('event_id', eventId)
+          .or(`giver_id.eq.${participant.id},receiver_id.eq.${participant.id}`)
+          .single();
 
-      if (!assignment) {
-        return new Response(
-          JSON.stringify({ error: 'No assignment found for pair chat' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        if (!assignment) {
+          return new Response(
+            JSON.stringify({ error: 'No assignment found for pair chat' }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        assignmentId = assignment.id;
       }
-      assignmentId = assignment.id;
     }
 
     // Insert the message
@@ -122,6 +130,7 @@ export default async function handler(req: Request): Promise<Response> {
         event_id: eventId,
         channel,
         assignment_id: assignmentId,
+        recipient_participant_id: recipientParticipantId,
         author_participant_id: participant.id,
         alias_snapshot: aliasSnapshot,
         color_snapshot: '#6366f1', // Default color
