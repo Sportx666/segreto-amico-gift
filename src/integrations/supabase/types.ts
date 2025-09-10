@@ -600,6 +600,10 @@ export type Database = {
       }
     }
     Functions: {
+      fix_event_membership_duplicates: {
+        Args: { _event_id: string; _profile_id: string }
+        Returns: Json
+      }
       generate_join_code: {
         Args: Record<PropertyKey, never>
         Returns: string

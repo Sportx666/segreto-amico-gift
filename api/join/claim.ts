@@ -102,7 +102,54 @@ export default async function handler(req: any, res: any) {
   if (memberErr || !memberRow) {
     return res.status(500).json({ error: memberErr?.message || 'member_upsert_failed' });
   }
-  const memberId = memberRow.id;
+
+  // Fix any duplicate memberships and check for merging
+  const { data: fixResult, error: fixErr } = await supabase.rpc(
+    'fix_event_membership_duplicates',
+    { _event_id: jt.event_id, _profile_id: user.id }
+  );
+  if (fixErr) {
+    console.warn('Failed to fix duplicates:', fixErr);
+  }
+
+  // If duplicates were merged, notify admin
+  if (fixResult?.merged_pids?.length > 0) {
+    try {
+      // Get admin email
+      const { data: event } = await supabase
+        .from('events')
+        .select('admin_profile_id')
+        .eq('id', jt.event_id)
+        .single();
+      
+      if (event?.admin_profile_id) {
+        const { data: adminProfile } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', event.admin_profile_id)
+          .single();
+        
+        if (adminProfile?.email) {
+          // Send merge notification
+          await fetch(`${process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL}/functions/v1/mail-merge-notice`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({
+              adminEmail: adminProfile.email,
+              eventId: jt.event_id,
+              profileId: user.id,
+              mergedPids: fixResult.merged_pids
+            })
+          });
+        }
+      }
+    } catch (mailErr) {
+      console.warn('Failed to send merge notification:', mailErr);
+    }
+  }
 
   // Ensure default wishlist exists
   const { data: wl } = await supabase
