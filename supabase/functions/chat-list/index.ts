@@ -66,19 +66,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Get event members for this event to verify membership
-    const { data: members, error: membersError } = await supabase
-      .rpc('list_event_members', { _event_id: eventId });
-
-    if (membersError) {
-      console.error('Members error:', membersError);
-      return new Response(
-        JSON.stringify({ error: 'User is not a member of this event' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get user's participant ID 
+    // Get user's participant ID
     const { data: userParticipant, error: participantError } = await supabase
       .from('participants')
       .select('id')
