@@ -13,6 +13,7 @@ import { getOrCreateParticipantId } from "@/lib/participants";
 import { debugLog, isDebug } from "@/lib/debug";
 import { StatusChip } from "@/components/StatusChip";
 import { copyToClipboard, shareViaWhatsApp } from "@/lib/whatsapp";
+import { EventMemberNameEditor } from './EventMemberNameEditor';
 import { absUrl } from "@/lib/url";
 
 interface EventMembersProps {
@@ -38,11 +39,33 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [diag, setDiag] = useState<any>({});
+  const [currentUserParticipantId, setCurrentUserParticipantId] = useState<string | null>(null);
   const [inviteLinks, setInviteLinks] = useState<Record<string, any>>({});
 
   useEffect(() => {
     fetchMembers();
-  }, [eventId, userRole]);
+    
+    // Get current user's participant ID
+    const getCurrentUserParticipant = async () => {
+      if (user) {
+        try {
+          const { data: participant } = await supabase
+            .from('participants')
+            .select('id')
+            .eq('profile_id', user.id)
+            .single();
+          
+          if (participant) {
+            setCurrentUserParticipantId(participant.id);
+          }
+        } catch (error) {
+          console.error('Error fetching user participant:', error);
+        }
+      }
+    };
+    
+    getCurrentUserParticipant();
+  }, [eventId, userRole, user]);
 
   const fetchMembers = async () => {
     try {
@@ -373,7 +396,19 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                     )}
                   </div>
                   <div>
-                    <p className="font-medium">{getMemberName(member)}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{getMemberName(member)}</p>
+                      {/* Allow users to edit their own name */}
+                      {currentUserParticipantId === member.participant_id && (
+                        <EventMemberNameEditor
+                          eventId={eventId}
+                          participantId={member.participant_id}
+                          currentName={member.anonymous_name}
+                          currentEmail={member.anonymous_email}
+                          onNameUpdated={fetchMembers}
+                        />
+                      )}
+                    </div>
                     {member.anonymous_email && (
                       <p className="text-sm text-muted-foreground">
                         {member.anonymous_email}

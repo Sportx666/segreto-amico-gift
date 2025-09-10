@@ -1,5 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/integrations/supabase/types';
+import { createServiceClient } from '../_supabase';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -49,21 +48,11 @@ export default async function handler(req: Request): Promise<Response> {
       );
     }
 
-    // Create Supabase client with service role for server-side operations
-    const supabase = createClient<Database>(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-      {
-        global: {
-          headers: {
-            authorization: authHeader,
-          },
-        },
-      }
-    );
+    // Create Supabase client
+    const supabase = createServiceClient();
 
     // Get user from auth token
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
 
     if (authError || !user) {
       return new Response(

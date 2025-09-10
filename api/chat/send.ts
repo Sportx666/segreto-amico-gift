@@ -1,5 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/integrations/supabase/types';
+import { createServiceClient } from '../_supabase';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,21 +44,11 @@ export default async function handler(req: Request): Promise<Response> {
       );
     }
 
-    // Create Supabase client with service role for server-side operations
-    const supabase = createClient<Database>(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-      {
-        global: {
-          headers: {
-            authorization: authHeader,
-          },
-        },
-      }
-    );
+    // Create Supabase client
+    const supabase = createServiceClient();
 
     // Get user from auth token
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
 
     if (authError || !user) {
       return new Response(
@@ -87,20 +76,25 @@ export default async function handler(req: Request): Promise<Response> {
     }
 
     // Get user's current alias for this event (or use display name as fallback)
-    const { data: alias } = await supabase
-      .from('anonymous_aliases')
-      .select('nickname')
-      .eq('event_id', eventId)
-      .eq('participant_id', participant.id)
-      .single();
-
     const { data: profile } = await supabase
       .from('profiles')
       .select('display_name')
       .eq('id', user.id)
       .single();
+
+    let aliasSnapshot = profile?.display_name || 'Anonimo';
     
-    const aliasSnapshot = alias?.nickname || profile?.display_name || 'Anonimo';
+    // Use nickname only for pair channel (private chat)
+    if (channel === 'pair') {
+      const { data: alias } = await supabase
+        .from('anonymous_aliases')
+        .select('nickname')
+        .eq('event_id', eventId)
+        .eq('participant_id', participant.id)
+        .single();
+      
+      aliasSnapshot = alias?.nickname || profile?.display_name || 'Anonimo';
+    }
 
     // Resolve assignment_id if channel is 'pair'
     let assignmentId = null;

@@ -31,7 +31,7 @@ export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
     loadMore
   } = useChat(eventId, activeChannel);
 
-  const canUsePairChat = eventStatus === 'completed';
+  const canUsePairChat = true; // Private chat is always available
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,14 +96,9 @@ export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
                   <Users className="w-4 h-4" />
                   Chat Generale
                 </TabsTrigger>
-                <TabsTrigger value="pair" disabled={!canUsePairChat} className="flex items-center gap-2">
+                <TabsTrigger value="pair" className="flex items-center gap-2">
                   <Heart className="w-4 h-4" />
                   Chat Privata
-                  {!canUsePairChat && (
-                    <Badge variant="secondary" className="ml-1 text-xs">
-                      Dopo sorteggio
-                    </Badge>
-                  )}
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -188,93 +183,79 @@ export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
 
             <TabsContent value="pair" className="mt-0">
               <div className="flex flex-col h-[500px]">
-                {canUsePairChat ? (
-                  <>
-                    {/* Pair Messages Area */}
-                    <ScrollArea className="flex-1 px-6">
-                      <div className="space-y-4 pb-4">
-                        {hasMore && (
-                          <div className="text-center">
-                            <Button variant="outline" size="sm" onClick={loadMore} disabled={loading}>
-                              <ChevronUp className="w-4 h-4 mr-2" />
-                              Carica messaggi precedenti
-                            </Button>
-                          </div>
-                        )}
+                {/* Pair Messages Area */}
+                <ScrollArea className="flex-1 px-6">
+                  <div className="space-y-4 pb-4">
+                    {hasMore && (
+                      <div className="text-center">
+                        <Button variant="outline" size="sm" onClick={loadMore} disabled={loading}>
+                          <ChevronUp className="w-4 h-4 mr-2" />
+                          Carica messaggi precedenti
+                        </Button>
+                      </div>
+                    )}
 
-                        {Object.entries(messageGroups).map(([date, dayMessages]) => (
-                          <div key={date}>
-                            <div className="text-center my-4">
-                              <Badge variant="outline" className="text-xs">
-                                {date}
-                              </Badge>
+                    {Object.entries(messageGroups).map(([date, dayMessages]) => (
+                      <div key={date}>
+                        <div className="text-center my-4">
+                          <Badge variant="outline" className="text-xs">
+                            {date}
+                          </Badge>
+                        </div>
+                        {dayMessages.map((message) => (
+                          <div key={message.id} className="flex items-start gap-3 mb-4">
+                            <div 
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white"
+                              style={{ backgroundColor: message.color_snapshot }}
+                            >
+                              {message.alias_snapshot?.charAt(0)?.toUpperCase() || '?'}
                             </div>
-                            {dayMessages.map((message) => (
-                              <div key={message.id} className="flex items-start gap-3 mb-4">
-                                <div 
-                                  className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white"
-                                  style={{ backgroundColor: message.color_snapshot }}
-                                >
-                                  {message.alias_snapshot?.charAt(0)?.toUpperCase() || '?'}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-medium text-sm">
-                                      {message.alias_snapshot || 'Anonimo'}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">
-                                      {formatMessageTime(message.created_at)}
-                                    </span>
-                                  </div>
-                                  <div className="text-sm bg-muted/50 rounded-lg px-3 py-2">
-                                    {message.content}
-                                  </div>
-                                </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-sm">
+                                  {message.alias_snapshot || 'Anonimo'}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatMessageTime(message.created_at)}
+                                </span>
                               </div>
-                            ))}
+                              <div className="text-sm bg-muted/50 rounded-lg px-3 py-2">
+                                {message.content}
+                              </div>
+                            </div>
                           </div>
                         ))}
-
-                        {messages.length === 0 && !loading && (
-                          <div className="text-center py-8 text-muted-foreground">
-                            <Heart className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                            <p>Nessun messaggio privato ancora.</p>
-                            <p className="text-sm">Chatta con il tuo Amico Segreto!</p>
-                          </div>
-                        )}
-
-                        <div ref={scrollRef} />
                       </div>
-                    </ScrollArea>
+                    ))}
 
-                    {/* Pair Message Input */}
-                    <div className="border-t bg-background/50 p-4">
-                      <form onSubmit={handleSendMessage} className="flex gap-2">
-                        <Input
-                          ref={inputRef}
-                          value={messageText}
-                          onChange={(e) => setMessageText(e.target.value)}
-                          placeholder="Messaggio privato al tuo Amico Segreto..."
-                          maxLength={500}
-                          disabled={sending}
-                        />
-                        <Button type="submit" disabled={!messageText.trim() || sending}>
-                          <Send className="w-4 h-4" />
-                        </Button>
-                      </form>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex-1 flex items-center justify-center p-6">
-                    <div className="text-center text-muted-foreground">
-                      <Heart className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                      <h3 className="font-semibold mb-2">Chat Privata Non Disponibile</h3>
-                      <p className="text-sm">
-                        La chat privata sarà disponibile dopo il completamento del sorteggio.
-                      </p>
-                    </div>
+                    {messages.length === 0 && !loading && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Heart className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>Nessun messaggio privato ancora.</p>
+                        <p className="text-sm">Chatta con il tuo Amico Segreto!</p>
+                      </div>
+                    )}
+
+                    <div ref={scrollRef} />
                   </div>
-                )}
+                </ScrollArea>
+
+                {/* Pair Message Input */}
+                <div className="border-t bg-background/50 p-4">
+                  <form onSubmit={handleSendMessage} className="flex gap-2">
+                    <Input
+                      ref={inputRef}
+                      value={messageText}
+                      onChange={(e) => setMessageText(e.target.value)}
+                      placeholder="Messaggio privato al tuo Amico Segreto..."
+                      maxLength={500}
+                      disabled={sending}
+                    />
+                    <Button type="submit" disabled={!messageText.trim() || sending}>
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </form>
+                </div>
               </div>
             </TabsContent>
           </Tabs>
