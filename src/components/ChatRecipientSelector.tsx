@@ -55,7 +55,8 @@ export function ChatRecipientSelector({ eventId, onChatStart, isOpen, onOpenChan
           anonymous_name,
           participants!inner(
             id,
-            profiles!inner(
+            profile_id,
+            profiles!participants_profile_id_fkey(
               display_name
             )
           )
