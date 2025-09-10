@@ -7,6 +7,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { Navbar } from "@/components/Navbar";
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { AdSlot } from "@/components/AdSlot";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useAdsConsent } from "@/hooks/useAdsConsent";
 import { getAdSlotsForRoute } from "@/lib/adsConfig";
 import Index from "./pages/Index";
@@ -91,13 +92,15 @@ const AppContent = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </BrowserRouter>
+      <ErrorBoundary>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </BrowserRouter>
+      </ErrorBoundary>
     </TooltipProvider>
   </QueryClientProvider>
 );
