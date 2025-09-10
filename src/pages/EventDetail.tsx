@@ -7,13 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
-import { ArrowLeft, Calendar, Users, Gift, Share2, Shuffle, Ban, ImageUp, Trash2 } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Gift, Share2, Shuffle, Ban, ImageUp, Trash2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { uploadImage, resizeToWebP } from "@/lib/upload";
 import { EventMembers } from "@/components/EventMembers";
 import { EventExclusions } from "@/components/EventExclusions";
 import { EventDraw } from "@/components/EventDraw";
 import { EventShare } from "@/components/EventShare";
+import { ChatManager } from "@/components/ChatManager";
 import { getOrCreateParticipantId } from "@/lib/participants";
 import { debugLog, isDebug } from "@/lib/debug";
 
@@ -347,7 +348,7 @@ export default function EventDetail() {
         {/* Sticky Tabs */}
         <div className="sticky top-0 z-40 bg-gradient-subtle/80 backdrop-blur-sm pb-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4 bg-white/80 backdrop-blur-sm shadow-card">
+            <TabsList className="grid w-full grid-cols-5 bg-white/80 backdrop-blur-sm shadow-card">
               <TabsTrigger value="partecipanti" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 <span className="hidden sm:inline">Partecipanti</span>
@@ -359,6 +360,10 @@ export default function EventDetail() {
               <TabsTrigger value="sorteggio" className="flex items-center gap-2">
                 <Shuffle className="w-4 h-4" />
                 <span className="hidden sm:inline">Sorteggio</span>
+              </TabsTrigger>
+              <TabsTrigger value="chat" className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4" />
+                <span className="hidden sm:inline">Chat</span>
               </TabsTrigger>
               <TabsTrigger value="condividi" className="flex items-center gap-2">
                 <Share2 className="w-4 h-4" />
@@ -380,6 +385,10 @@ export default function EventDetail() {
 
           <TabsContent value="sorteggio">
             <EventDraw eventId={event.id} userRole={userRole} event={event} onStatusChange={fetchEventDetails} />
+          </TabsContent>
+
+          <TabsContent value="chat">
+            <ChatManager eventId={event.id} eventStatus={event.draw_status} />
           </TabsContent>
 
           <TabsContent value="condividi">
