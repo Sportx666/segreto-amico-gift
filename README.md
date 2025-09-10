@@ -74,13 +74,15 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-trick
 
 ## Environment variables
 
+### Supabase Configuration
+
 Set the following variables for Supabase:
 
 - `VITE_SUPABASE_URL`: Public project URL (client-side)
 - `VITE_SUPABASE_PUBLISHABLE_KEY`: Publishable anon key (client-side)
 - `SUPABASE_URL`: Project URL (server-side; same as above)
 - `SUPABASE_SERVICE_ROLE_KEY`: Service role key (server-side; privileged)
- - `SUPABASE_ANON_KEY` (optional): Anon key for the debug API to run RLS checks using your session token.
+- `SUPABASE_ANON_KEY` (optional): Anon key for the debug API to run RLS checks using your session token.
 
 Where to find these in Supabase:
 
@@ -88,6 +90,24 @@ Where to find these in Supabase:
   - Project URL → use for `VITE_SUPABASE_URL` and `SUPABASE_URL`
   - anon public key → use for `VITE_SUPABASE_PUBLISHABLE_KEY`
   - service_role secret → use for `SUPABASE_SERVICE_ROLE_KEY` (do not expose client-side)
+
+### Amazon Affiliate Configuration
+
+To enable Amazon affiliate links and product search:
+
+1. **Create Amazon Associate Account**: Visit [Amazon Associates](https://affiliate-program.amazon.com/) and sign up
+2. **Get Associate Tag**: Your unique tracking ID (e.g., `yourtag-21`)
+3. **Apply for Product Advertising API**: Visit [Amazon Developer Services](https://webservices.amazon.com/paapi5/documentation/)
+4. **Create PA-API credentials**: Get Access Key ID and Secret Access Key
+
+Required environment variables:
+- `AMZ_ACCESS_KEY`: Your PA-API Access Key ID
+- `AMZ_SECRET_KEY`: Your PA-API Secret Access Key  
+- `AMZ_ASSOC_TAG`: Your Amazon Associate tracking ID
+- `AMZ_REGION`: AWS region (e.g., `eu-west-1` for Europe, `us-east-1` for US)
+- `AMAZON_API_ENABLED`: Set to `true` to use real API (default: `false` for mock data)
+
+**Important**: PA-API v5 requires approval from Amazon. During development, the system uses mock data by default.
 
 In deployment (e.g., Vercel), add the server-side variables in your Project → Settings → Environment Variables and redeploy.
 
@@ -111,3 +131,139 @@ psql $SUPABASE_DB_URL -f supabase/migrations/20250908000000_profile_images.sql
 ```
 
 Run this SQL after pulling the repository to ensure your database schema is up to date.
+
+## OAuth Configuration (Google/Facebook)
+
+To enable social authentication with Google and Facebook:
+
+### Google OAuth Setup
+
+1. **Create Google Cloud Project**: Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. **Enable Google+ API**: Navigate to APIs & Services → Library → search for "Google+ API"
+3. **Create OAuth Credentials**:
+   - Go to APIs & Services → Credentials
+   - Click "Create Credentials" → OAuth 2.0 Client ID
+   - Application type: Web application
+   - Authorized JavaScript origins: Add your domain(s)
+   - Authorized redirect URIs: Add `https://yourproject.supabase.co/auth/v1/callback`
+4. **Configure Supabase**:
+   - Go to Supabase Dashboard → Authentication → Providers
+   - Enable Google provider
+   - Add your Client ID and Client Secret
+   - Set redirect URL to your app's auth callback
+
+### Facebook OAuth Setup
+
+1. **Create Facebook App**: Go to [Facebook Developers](https://developers.facebook.com/)
+2. **Add Facebook Login Product**: Configure OAuth redirect URIs
+3. **Get App ID & Secret**: From app settings
+4. **Configure Supabase**:
+   - Enable Facebook provider in Supabase Dashboard
+   - Add App ID and App Secret
+   - Set redirect URL
+
+### OAuth Implementation Example
+
+```typescript
+// Sign in with Google
+const signInWithGoogle = async () => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`
+    }
+  });
+};
+
+// Sign in with Facebook  
+const signInWithFacebook = async () => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'facebook',
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`
+    }
+  });
+};
+
+// Handle OAuth callback and token exchange
+const handleOAuthCallback = async () => {
+  const { data, error } = await supabase.auth.getSession();
+  if (data?.session) {
+    // User is authenticated, redirect to main app
+    window.location.href = '/';
+  }
+};
+```
+
+### Token-based Join Flow Integration
+
+For invite links that require OAuth authentication:
+
+```typescript
+// In your /join/:token handler
+const handleJoinWithOAuth = async (token: string, provider: 'google' | 'facebook') => {
+  // Store token in sessionStorage for after OAuth
+  sessionStorage.setItem('pendingJoinToken', token);
+  
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback?join=true`
+    }
+  });
+};
+
+// In your OAuth callback handler
+const handleOAuthCallbackWithJoin = async () => {
+  const { data, error } = await supabase.auth.getSession();
+  const pendingToken = sessionStorage.getItem('pendingJoinToken');
+  
+  if (data?.session && pendingToken) {
+    // Process the join token now that user is authenticated
+    const response = await fetch('/api/join/redeem', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${data.session.access_token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ token: pendingToken })
+    });
+    
+    sessionStorage.removeItem('pendingJoinToken');
+    
+    if (response.ok) {
+      const { eventId } = await response.json();
+      window.location.href = `/events/${eventId}`;
+    }
+  }
+};
+```
+
+## Compliance & Legal Notes
+
+### Amazon Affiliate Disclosure
+
+This application uses Amazon affiliate links. **Legal requirements**:
+
+- **Proper Attribution**: Display "As an Amazon Associate, we earn from qualifying purchases" or similar disclosure
+- **No Link Cloaking**: All affiliate links must be clearly identifiable as Amazon links
+- **Transparency**: Users must understand they're being redirected to Amazon
+- **Geographic Compliance**: Ensure compliance with local advertising laws
+
+The app includes proper disclosure in the UI. Do not modify affiliate URLs to hide their nature.
+
+### Data Privacy
+
+- **User Consent**: GDPR compliance includes cookie/tracking consent
+- **Data Retention**: Implement appropriate data retention policies
+- **Third-party Services**: Ensure all integrated services (Amazon, Google, Facebook) comply with privacy laws
+- **User Rights**: Provide mechanisms for data export/deletion
+
+### Rate Limiting
+
+Amazon PA-API has strict rate limits:
+- Max 1 request per second per Associate Tag
+- Max 8,640 requests per day for approved applications
+- Cache responses appropriately (15-30 minutes recommended)
+
+The server-side proxy implements caching to respect these limits.

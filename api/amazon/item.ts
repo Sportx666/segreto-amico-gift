@@ -3,13 +3,12 @@ import crypto from 'crypto';
 import type { Item } from './types';
 
 interface CacheEntry {
-  items: Item[];
-  total: number;
+  data: Item;
   timestamp: number;
 }
 
 const cache = new Map<string, CacheEntry>();
-const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+const CACHE_TTL = 20 * 60 * 1000; // 20 minutes
 
 // PA-API v5 signing utilities
 function createSignedRequest(params: any, method: string = 'POST') {
@@ -21,8 +20,8 @@ function createSignedRequest(params: any, method: string = 'POST') {
     throw new Error('Amazon API credentials not configured');
   }
 
-  const host = `webservices.amazon.${region === 'eu-west-1' ? 'co.uk' : 'com'}`;
-  const endpoint = `/paapi5/searchitems`;
+  const host = `webservices.amazon.${region === 'us-east-1' ? 'com' : region.replace('us-', '').replace('eu-', '')}`;
+  const endpoint = `/paapi5/getitems`;
   
   const timestamp = new Date().toISOString().replace(/[:\-]|\.\d{3}/g, '');
   const date = timestamp.substr(0, 8);
@@ -49,7 +48,7 @@ function createSignedRequest(params: any, method: string = 'POST') {
       'Authorization': authorization,
       'X-Amz-Date': timestamp,
       'Content-Type': 'application/json; charset=utf-8',
-      'X-Amz-Target': 'com.amazon.paapi5.v1.ProductAdvertisingAPIv1.SearchItems'
+      'X-Amz-Target': 'com.amazon.paapi5.v1.ProductAdvertisingAPIv1.GetItems'
     },
     body: JSON.stringify(params)
   };
@@ -76,8 +75,6 @@ function addAffiliateTag(url: string): string {
   }
 }
 
-let mockCache: Item[] | null = null;
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -85,51 +82,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const enabled = String(process.env.AMAZON_API_ENABLED || 'false').toLowerCase() === 'true';
-  const { q = '', page = 1 } = (req.body || {}) as { q?: string; page?: number };
-  const query = (q || '').trim();
-  if (!query) return res.status(400).json({ error: 'Missing q' });
-
-  // Check cache first
-  const cacheKey = `search:${query}:${page}`;
-  const cached = cache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return res.status(200).json({ 
-      items: cached.items, 
-      total: cached.total, 
-      page: Number(page), 
-      pageSize: 10, 
-      cached: true 
-    });
+  const { asin } = (req.body || {}) as { asin?: string };
+  
+  if (!asin) {
+    return res.status(400).json({ error: 'Missing asin parameter' });
   }
 
-  // MOCK-FIRST (default) — load once via ESM dynamic import
+  // Check cache first
+  const cacheKey = `item:${asin}`;
+  const cached = cache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return res.status(200).json({ item: cached.data, cached: true });
+  }
+
   if (!enabled) {
-    try {
-      if (!mockCache) {
-        const mod = await import('./mock.mjs');
-        mockCache = (mod.default ?? []) as Item[];
-      }
-    } catch {
-      // tiny fallback if import fails for any reason
-      mockCache = [{
-        asin: 'FALLBACK001',
-        title: 'Esempio regalo',
-        image: 'https://via.placeholder.com/400?text=Regalo',
-        price: 9.99, currency: 'EUR',
-        url: addAffiliateTag('https://www.amazon.it/s?k=regalo'),
-        lastUpdated: new Date().toISOString(),
-      }];
-    }
-    const all = mockCache!;
-    const filtered = all.filter(i => i.title.toLowerCase().includes(query.toLowerCase()));
-    const pageSize = 10;
-    const start = (Number(page) - 1) * pageSize;
-    const items = filtered.slice(start, start + pageSize);
+    // Return mock data
+    const mockItem: Item = {
+      asin,
+      title: `Prodotto ${asin}`,
+      image: `https://via.placeholder.com/400?text=${asin}`,
+      price: Math.round(Math.random() * 100 + 10),
+      currency: 'EUR',
+      url: addAffiliateTag(`https://www.amazon.it/dp/${asin}`),
+      lastUpdated: new Date().toISOString(),
+    };
     
-    // Cache mock results too
-    cache.set(cacheKey, { items, total: filtered.length, timestamp: Date.now() });
-    
-    return res.status(200).json({ items, total: filtered.length, page: Number(page), pageSize, mock: true });
+    cache.set(cacheKey, { data: mockItem, timestamp: Date.now() });
+    return res.status(200).json({ item: mockItem, mock: true });
   }
 
   try {
@@ -139,17 +118,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const params = {
-      Keywords: query,
+      ItemIds: [asin],
       Resources: [
         'Images.Primary.Large',
         'ItemInfo.Title',
-        'Offers.Listings.Price'
+        'Offers.Listings.Price',
+        'ItemInfo.Features'
       ],
       PartnerTag: associateTag,
       PartnerType: 'Associates',
-      Marketplace: 'www.amazon.it',
-      ItemPage: Number(page),
-      ItemCount: 10
+      Marketplace: 'www.amazon.it'
     };
 
     const signedRequest = createSignedRequest(params);
@@ -170,26 +148,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new Error(`PA-API error: ${data.Errors[0].Message}`);
     }
 
-    const items: Item[] = (data.SearchResult?.Items || []).map((item: any) => ({
+    const item = data.ItemsResult?.Items?.[0];
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    const result: Item = {
       asin: item.ASIN,
       title: item.ItemInfo?.Title?.DisplayValue || 'Unknown Title',
       image: item.Images?.Primary?.Large?.URL || '',
       price: item.Offers?.Listings?.[0]?.Price?.Amount || null,
       currency: item.Offers?.Listings?.[0]?.Price?.Currency || null,
-      url: addAffiliateTag(item.DetailPageURL || `https://www.amazon.it/dp/${item.ASIN}`),
+      url: addAffiliateTag(item.DetailPageURL || `https://www.amazon.it/dp/${asin}`),
       lastUpdated: new Date().toISOString(),
-    }));
+    };
 
-    const total = data.SearchResult?.TotalResultCount || items.length;
+    // Cache the result
+    cache.set(cacheKey, { data: result, timestamp: Date.now() });
 
-    // Cache the results
-    cache.set(cacheKey, { items, total, timestamp: Date.now() });
-
-    return res.status(200).json({ items, total, page: Number(page), pageSize: 10 });
+    return res.status(200).json({ item: result });
 
   } catch (error: any) {
     console.error('Amazon API error:', error);
     return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 }
-// import mockData from './mock.json';  // <-- Use this if using "resolveJsonModule" in tsconfig.json
