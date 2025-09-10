@@ -1,5 +1,5 @@
-import { createServiceClient } from '../_supabase.ts';
-import { computePairs, type Member, type Pair } from '../../src/lib/draw.ts';
+import { createServiceClient } from '../_supabase';
+import { computePairs, type Member, type Pair } from '../../src/lib/draw';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
