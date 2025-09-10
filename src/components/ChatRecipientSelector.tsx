@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
-import { supabase } from '@/integrations/supabase/client';
+import { useEventMembers } from '@/hooks/useEventMembers';
+import { getOrCreateParticipantId } from '@/lib/participants';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -11,8 +12,7 @@ import { MessageCircle, User } from 'lucide-react';
 
 interface EventMember {
   id: string;
-  display_name: string;
-  anonymous_name: string;
+  event_display_name: string;
   participant_id: string;
 }
 
@@ -25,64 +25,36 @@ interface ChatRecipientSelectorProps {
 
 export function ChatRecipientSelector({ eventId, onChatStart, isOpen, onOpenChange }: ChatRecipientSelectorProps) {
   const { user } = useAuth();
+  const { members: allMembers, loading } = useEventMembers(eventId);
   const [members, setMembers] = useState<EventMember[]>([]);
   const [selectedRecipient, setSelectedRecipient] = useState<string>('');
   const [nickname, setNickname] = useState('');
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isOpen && eventId) {
-      fetchEventMembers();
+    if (!user?.id || !allMembers.length) {
+      setMembers([]);
+      return;
     }
-  }, [isOpen, eventId]);
 
-  const fetchEventMembers = async () => {
-    try {
-      setLoading(true);
-      
-      // Get current user's participant ID to exclude them
-      const { data: currentParticipant } = await supabase
-        .from('participants')
-        .select('id')
-        .eq('profile_id', user?.id)
-        .single();
+    const filterCurrentUser = async () => {
+      try {
+        const currentParticipantId = await getOrCreateParticipantId(user.id);
+        const filteredMembers = allMembers
+          .filter(member => member.participant_id !== currentParticipantId)
+          .map(member => ({
+            id: member.participant_id,
+            event_display_name: member.event_display_name,
+            participant_id: member.participant_id
+          }));
+        setMembers(filteredMembers);
+      } catch (error) {
+        console.error('Error filtering members:', error);
+        toast.error('Errore nel caricamento dei membri');
+      }
+    };
 
-      // Get all event members except current user
-      const { data, error } = await supabase
-        .from('event_members')
-        .select(`
-          participant_id,
-          anonymous_name,
-          participants(
-            id,
-            profile_id,
-            profiles(
-              id,
-              display_name
-            )
-          )
-        `)
-        .eq('event_id', eventId)
-        .neq('participant_id', currentParticipant?.id)
-        .eq('status', 'joined');
-
-      if (error) throw error;
-
-      const formattedMembers = data.map(member => ({
-        id: member.participant_id,
-        display_name: member.participants.profiles.display_name || 'Senza nome',
-        anonymous_name: member.anonymous_name || 'Membro',
-        participant_id: member.participant_id
-      }));
-
-      setMembers(formattedMembers);
-    } catch (error) {
-      console.error('Error fetching event members:', error);
-      toast.error('Errore nel caricamento dei membri');
-    } finally {
-      setLoading(false);
-    }
-  };
+    filterCurrentUser();
+  }, [user?.id, allMembers]);
 
   const handleStartChat = () => {
     if (!selectedRecipient || !nickname.trim()) {
@@ -131,7 +103,7 @@ export function ChatRecipientSelector({ eventId, onChatStart, isOpen, onOpenChan
                     <SelectItem key={member.id} value={member.participant_id}>
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4" />
-                        <span>{member.display_name}</span>
+                        <span>{member.event_display_name}</span>
                       </div>
                     </SelectItem>
                   ))

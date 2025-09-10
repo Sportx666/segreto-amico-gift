@@ -61,44 +61,46 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Get user's participant record for this event
-    const { data: participant, error: participantError } = await supabase
-      .from('participants')
-      .select(`
-        id,
-        event_members!inner(event_id)
-      `)
-      .eq('profile_id', user.id)
-      .eq('event_members.event_id', eventId)
-      .single();
+    // Get event members for this event to verify membership
+    const { data: members, error: membersError } = await supabase
+      .rpc('list_event_members', { _event_id: eventId });
 
-    if (participantError || !participant) {
-      console.error('Participant error:', participantError);
+    if (membersError) {
+      console.error('Members error:', membersError);
       return new Response(
         JSON.stringify({ error: 'User is not a member of this event' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get user's current alias for this event (or use display name as fallback)
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('display_name')
-      .eq('id', user.id)
+    // Get user's participant ID from members list
+    const { data: userParticipant } = await supabase
+      .from('participants')
+      .select('id')
+      .eq('profile_id', user.id)
       .single();
 
-    let aliasSnapshot = profile?.display_name || 'Anonimo';
+    if (!userParticipant) {
+      return new Response(
+        JSON.stringify({ error: 'User participant not found' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Find current user in members list
+    const currentMember = members?.find(m => m.participant_id === userParticipant.id);
+    if (!currentMember) {
+      return new Response(
+        JSON.stringify({ error: 'User is not a member of this event' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Use event display name for event channel, nickname for pair channel
+    let aliasSnapshot = currentMember.event_display_name;
     
-    // Use nickname only for pair channel (private chat)
-    if (channel === 'pair') {
-      const { data: alias } = await supabase
-        .from('anonymous_aliases')
-        .select('nickname')
-        .eq('event_id', eventId)
-        .eq('participant_id', participant.id)
-        .single();
-      
-      aliasSnapshot = alias?.nickname || profile?.display_name || 'Anonimo';
+    if (channel === 'pair' && currentMember.anonymous_name) {
+      aliasSnapshot = currentMember.anonymous_name;
     }
 
     // Resolve assignment_id and recipient_participant_id based on channel and recipientId
@@ -115,7 +117,7 @@ Deno.serve(async (req: Request) => {
           .from('assignments')
           .select('id')
           .eq('event_id', eventId)
-          .or(`giver_id.eq.${participant.id},receiver_id.eq.${participant.id}`)
+          .or(`giver_id.eq.${userParticipant.id},receiver_id.eq.${userParticipant.id}`)
           .single();
 
         if (!assignment) {
@@ -136,7 +138,7 @@ Deno.serve(async (req: Request) => {
         channel,
         assignment_id: assignmentId,
         recipient_participant_id: recipientParticipantId,
-        author_participant_id: participant.id,
+        author_participant_id: userParticipant.id,
         alias_snapshot: aliasSnapshot,
         color_snapshot: '#6366f1', // Default color
         content: content.trim(),

@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getOrCreateParticipantId } from "@/lib/participants";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
@@ -766,11 +767,11 @@ export default function Wishlist() {
                 try {
                   const { data: { user } } = await supabase.auth.getUser();
                   if (!user) { toast.error('Devi essere autenticato'); return; }
-                  const { data: participant } = await supabase.from('participants').select('id').eq('profile_id', user.id).single();
-                  if (!participant) { toast.error('Profilo partecipante non trovato'); return; }
+                  const participantId = await getOrCreateParticipantId(user.id);
+                  if (!participantId) { toast.error('Profilo partecipante non trovato'); return; }
                   const { data: inserted, error } = await supabase
                     .from('wishlists')
-                    .insert({ owner_id: participant.id, title: newListTitle.trim(), event_id: newListEventId })
+                    .insert({ owner_id: participantId, title: newListTitle.trim(), event_id: newListEventId })
                     .select('id,title')
                     .single();
                   if (error) throw error;
@@ -861,8 +862,8 @@ export default function Wishlist() {
                 try {
                   const { data: { user } } = await supabase.auth.getUser();
                   if (!user) { toast.error('Devi essere autenticato'); return; }
-                  const { data: participant } = await supabase.from('participants').select('id').eq('profile_id', user.id).single();
-                  if (!participant) { toast.error('Profilo partecipante non trovato'); return; }
+                  const participantId = await getOrCreateParticipantId(user.id);
+                  if (!participantId) { toast.error('Profilo partecipante non trovato'); return; }
                   const { data: existingItem } = await supabase
                     .from('wishlist_items').select('id')
                     .eq('wishlist_id', selectedWishlistId)
@@ -870,7 +871,7 @@ export default function Wishlist() {
                     .maybeSingle();
                   if (existingItem) { toast.error('Prodotto già presente nella lista'); return; }
                   const { error } = await supabase.from('wishlist_items').insert({
-                    owner_id: participant.id,
+                    owner_id: participantId,
                     wishlist_id: selectedWishlistId,
                     asin: prod.asin,
                     title: prod.title,
