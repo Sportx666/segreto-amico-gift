@@ -10,15 +10,13 @@ import { toast } from 'sonner';
 import { MessageCircle, User } from 'lucide-react';
 
 interface EventMember {
-  id: string;
-  display_name: string;
+  id: string;  
   anonymous_name: string;
-  participant_id: string;
 }
 
 interface ChatRecipientSelectorProps {
   eventId: string;
-  onChatStart: (recipientId: string, nickname: string) => void;
+  onChatStart: (recipientId: string, recipientName: string) => void;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -52,15 +50,7 @@ export function ChatRecipientSelector({ eventId, onChatStart, isOpen, onOpenChan
         .from('event_members')
         .select(`
           participant_id,
-          anonymous_name,
-          participants(
-            id,
-            profile_id,
-            profiles(
-              id,
-              display_name
-            )
-          )
+          anonymous_name
         `)
         .eq('event_id', eventId)
         .neq('participant_id', currentParticipant?.id)
@@ -70,9 +60,7 @@ export function ChatRecipientSelector({ eventId, onChatStart, isOpen, onOpenChan
 
       const formattedMembers = data.map(member => ({
         id: member.participant_id,
-        display_name: member.participants.profiles.display_name || 'Senza nome',
-        anonymous_name: member.anonymous_name || 'Membro',
-        participant_id: member.participant_id
+        anonymous_name: member.anonymous_name || 'Membro'
       }));
 
       setMembers(formattedMembers);
@@ -85,20 +73,17 @@ export function ChatRecipientSelector({ eventId, onChatStart, isOpen, onOpenChan
   };
 
   const handleStartChat = () => {
-    if (!selectedRecipient || !nickname.trim()) {
-      toast.error('Seleziona un membro e inserisci un nickname');
+    if (!selectedRecipient) {
+      toast.error('Seleziona un membro');
       return;
     }
 
-    if (nickname.trim().length < 2) {
-      toast.error('Il nickname deve avere almeno 2 caratteri');
-      return;
-    }
+    const selected = members.find(m => (m as any).participant_id === selectedRecipient || (m as any).id === selectedRecipient);
+    const name = (selected as any)?.anonymous_name || (selected as any)?.display_name || 'Utente Anonimo';
 
-    onChatStart(selectedRecipient, nickname.trim());
+    onChatStart(selectedRecipient, name);
     onOpenChange(false);
     setSelectedRecipient('');
-    setNickname('');
   };
 
   return (
@@ -128,10 +113,10 @@ export function ChatRecipientSelector({ eventId, onChatStart, isOpen, onOpenChan
                   </SelectItem>
                 ) : (
                   members.map(member => (
-                    <SelectItem key={member.id} value={member.participant_id}>
+                    <SelectItem key={member.id} value={member.id}>
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4" />
-                        <span>{member.display_name}</span>
+                        <span>{member.anonymous_name}</span>
                       </div>
                     </SelectItem>
                   ))
@@ -140,27 +125,13 @@ export function ChatRecipientSelector({ eventId, onChatStart, isOpen, onOpenChan
             </Select>
           </div>
 
-          <div>
-            <Label htmlFor="nickname">Il tuo nickname anonimo</Label>
-            <Input
-              id="nickname"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              placeholder="Es. Babbo Natale, Elfo Magico..."
-              maxLength={50}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Questo nickname sarà visibile al destinatario per mantenere l'anonimato.
-            </p>
-          </div>
-
           <div className="flex gap-2 pt-2">
             <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
               Annulla
             </Button>
             <Button 
               onClick={handleStartChat} 
-              disabled={!selectedRecipient || !nickname.trim() || loading}
+              disabled={!selectedRecipient || loading}
               className="flex-1"
             >
               Inizia Chat

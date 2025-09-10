@@ -50,7 +50,7 @@ export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
     activeChat?.recipientId
   );
 
-  const handleChatStart = (recipientId: string) => {
+  const handleChatStart = (recipientId: string, recipientName?: string) => {
     // Get recipient name from event members
     const chatId = `pair-${recipientId}`;
     
@@ -59,7 +59,7 @@ export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
     if (!existingChat) {
       const newChat: ActiveChat = {
         recipientId,
-        recipientName: 'Utente Anonimo', // This could be fetched from the API
+        recipientName: recipientName || 'Utente Anonimo',
       };
       setActiveChats(prev => [...prev, newChat]);
     }
@@ -165,7 +165,7 @@ export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
                     className="flex items-center gap-2 relative"
                   >
                     <Heart className="w-4 h-4" />
-                    <span className="truncate max-w-20">{globalNickname.nickname}</span>
+                    <span className="truncate max-w-20">{chat.recipientName}</span>
                     <Button
                       variant="ghost"
                       size="sm"
