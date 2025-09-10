@@ -1,0 +1,55 @@
+{
+  "navbar": {
+    "events": "Eventi",
+    "ideas": "Idee",
+    "wishlist": "Lista Desideri",
+    "profile": "Profilo",
+    "logout": "Esci"
+  },
+  "auth": {
+    "login": "Accedi",
+    "signup": "Registrati"
+  },
+  "events": {
+    "title": "I Tuoi Eventi",
+    "create": "Crea Evento",
+    "join": "Partecipa",
+    "share": "Condividi",
+    "members": "Membri",
+    "draw": "Sorteggio"
+  },
+  "wishlist": {
+    "add": "Aggiungi alla Lista",
+    "remove": "Rimuovi",
+    "purchase": "Acquista",
+    "purchased": "Acquistato",
+    "title": "Lista Desideri"
+  },
+  "profile": {
+    "title": "Profilo",
+    "description": "Gestisci le tue informazioni personali",
+    "personal_info": "Informazioni Personali",
+    "shipping_info": "Informazioni Spedizione",
+    "display_name": "Nome Visualizzato",
+    "email": "Email",
+    "address": "Indirizzo",
+    "city": "Città",
+    "postal_code": "Codice Postale",
+    "country": "Paese",
+    "phone": "Telefono",
+    "avatar": "Avatar",
+    "upload_image": "Carica Immagine",
+    "remove_avatar": "Rimuovi Avatar",
+    "save_changes": "Salva Modifiche",
+    "saving": "Salvando..."
+  },
+  "common": {
+    "cancel": "Annulla",
+    "save": "Salva",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "loading": "Caricamento...",
+    "error": "Errore",
+    "success": "Successo"
+  }
+}

@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { useI18n } from "@/i18n";
 import { NotificationBell } from "./NotificationBell";
+import { LanguageMenu } from "./LanguageMenu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Gift, Calendar, Lightbulb, User, LogOut, Heart, Menu } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 export const Navbar = () => {
   const { user, loading } = useAuth();
+  const { t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -68,7 +71,7 @@ export const Navbar = () => {
           </Link>
           <Link to="/auth">
             <Button variant="outline" size="sm" className="font-medium">
-              Accedi
+              {t('auth.login')}
             </Button>
           </Link>
         </div>
@@ -116,20 +119,21 @@ export const Navbar = () => {
           <div className="hidden md:flex items-center gap-2">
             <Link to="/events" className={navLinkClass("/events")} aria-current={isActiveRoute("/events") ? "page" : undefined}>
               <Calendar className="w-4 h-4" />
-              <span>Eventi</span>
+              <span>{t('navbar.events')}</span>
             </Link>
             <Link to="/ideas" className={navLinkClass("/ideas")} aria-current={isActiveRoute("/ideas") ? "page" : undefined}>
               <Lightbulb className="w-4 h-4" />
-              <span>Idee</span>
+              <span>{t('navbar.ideas')}</span>
             </Link>
             <Link to="/wishlist" className={navLinkClass("/wishlist")} aria-current={isActiveRoute("/wishlist") ? "page" : undefined}>
               <Heart className="w-4 h-4" />
-              <span>Lista Desideri</span>
+              <span>{t('navbar.wishlist')}</span>
             </Link>
           </div>
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3">
+            <LanguageMenu />
             <NotificationBell />
             <Link 
               to="/profile" 
@@ -151,7 +155,7 @@ export const Navbar = () => {
               aria-label="Esci dall'account"
             >
               <LogOut className="w-4 h-4" />
-              <span className="hidden lg:inline ml-2">Esci</span>
+              <span className="hidden lg:inline ml-2">{t('navbar.logout')}</span>
             </Button>
           </div>
 
@@ -177,7 +181,7 @@ export const Navbar = () => {
             aria-label="Eventi"
           >
             <Calendar className="w-5 h-5" />
-            <span className="text-xs font-medium">Eventi</span>
+            <span className="text-xs font-medium">{t('navbar.events')}</span>
           </Link>
           <Link 
             to="/ideas" 
@@ -186,7 +190,7 @@ export const Navbar = () => {
             aria-label="Idee regalo"
           >
             <Lightbulb className="w-5 h-5" />
-            <span className="text-xs font-medium">Idee</span>
+            <span className="text-xs font-medium">{t('navbar.ideas')}</span>
           </Link>
           <Link 
             to="/wishlist" 
@@ -195,7 +199,7 @@ export const Navbar = () => {
             aria-label="Lista desideri"
           >
             <Heart className="w-5 h-5" />
-            <span className="text-xs font-medium">Lista</span>
+            <span className="text-xs font-medium">{t('navbar.wishlist')}</span>
           </Link>
           <Link
             to="/profile"
@@ -209,7 +213,7 @@ export const Navbar = () => {
                 <User className="w-3 h-3" />
               </AvatarFallback>
             </Avatar>
-            <span className="text-xs font-medium">Profilo</span>
+            <span className="text-xs font-medium">{t('navbar.profile')}</span>
           </Link>
         </div>
       </div>

@@ -1,0 +1,55 @@
+{
+  "navbar": {
+    "events": "Events",
+    "ideas": "Ideas",
+    "wishlist": "Wishlist",
+    "profile": "Profile",
+    "logout": "Logout"
+  },
+  "auth": {
+    "login": "Login",
+    "signup": "Sign Up"
+  },
+  "events": {
+    "title": "Your Events",
+    "create": "Create Event",
+    "join": "Join",
+    "share": "Share",
+    "members": "Members",
+    "draw": "Draw"
+  },
+  "wishlist": {
+    "add": "Add to Wishlist",
+    "remove": "Remove",
+    "purchase": "Purchase",
+    "purchased": "Purchased",
+    "title": "Wishlist"
+  },
+  "profile": {
+    "title": "Profile",
+    "description": "Manage your personal information",
+    "personal_info": "Personal Information",
+    "shipping_info": "Shipping Information",
+    "display_name": "Display Name",
+    "email": "Email",
+    "address": "Address",
+    "city": "City",
+    "postal_code": "Postal Code",
+    "country": "Country",
+    "phone": "Phone",
+    "avatar": "Avatar",
+    "upload_image": "Upload Image",
+    "remove_avatar": "Remove Avatar",
+    "save_changes": "Save Changes",
+    "saving": "Saving..."
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  }
+}
