@@ -17,6 +17,9 @@ import { EventShare } from "@/components/EventShare";
 import { ChatManager } from "@/components/ChatManager";
 import { getOrCreateParticipantId } from "@/lib/participants";
 import { debugLog, isDebug } from "@/lib/debug";
+import { UserAssignment } from "@/components/UserAssignment";
+import { useRevealAnimation } from "@/hooks/useRevealAnimation";
+import { RevealAnimation } from "@/components/RevealAnimation";
 
 interface Event {
   id: string;
@@ -41,6 +44,15 @@ export default function EventDetail() {
   const [diag, setDiag] = useState<any>({});
   const [uploadingCover, setUploadingCover] = useState(false);
   const [removingCover, setRemovingCover] = useState(false);
+  const [recipientName, setRecipientName] = useState<string>('');
+
+  // Reveal animation hook
+  const { shouldShow, isPlaying, startAnimation } = useRevealAnimation({
+    eventId: id || '',
+    onComplete: () => {
+      // Animation completed
+    }
+  });
 
   useEffect(() => {
     // Wait for auth to resolve before deciding
@@ -58,6 +70,13 @@ export default function EventDetail() {
     debugLog("EventDetail.mount", { eventId: id, userId: user.id });
     fetchEventDetails();
   }, [user, id, loading, navigate]);
+
+  const handleRevealAnimation = (name?: string) => {
+    if (name) setRecipientName(name);
+    if (shouldShow) {
+      startAnimation();
+    }
+  };
 
   const handleDeleteItem = async (eventId: string) => {
       try {
@@ -384,7 +403,15 @@ export default function EventDetail() {
           </TabsContent>
 
           <TabsContent value="sorteggio">
-            <EventDraw eventId={event.id} userRole={userRole} event={event} onStatusChange={fetchEventDetails} />
+            {userRole === 'admin' ? (
+              <EventDraw eventId={event.id} userRole={userRole} event={event} onStatusChange={fetchEventDetails} />
+            ) : (
+              <UserAssignment 
+                eventId={event.id} 
+                eventStatus={event.draw_status}
+                onRevealAnimation={() => handleRevealAnimation()}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="chat">
@@ -396,6 +423,15 @@ export default function EventDetail() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Reveal Animation Overlay */}
+      <RevealAnimation 
+        isVisible={isPlaying}
+        recipientName={recipientName}
+        onComplete={() => {
+          // Animation completed, component will handle cleanup
+        }}
+      />
     </div>
   );
 }

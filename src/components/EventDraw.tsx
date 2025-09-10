@@ -37,7 +37,6 @@ interface Exclusion {
 
 export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDrawProps) => {
   const [members, setMembers] = useState<Member[]>([]);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [exclusions, setExclusions] = useState<Exclusion[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,15 +56,6 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
 
       if (membersError) throw membersError;
       setMembers(membersData || []);
-
-      // Fetch assignments
-      const { data: assignmentsData, error: assignmentsError } = await supabase
-        .from('assignments')
-        .select('*')
-        .eq('event_id', eventId);
-
-      if (assignmentsError) throw assignmentsError;
-      setAssignments(assignmentsData || []);
 
       // Fetch exclusions
       const { data: exclusionsData, error: exclusionsError } = await supabase
@@ -260,7 +250,10 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
       {userRole === 'admin' && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Azioni Sorteggio</CardTitle>
+            <CardTitle className="text-lg">Controlli Amministratore</CardTitle>
+            <CardDescription>
+              Solo l'amministratore può gestire il sorteggio
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {event.draw_status !== 'completed' ? (
@@ -275,6 +268,14 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
               </Button>
             ) : (
               <div className="space-y-3">
+                <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                  <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                  <p className="font-semibold text-green-700">Sorteggio Completato</p>
+                  <p className="text-sm text-green-600">
+                    Tutti i partecipanti hanno ricevuto la loro assegnazione
+                  </p>
+                </div>
+                
                 <Button
                   onClick={resetDraw}
                   variant="outline"
@@ -292,35 +293,21 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
         </Card>
       )}
 
-      {/* Assignments Results */}
-      {assignments.length > 0 && userRole === 'admin' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Gift className="w-5 h-5" />
-              Risultati Sorteggio
-            </CardTitle>
-            <CardDescription>
-              Assegnazioni generate dal sorteggio (visibili solo agli admin)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {assignments.map((assignment) => (
-                <div key={assignment.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Users className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      <strong>{getMemberName(assignment.giver_id)}</strong> regala a{" "}
-                      <strong>{getMemberName(assignment.receiver_id)}</strong>
-                    </span>
-                  </div>
-                </div>
-              ))}
+      {/* Privacy Notice */}
+      <Card className="border-amber-200 bg-amber-50">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <Gift className="w-5 h-5 text-amber-600 mt-0.5" />
+            <div>
+              <h4 className="font-semibold text-amber-800 mb-1">Privacy del Sorteggio</h4>
+              <p className="text-sm text-amber-700">
+                Per mantenere la sorpresa, nessuno (nemmeno l'amministratore) può vedere tutte le assegnazioni. 
+                Ogni partecipante vedrà solo a chi deve fare il regalo.
+              </p>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </CardContent>
+      </Card>
 
       {event.draw_status !== 'completed' && userRole !== 'admin' && (
         <Alert>
