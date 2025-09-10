@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      anonymous_aliases: {
+        Row: {
+          changes_used: number | null
+          created_at: string | null
+          event_id: string
+          id: string
+          nickname: string
+          participant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          changes_used?: number | null
+          created_at?: string | null
+          event_id: string
+          id?: string
+          nickname: string
+          participant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          changes_used?: number | null
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          nickname?: string
+          participant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anonymous_aliases_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anonymous_aliases_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignments: {
         Row: {
           event_id: string | null
@@ -56,6 +101,71 @@ export type Database = {
             columns: ["receiver_id"]
             isOneToOne: false
             referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          alias_snapshot: string
+          assignment_id: string | null
+          author_participant_id: string
+          channel: string
+          color_snapshot: string | null
+          content: string
+          created_at: string | null
+          event_id: string
+          id: string
+        }
+        Insert: {
+          alias_snapshot: string
+          assignment_id?: string | null
+          author_participant_id: string
+          channel: string
+          color_snapshot?: string | null
+          content: string
+          created_at?: string | null
+          event_id: string
+          id?: string
+        }
+        Update: {
+          alias_snapshot?: string
+          assignment_id?: string | null
+          author_participant_id?: string
+          channel?: string
+          color_snapshot?: string | null
+          content?: string
+          created_at?: string | null
+          event_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "v_assignment_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_author_participant_id_fkey"
+            columns: ["author_participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -116,6 +226,7 @@ export type Database = {
           admin_profile_id: string | null
           amazon_marketplace: string | null
           budget: number | null
+          cover_image_url: string | null
           created_at: string | null
           date: string | null
           draw_status: string | null
@@ -123,12 +234,12 @@ export type Database = {
           join_code: string | null
           name: string
           previous_event_id: string | null
-          cover_image_url: string | null
         }
         Insert: {
           admin_profile_id?: string | null
           amazon_marketplace?: string | null
           budget?: number | null
+          cover_image_url?: string | null
           created_at?: string | null
           date?: string | null
           draw_status?: string | null
@@ -136,12 +247,12 @@ export type Database = {
           join_code?: string | null
           name: string
           previous_event_id?: string | null
-          cover_image_url?: string | null
         }
         Update: {
           admin_profile_id?: string | null
           amazon_marketplace?: string | null
           budget?: number | null
+          cover_image_url?: string | null
           created_at?: string | null
           date?: string | null
           draw_status?: string | null
@@ -149,7 +260,6 @@ export type Database = {
           join_code?: string | null
           name?: string
           previous_event_id?: string | null
-          cover_image_url?: string | null
         }
         Relationships: [
           {
@@ -293,31 +403,31 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string | null
           display_name: string | null
           email: string | null
           family_group: string | null
           id: string
           locale: string | null
-          avatar_url: string | null
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string | null
           display_name?: string | null
           email?: string | null
           family_group?: string | null
           id: string
           locale?: string | null
-          avatar_url?: string | null
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string | null
           display_name?: string | null
           email?: string | null
           family_group?: string | null
           id?: string
           locale?: string | null
-          avatar_url?: string | null
         }
         Relationships: []
       }
@@ -406,31 +516,31 @@ export type Database = {
       }
       wishlists: {
         Row: {
+          cover_image_url: string | null
           created_at: string | null
           event_id: string | null
           id: string
           notes: string | null
           owner_id: string | null
           title: string | null
-          cover_image_url: string | null
         }
         Insert: {
+          cover_image_url?: string | null
           created_at?: string | null
           event_id?: string | null
           id?: string
           notes?: string | null
           owner_id?: string | null
           title?: string | null
-          cover_image_url?: string | null
         }
         Update: {
+          cover_image_url?: string | null
           created_at?: string | null
           event_id?: string | null
           id?: string
           notes?: string | null
           owner_id?: string | null
           title?: string | null
-          cover_image_url?: string | null
         }
         Relationships: [
           {
@@ -451,7 +561,7 @@ export type Database = {
       }
     }
     Views: {
-      v_assignments_member: {
+      v_assignment_members: {
         Row: {
           event_id: string | null
           generated_on: string | null
@@ -469,7 +579,7 @@ export type Database = {
           },
         ]
       }
-      v_exclusions_member: {
+      v_exclusion_members: {
         Row: {
           blocked_member_id: string | null
           created_at: string | null
@@ -497,6 +607,18 @@ export type Database = {
       generate_join_token: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      is_event_admin: {
+        Args: { eid: string; uid: string }
+        Returns: boolean
+      }
+      is_event_member: {
+        Args: { eid: string; uid: string }
+        Returns: boolean
+      }
+      update_profile_display_name: {
+        Args: { _name: string; _profile_id: string }
+        Returns: undefined
       }
     }
     Enums: {
