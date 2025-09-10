@@ -80,21 +80,21 @@ export default function EventDetail() {
   };
 
   const handleDeleteItem = async (eventId: string) => {
-      try {
-        const { error } = await supabase
-          .from("events")
-          .delete()
-          .eq("id", eventId);
-  
-        if (error) throw error;
-  
-        toast.success("Evento rimosso dalla lista");
-        navigate("/events");
-      } catch (error: unknown) {
-        console.error("Error deleting item:", error);
-        toast.error("Errore nella rimozione dell'evento");
-      }
-    };
+    try {
+      const { error } = await supabase
+        .from("events")
+        .delete()
+        .eq("id", eventId);
+
+      if (error) throw error;
+
+      toast.success("Evento rimosso dalla lista");
+      navigate("/events");
+    } catch (error: unknown) {
+      console.error("Error deleting item:", error);
+      toast.error("Errore nella rimozione dell'evento");
+    }
+  };
 
   const fetchEventDetails = async () => {
     try {
@@ -112,7 +112,7 @@ export default function EventDetail() {
         .single();
       debugLog("EventDetail.eventData", { eventData, error });
       if (error) throw error;
-      
+
       setEvent(eventData);
       setDiag((d: any) => ({ ...d, eventLoaded: true }));
 
@@ -220,7 +220,7 @@ export default function EventDetail() {
           {/* Overlay gradient for text readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
         </div>
-        
+
         {/* Title overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
           <div className="container max-w-6xl">
@@ -251,8 +251,8 @@ export default function EventDetail() {
 
       <div className="container max-w-6xl py-6">
         {/* Back Button */}
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           onClick={() => navigate("/events")}
           className="mb-6 text-muted-foreground hover:text-foreground"
         >
@@ -272,7 +272,7 @@ export default function EventDetail() {
                   </div>
                 )}
               </div>
-              
+
               {/* Admin Controls */}
               <div className="flex items-center gap-2">
                 {userRole === 'admin' && (
@@ -321,7 +321,7 @@ export default function EventDetail() {
                       <ImageUp className="w-4 h-4 mr-2" />
                       {uploadingCover ? 'Carico...' : 'Cambia immagine'}
                     </Button>
-                    
+
                     <Button
                       size="sm"
                       variant="destructive"
@@ -331,7 +331,7 @@ export default function EventDetail() {
                       <Trash2 className="w-4 h-4 mr-2" />
                       Rimuovi Evento
                     </Button>
-                    
+
                     {/* Mobile buttons */}
                     <Button
                       size="sm"
@@ -342,7 +342,7 @@ export default function EventDetail() {
                     >
                       <ImageUp className="w-4 h-4" />
                     </Button>
-                    
+
                     <Button
                       size="sm"
                       variant="destructive"
@@ -368,7 +368,7 @@ export default function EventDetail() {
         {/* Sticky Tabs */}
         <div className="sticky top-0 z-40 bg-gradient-subtle/80 backdrop-blur-sm pb-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className={`grid w-full ${event.draw_status === 'completed' ? 'grid-cols-4' : 'grid-cols-5'} bg-white/80 backdrop-blur-sm shadow-card`}>
+            <TabsList className={`grid w-full grid-cols-4 bg-white/80 backdrop-blur-sm shadow-card`}>
               <TabsTrigger value="partecipanti" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 <span className="hidden sm:inline">Partecipanti</span>
@@ -378,7 +378,12 @@ export default function EventDetail() {
                   <Ban className="w-4 h-4" />
                   <span className="hidden sm:inline">Esclusioni</span>
                 </TabsTrigger>
-              )}
+              ) || (
+                  <TabsTrigger value="assegnazione" className="flex items-center gap-2">
+                    <Gift className="w-4 h-4" />
+                    <span className="hidden sm:inline">Il tuo abbinamento</span>
+                  </TabsTrigger>
+                )}
               <TabsTrigger value="sorteggio" className="flex items-center gap-2">
                 <Shuffle className="w-4 h-4" />
                 <span className="hidden sm:inline">Sorteggio</span>
@@ -386,10 +391,6 @@ export default function EventDetail() {
               <TabsTrigger value="chat" className="flex items-center gap-2">
                 <MessageCircle className="w-4 h-4" />
                 <span className="hidden sm:inline">Chat</span>
-              </TabsTrigger>
-              <TabsTrigger value="assegnazione" className="flex items-center gap-2">
-                <Gift className="w-4 h-4" />
-                <span className="hidden sm:inline">Il tuo abbinamento</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -411,8 +412,8 @@ export default function EventDetail() {
             {userRole === 'admin' ? (
               <EventDraw eventId={event.id} userRole={userRole} event={event} onStatusChange={fetchEventDetails} />
             ) : (
-              <UserAssignment 
-                eventId={event.id} 
+              <UserAssignment
+                eventId={event.id}
                 eventStatus={event.draw_status}
                 onRevealAnimation={() => handleRevealAnimation()}
               />
@@ -424,8 +425,8 @@ export default function EventDetail() {
           </TabsContent>
 
           <TabsContent value="assegnazione">
-            <YourAssignment 
-              eventId={event.id} 
+            <YourAssignment
+              eventId={event.id}
               eventStatus={event.draw_status}
             />
           </TabsContent>
@@ -433,7 +434,7 @@ export default function EventDetail() {
       </div>
 
       {/* Reveal Animation Overlay */}
-      <RevealAnimation 
+      <RevealAnimation
         isVisible={isPlaying}
         recipientName={recipientName}
         onComplete={() => {

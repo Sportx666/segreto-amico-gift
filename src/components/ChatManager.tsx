@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChat } from '@/hooks/useChat';
+import { useNickname } from '@/hooks/useNickname';
 import { NicknameManager } from './NicknameManager';
 import { ChatRecipientSelector } from './ChatRecipientSelector';
 import { MessageCircle, Users, Heart, Send, ChevronUp, Plus, X } from 'lucide-react';
@@ -15,7 +16,6 @@ import { it } from 'date-fns/locale';
 interface ActiveChat {
   recipientId: string;
   recipientName: string;
-  nickname: string;
 }
 
 interface ChatManagerProps {
@@ -30,6 +30,7 @@ export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
   const [showRecipientSelector, setShowRecipientSelector] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { nickname: globalNickname } = useNickname(eventId);
 
   // Determine which chat to use based on active channel
   const isEventChannel = activeChannel === 'event';
@@ -41,14 +42,15 @@ export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
     sending,
     hasMore,
     sendMessage,
-    loadMore
+    loadMore,
+    refetch
   } = useChat(
     eventId, 
     isEventChannel ? 'event' : 'pair',
     activeChat?.recipientId
   );
 
-  const handleChatStart = (recipientId: string, nickname: string) => {
+  const handleChatStart = (recipientId: string) => {
     // Get recipient name from event members
     const chatId = `pair-${recipientId}`;
     
@@ -57,8 +59,7 @@ export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
     if (!existingChat) {
       const newChat: ActiveChat = {
         recipientId,
-        recipientName: 'Membro', // This could be fetched from the API
-        nickname
+        recipientName: 'Utente Anonimo', // This could be fetched from the API
       };
       setActiveChats(prev => [...prev, newChat]);
     }
@@ -73,6 +74,13 @@ export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
       setActiveChannel('event');
     }
   };
+
+  // Reload messages when returning to event channel
+  useEffect(() => {
+    if (activeChannel === 'event') {
+      refetch();
+    }
+  }, [activeChannel]);
 
   const canUsePairChat = true; // Private chat is always available
 
@@ -157,7 +165,7 @@ export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
                     className="flex items-center gap-2 relative"
                   >
                     <Heart className="w-4 h-4" />
-                    <span className="truncate max-w-20">{chat.nickname}</span>
+                    <span className="truncate max-w-20">{globalNickname.nickname}</span>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -177,7 +185,7 @@ export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
             <TabsContent value="event" className="mt-0">
               <div className="flex flex-col h-[500px]">
                 {/* Messages Area */}
-                <ScrollArea className="flex-1 px-6">
+                <ScrollArea className={`flex-1 px-6 ${loading ? 'pointer-events-none opacity-60' : ''}`}>
                   <div className="space-y-4 pb-4">
                     {hasMore && (
                       <div className="text-center">
@@ -257,11 +265,11 @@ export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
               <TabsContent key={chat.recipientId} value={`pair-${chat.recipientId}`} className="mt-0">
                 <div className="flex flex-col h-[500px]">
                   {/* Private Messages Area */}
-                  <ScrollArea className="flex-1 px-6">
+                  <ScrollArea className={`flex-1 px-6 ${loading ? 'pointer-events-none opacity-60' : ''}`}>
                     <div className="space-y-4 pb-4">
                       <div className="text-center py-4">
                         <Badge variant="secondary" className="text-xs">
-                          Chat privata con {chat.recipientName} (tu sei "{chat.nickname}")
+                          Chat privata con {chat.recipientName} (tu sei "{globalNickname.nickname || 'Anonimo'}")
                         </Badge>
                       </div>
 
@@ -326,7 +334,7 @@ export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
                         ref={inputRef}
                         value={messageText}
                         onChange={(e) => setMessageText(e.target.value)}
-                        placeholder={`Messaggio privato come "${chat.nickname}"...`}
+                        placeholder={`Messaggio privato come "${globalNickname.nickname}"...`}
                         maxLength={500}
                         disabled={sending}
                       />

@@ -77,7 +77,7 @@ export function UserAssignment({ eventId, eventStatus, onRevealAnimation }: User
         setAssignment({
           id: assignmentData.id,
           receiver_id: assignmentData.receiver_id,
-          receiver_name: receiverData.profiles.display_name || 'Membro',
+          receiver_name: receiverData.profiles.display_name || 'Utente Anonimo',
           receiver_avatar: receiverData.profiles.avatar_url,
           event_id: assignmentData.event_id,
         });
