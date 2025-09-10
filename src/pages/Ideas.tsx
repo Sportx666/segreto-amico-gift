@@ -1,80 +1,17 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { IdeasHeader } from "@/components/IdeasHeader";
-import { SearchBar } from "@/components/SearchBar";
-import { ProductsGrid } from "@/components/ProductsGrid";
-import { AdSlot } from "@/components/AdSlot";
-import { PageHeader } from "@/components/ui/page-header";
-import { EmptyState } from "@/components/ui/empty-state";
-import { SectionHeader } from "@/components/ui/section-header";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Lightbulb, Search } from "lucide-react";
-import { useI18n } from "@/i18n";
-
-type Product = {
-  asin: string;
-  title: string;
-  image: string;
-  price: number;
-  currency: string;
-  url: string;
-  lastUpdated?: string;
-};
-
-interface SearchResult {
-  items: Product[];
-  page: number;
-  pageSize: number;
-  total: number;
-  mock: boolean;
-}
+import IdeasPage from '@/features/ideas/components/IdeasPage';
 
 interface IdeasProps {
   showMobileFeed?: boolean;
 }
 
 export default function Ideas({ showMobileFeed = false }: IdeasProps) {
+  return <IdeasPage showMobileFeed={showMobileFeed} />;
+}
+}
   const { t } = useI18n();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-  const [chooseOpen, setChooseOpen] = useState(false);
-  const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
-  const [wishlists, setWishlists] = useState<Array<{ id: string; title: string | null }>>([]);
-  const [selectedWishlistId, setSelectedWishlistId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
 
-  const addProductToWishlist = async (ownerId: string, wishlistId: string, product: Product) => {
-    // Check duplicate in selected wishlist
-    const { data: existingItem } = await supabase
-      .from('wishlist_items')
-      .select('id')
-      .eq('owner_id', ownerId)
-      .eq('wishlist_id', wishlistId)
-      .eq('asin', product.asin)
-      .maybeSingle();
-    if (existingItem) {
-      toast.error('Prodotto già presente in questa lista');
-      return;
-    }
-    const { error } = await supabase
-      .from('wishlist_items')
-      .insert({
-        owner_id: ownerId,
-        wishlist_id: wishlistId,
-        asin: product.asin,
-        title: product.title,
-        image_url: product.image,
-        price_snapshot: `${product.price} ${product.currency}`,
-        affiliate_url: product.url,
-        raw_url: product.url,
-      });
-    if (error) throw error;
-    toast.success('Prodotto aggiunto alla lista!');
-  };
 
   const handleAddToWishlistSelect = async (product: Product) => {
     try {
