@@ -470,31 +470,43 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           avatar_url: string | null
+          city: string | null
+          country: string | null
           created_at: string | null
           display_name: string | null
           email: string | null
           family_group: string | null
           id: string
-          locale: string | null
+          phone: string | null
+          postal_code: string | null
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string | null
           display_name?: string | null
           email?: string | null
           family_group?: string | null
           id: string
-          locale?: string | null
+          phone?: string | null
+          postal_code?: string | null
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string | null
           display_name?: string | null
           email?: string | null
           family_group?: string | null
           id?: string
-          locale?: string | null
+          phone?: string | null
+          postal_code?: string | null
         }
         Relationships: []
       }

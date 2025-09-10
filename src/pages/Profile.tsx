@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { useI18n } from "@/i18n";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,15 +9,19 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PageHeader } from "@/components/ui/page-header";
 import { uploadImage, resizeToWebP } from "@/lib/upload";
-import { AVATAR_PLACEHOLDER } from "@/lib/placeholder";
 import { toast } from "sonner";
 import { Trash2, Upload, User } from "lucide-react";
 import { NotificationSettings } from '@/components/NotificationSettings';
 
 const Profile = () => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [displayName, setDisplayName] = useState("");
-  const [locale, setLocale] = useState("it");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [country, setCountry] = useState("");
+  const [phone, setPhone] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -27,12 +32,16 @@ const Profile = () => {
       if (!user) return;
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, locale, avatar_url")
+        .select("display_name, address, city, postal_code, country, phone, avatar_url")
         .eq("id", user.id)
         .single();
       if (data) {
         setDisplayName(data.display_name ?? "");
-        setLocale(data.locale ?? "it");
+        setAddress(data.address ?? "");
+        setCity(data.city ?? "");
+        setPostalCode(data.postal_code ?? "");
+        setCountry(data.country ?? "");
+        setPhone(data.phone ?? "");
         setAvatarUrl(data.avatar_url);
       }
     }
@@ -100,16 +109,24 @@ const Profile = () => {
       }
       const { error } = await supabase
         .from("profiles")
-        .update({ display_name: displayName, locale, avatar_url: url })
+        .update({ 
+          display_name: displayName, 
+          address, 
+          city, 
+          postal_code: postalCode, 
+          country, 
+          phone, 
+          avatar_url: url 
+        })
         .eq("id", user.id);
       if (error) throw error;
       setAvatarUrl(url);
       setFile(null);
-      toast.success("Profilo aggiornato");
+      toast.success(t('common.success'));
       window.location.href = "/";
     } catch (err) {
       console.error(err);
-      toast.error("Errore durante l'aggiornamento");
+      toast.error(t('common.error'));
     }
   };
 
@@ -135,8 +152,8 @@ const Profile = () => {
   return (
     <div className="container mx-auto px-4 md:px-6 py-4 md:py-6">
       <PageHeader 
-        title="Profilo" 
-        description="Gestisci le tue informazioni personali"
+        title={t('profile.title')} 
+        description={t('profile.description')}
       />
       
       <div className="grid gap-6 md:gap-8">
@@ -145,11 +162,11 @@ const Profile = () => {
           <div className="md:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Informazioni Personali</CardTitle>
+                <CardTitle className="text-lg">{t('profile.personal_info')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t('profile.email')}</Label>
                   <Input 
                     id="email"
                     value={user.email ?? ""} 
@@ -159,22 +176,72 @@ const Profile = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="displayName">Nome Visualizzato</Label>
+                  <Label htmlFor="displayName">{t('profile.display_name')}</Label>
                   <Input
                     id="displayName"
-                    placeholder="Come ti chiami?"
+                    placeholder={t('profile.display_name')}
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="locale">Lingua</Label>
+                  <Label htmlFor="phone">{t('profile.phone')}</Label>
                   <Input 
-                    id="locale"
-                    placeholder="it"
-                    value={locale} 
-                    onChange={(e) => setLocale(e.target.value)} 
+                    id="phone"
+                    placeholder={t('profile.phone')}
+                    value={phone} 
+                    onChange={(e) => setPhone(e.target.value)} 
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Shipping Information */}
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="text-lg">{t('profile.shipping_info')}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="address">{t('profile.address')}</Label>
+                  <Input
+                    id="address"
+                    placeholder={t('profile.address')}
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="city">{t('profile.city')}</Label>
+                    <Input
+                      id="city"
+                      placeholder={t('profile.city')}
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="postalCode">{t('profile.postal_code')}</Label>
+                    <Input
+                      id="postalCode"
+                      placeholder={t('profile.postal_code')}
+                      value={postalCode}
+                      onChange={(e) => setPostalCode(e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="country">{t('profile.country')}</Label>
+                  <Input
+                    id="country"
+                    placeholder={t('profile.country')}
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
                   />
                 </div>
               </CardContent>
@@ -185,7 +252,7 @@ const Profile = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Avatar</CardTitle>
+                <CardTitle className="text-lg">{t('profile.avatar')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-center">
@@ -214,7 +281,7 @@ const Profile = () => {
                       className="flex items-center justify-center gap-2 h-10 px-4 py-2 bg-primary text-primary-foreground rounded-md cursor-pointer hover:bg-primary/90 transition-colors"
                     >
                       <Upload className="w-4 h-4" />
-                      Carica Immagine
+                      {t('profile.upload_image')}
                     </Label>
                   </div>
                   
@@ -227,14 +294,14 @@ const Profile = () => {
                       className="w-full"
                     >
                       <Trash2 className="w-4 h-4" />
-                      Rimuovi Avatar
+                      {t('profile.remove_avatar')}
                     </Button>
                   )}
                 </div>
                 
                 {uploadingAvatar && (
                   <p className="text-sm text-muted-foreground text-center">
-                    Caricamento in corso...
+                    {t('common.loading')}
                   </p>
                 )}
               </CardContent>
@@ -252,7 +319,7 @@ const Profile = () => {
           disabled={uploadingAvatar}
           size="lg"
         >
-          {uploadingAvatar ? "Salvando..." : "Salva Modifiche"}
+          {uploadingAvatar ? t('profile.saving') : t('profile.save_changes')}
         </Button>
       </div>
     </div>
