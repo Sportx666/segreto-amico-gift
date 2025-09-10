@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdSlot } from "@/components/AdSlot";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonGrid } from "@/components/ui/skeleton-grid";
@@ -23,7 +24,11 @@ interface Event {
   cover_image_url?: string | null;
 }
 
-const Events = () => {
+interface EventsProps {
+  showMobileFeed?: boolean;
+}
+
+const Events = ({ showMobileFeed = false }: EventsProps) => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const { user, loading: authLoading } = useAuth();
@@ -136,6 +141,18 @@ const Events = () => {
                 <pre className="text-xs whitespace-pre-wrap break-words">{JSON.stringify(diag, null, 2)}</pre>
               </Card>
             )}
+            
+            {/* Mobile In-Feed Ad */}
+            {showMobileFeed && (
+              <div className="lg:hidden mb-8">
+                <AdSlot 
+                  id="events-mobile-feed" 
+                  className="w-full"
+                  placeholder="Contenuti sponsorizzati"
+                />
+              </div>
+            )}
+            
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {events.map((event) => (
                 <Link key={event.id} to={`/events/${event.id}`} className="group">

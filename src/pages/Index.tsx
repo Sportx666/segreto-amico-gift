@@ -4,9 +4,14 @@ import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdSlot } from "@/components/AdSlot";
 import { Gift, Heart, Users, Sparkles, Calendar } from "lucide-react";
 
-const Index = () => {
+interface IndexProps {
+  showMobileFeed?: boolean;
+}
+
+const Index = ({ showMobileFeed = false }: IndexProps) => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState<string | null>(null);
@@ -102,6 +107,17 @@ const Index = () => {
           </div>
         </div>
       </div>
+
+      {/* Mobile In-Feed Ad */}
+      {showMobileFeed && (
+        <div className="lg:hidden px-4 py-8">
+          <AdSlot 
+            id="mobile-feed" 
+            className="w-full"
+            placeholder="Contenuti sponsorizzati"
+          />
+        </div>
+      )}
 
       {/* Features Section */}
       <div className="max-w-6xl mx-auto px-4 py-16">

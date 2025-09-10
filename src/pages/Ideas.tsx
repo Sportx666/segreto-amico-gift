@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { IdeasHeader } from "@/components/IdeasHeader";
 import { SearchBar } from "@/components/SearchBar";
 import { ProductsGrid } from "@/components/ProductsGrid";
+import { AdSlot } from "@/components/AdSlot";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHeader } from "@/components/ui/section-header";
@@ -31,7 +32,11 @@ interface SearchResult {
   mock: boolean;
 }
 
-export default function Ideas() {
+interface IdeasProps {
+  showMobileFeed?: boolean;
+}
+
+export default function Ideas({ showMobileFeed = false }: IdeasProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [chooseOpen, setChooseOpen] = useState(false);
@@ -262,6 +267,17 @@ export default function Ideas() {
               title={`Risultati per "${searchQuery}"`}
               description={searchResults ? `${searchResults.total} prodotti${searchResults.mock ? ' - dati di esempio' : ''}` : undefined}
             />
+            
+            {/* Mobile In-Feed Ad */}
+            {showMobileFeed && (
+              <div className="lg:hidden">
+                <AdSlot 
+                  id="ideas-mobile-feed" 
+                  className="w-full mb-6"
+                  placeholder="Contenuti sponsorizzati"
+                />
+              </div>
+            )}
             
             <ProductsGrid
               products={searchResults?.items || []}
