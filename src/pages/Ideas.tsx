@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Lightbulb, Search } from "lucide-react";
+import { useI18n } from "@/i18n";
 
 type Product = {
   asin: string;
@@ -37,6 +38,7 @@ interface IdeasProps {
 }
 
 export default function Ideas({ showMobileFeed = false }: IdeasProps) {
+  const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [chooseOpen, setChooseOpen] = useState(false);
@@ -239,8 +241,8 @@ export default function Ideas({ showMobileFeed = false }: IdeasProps) {
       <div className="container max-w-6xl">
         <PageHeader
           className="hidden"
-          title="Idee Regalo"
-          description="Trova il regalo perfetto cercando su Amazon"
+          title={t('ideas.title') || "Idee Regalo"}
+          description={t('ideas.description') || "Trova il regalo perfetto cercando su Amazon"}
         />
         
         <IdeasHeader 
@@ -258,8 +260,8 @@ export default function Ideas({ showMobileFeed = false }: IdeasProps) {
         {!searchQuery ? (
           <EmptyState
             icon={<Search className="w-8 h-8 text-white" />}
-            title="Inizia la ricerca"
-            description="Usa le categorie sopra o cerca qualcosa di specifico per trovare idee regalo"
+            title={t('ideas.start_search') || "Inizia la ricerca"}
+            description={t('ideas.search_hint') || "Usa le categorie sopra o cerca qualcosa di specifico per trovare idee regalo"}
           />
         ) : (
           <div className="space-y-6">
@@ -299,9 +301,9 @@ export default function Ideas({ showMobileFeed = false }: IdeasProps) {
       <Dialog open={chooseOpen} onOpenChange={setChooseOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Scegli una lista</DialogTitle>
+            <DialogTitle>{t('wishlist.choose_list') || "Scegli una lista"}</DialogTitle>
             <DialogDescription>
-              Seleziona la lista desideri dove aggiungere il prodotto.
+              {t('wishlist.choose_list_desc') || "Seleziona la lista desideri dove aggiungere il prodotto."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -318,7 +320,7 @@ export default function Ideas({ showMobileFeed = false }: IdeasProps) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setChooseOpen(false)}>
-              Annulla
+              {t('common.cancel') || "Annulla"}
             </Button>
             <Button
               disabled={!selectedWishlistId || !pendingProduct || saving}
@@ -345,7 +347,7 @@ export default function Ideas({ showMobileFeed = false }: IdeasProps) {
                 }
               }}
             >
-              {saving ? 'Aggiungendo...' : 'Aggiungi'}
+              {saving ? (t('common.adding') || 'Aggiungendo...') : (t('wishlist.add') || 'Aggiungi')}
             </Button>
           </DialogFooter>
         </DialogContent>

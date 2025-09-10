@@ -18,12 +18,20 @@
     "members": "Members",
     "draw": "Draw"
   },
+  "ideas": {
+    "title": "Gift Ideas",
+    "description": "Find the perfect gift by searching on Amazon",
+    "start_search": "Start searching",
+    "search_hint": "Use the categories above or search for something specific to find gift ideas"
+  },
   "wishlist": {
     "add": "Add to Wishlist",
     "remove": "Remove",
     "purchase": "Purchase",
     "purchased": "Purchased",
-    "title": "Wishlist"
+    "title": "Wishlist",
+    "choose_list": "Choose a list",
+    "choose_list_desc": "Select the wishlist where you want to add the product."
   },
   "profile": {
     "title": "Profile",
@@ -50,6 +58,8 @@
     "edit": "Edit",
     "loading": "Loading...",
     "error": "Error",
-    "success": "Success"
+    "success": "Success",
+    "search": "Search",
+    "adding": "Adding..."
   }
 }

@@ -51,6 +51,8 @@ export function useChat(eventId?: string, channel: 'event' | 'pair' = 'event', r
       setOffset(currentOffset + data.messages.length);
     } catch (error) {
       console.error('Error fetching messages:', error);
+      console.log('Event ID:', eventId, 'Channel:', channel, 'Recipient ID:', recipientId);
+      console.log('Response details:', error);
       toast.error('Errore nel caricamento dei messaggi');
     } finally {
       setLoading(false);
@@ -86,6 +88,7 @@ export function useChat(eventId?: string, channel: 'event' | 'pair' = 'event', r
       return true;
     } catch (error) {
       console.error('Error sending message:', error);
+      console.log('Send message payload:', { eventId, channel, content: content.trim(), recipientId });
       toast.error('Errore nell\'invio del messaggio');
       return false;
     } finally {

@@ -130,10 +130,13 @@ export default function Wishlist() {
     },
   });
 
+  const [isSearching, setIsSearching] = useState(false);
+  const [triggerSearch, setTriggerSearch] = useState("");
+
   const { data: searchResults, isLoading: isSearchLoading } = useQuery({
-    queryKey: ["amazon-search-wishlist", searchQuery],
+    queryKey: ["amazon-search-wishlist", triggerSearch],
     queryFn: async () => {
-      if (!searchQuery)
+      if (!triggerSearch)
         return { items: [], page: 1, pageSize: 10, total: 0, mock: true };
 
       const response = await fetch("/api/amazon/search", {
@@ -141,7 +144,7 @@ export default function Wishlist() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ q: searchQuery }),
+        body: JSON.stringify({ q: triggerSearch }),
       });
 
       if (!response.ok) {
@@ -150,7 +153,7 @@ export default function Wishlist() {
 
       return response.json();
     },
-    enabled: !!searchQuery && isSearchDialogOpen,
+    enabled: !!triggerSearch && isSearchDialogOpen,
   });
 
   // Events available to the user (member of)
@@ -707,10 +710,21 @@ export default function Wishlist() {
           </DialogHeader>
           <div className="space-y-4">
             <SearchBar
-              onSearch={setSearchQuery}
-              disabled={isSearchLoading}
+              onSearch={(query) => {
+                setSearchQuery(query);
+                setTriggerSearch(query);
+              }}
               value={searchQuery}
-              onChangeText={setSearchQuery}
+              onChangeText={(value) => {
+                setSearchQuery(value);
+                // Only trigger search when user has typed at least 4 characters
+                if (value.length >= 4) {
+                  setTriggerSearch(value);
+                } else if (value.length === 0) {
+                  setTriggerSearch('');
+                }
+              }}
+              disabled={isSearchLoading}
             />
             {searchQuery && (
               <ProductsGrid

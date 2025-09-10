@@ -18,12 +18,20 @@
     "members": "Membri",
     "draw": "Sorteggio"
   },
+  "ideas": {
+    "title": "Idee Regalo",
+    "description": "Trova il regalo perfetto cercando su Amazon",
+    "start_search": "Inizia la ricerca",
+    "search_hint": "Usa le categorie sopra o cerca qualcosa di specifico per trovare idee regalo"
+  },
   "wishlist": {
     "add": "Aggiungi alla Lista",
     "remove": "Rimuovi",
     "purchase": "Acquista",
     "purchased": "Acquistato",
-    "title": "Lista Desideri"
+    "title": "Lista Desideri",
+    "choose_list": "Scegli una lista",
+    "choose_list_desc": "Seleziona la lista desideri dove aggiungere il prodotto."
   },
   "profile": {
     "title": "Profilo",
@@ -50,6 +58,8 @@
     "edit": "Modifica",
     "loading": "Caricamento...",
     "error": "Errore",
-    "success": "Successo"
+    "success": "Successo",
+    "search": "Cerca",
+    "adding": "Aggiungendo..."
   }
 }
