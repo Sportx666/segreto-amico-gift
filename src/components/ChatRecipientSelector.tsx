@@ -53,10 +53,10 @@ export function ChatRecipientSelector({ eventId, onChatStart, isOpen, onOpenChan
         .select(`
           participant_id,
           anonymous_name,
-          participants!inner(
+          participants(
             id,
             profile_id,
-            profiles!inner(
+            profiles(
               id,
               display_name
             )
