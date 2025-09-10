@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { UserPlus, Trash2, Crown, User, Copy, RefreshCw, MessageCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { UserPlus, Trash2, Crown, User, Copy, RefreshCw, MessageCircle, Mail, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { getOrCreateParticipantId } from "@/lib/participants";
 import { debugLog, isDebug } from "@/lib/debug";
@@ -38,6 +39,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
+  const [sendInviteEmail, setSendInviteEmail] = useState(false);
   const [diag, setDiag] = useState<any>({});
   const [currentUserParticipantId, setCurrentUserParticipantId] = useState<string | null>(null);
   const [inviteLinks, setInviteLinks] = useState<Record<string, any>>({});
@@ -212,11 +214,44 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
       if (body?.invite && body?.memberId) {
         const invite = { ...body.invite, url: absUrl(`/join/${body.invite.token}`) };
         setInviteLinks((prev) => ({ ...prev, [body.memberId]: invite }));
+
+        // Send invite email if requested
+        if (sendInviteEmail && email) {
+          try {
+            const emailResp = await fetch('/api/mail/invite', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${session?.access_token}`,
+              },
+              body: JSON.stringify({
+                email,
+                eventId,
+                participantId: body.participantId,
+                joinUrl: invite.url
+              }),
+            });
+
+            if (emailResp.ok) {
+              toast.success('Partecipante aggiunto e email inviata!');
+            } else if (emailResp.status === 204) {
+              toast.success('Partecipante aggiunto! (Email service non configurato)');
+            } else {
+              toast.success('Partecipante aggiunto! (Errore nell\'invio email)');
+            }
+          } catch (emailError) {
+            console.error('Error sending invite email:', emailError);
+            toast.success('Partecipante aggiunto! (Errore nell\'invio email)');
+          }
+        } else {
+          toast.success('Partecipante aggiunto!');
+        }
       }
+      
       setNewMemberName('');
       setNewMemberEmail('');
+      setSendInviteEmail(false);
       await fetchMembers();
-      toast.success('Partecipante aggiunto!');
     } catch (error) {
       console.error('Error adding member via API:', error);
       toast.error('Errore nell\'aggiungere il partecipante');
@@ -290,6 +325,33 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
     } catch (error: unknown) {
       console.error('Error removing member:', error);
       toast.error("Errore nella rimozione del partecipante");
+    }
+  };
+
+  const removeUnjoinedMember = async (participantId: string) => {
+    if (userRole !== 'admin') {
+      toast.error("Solo gli amministratori possono rimuovere partecipanti");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.rpc('remove_unjoined_participant', {
+        _event_id: eventId,
+        _participant_id: participantId
+      });
+
+      if (error) throw error;
+
+      await fetchMembers();
+      toast.success("Invito rimosso");
+      console.log('Removal result:', data);
+    } catch (error: any) {
+      console.error('Error removing unjoined member:', error);
+      if (error.message?.includes('Cannot remove joined participant')) {
+        toast.error("Non puoi rimuovere un partecipante che ha già accettato l'invito");
+      } else {
+        toast.error("Errore nella rimozione dell'invito");
+      }
     }
   };
 
@@ -368,6 +430,21 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                     placeholder="email@esempio.com"
                   />
                 </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="send-invite"
+                    checked={sendInviteEmail}
+                    onCheckedChange={(checked) => setSendInviteEmail(checked as boolean)}
+                    disabled={!newMemberEmail.trim()}
+                  />
+                  <Label
+                    htmlFor="send-invite"
+                    className={`text-sm ${!newMemberEmail.trim() ? 'text-muted-foreground' : ''}`}
+                  >
+                    <Mail className="w-4 h-4 inline mr-2" />
+                    Invia email di invito
+                  </Label>
+                </div>
                 <Button 
                   onClick={addMemberServer} 
                   className="w-full" 
@@ -424,13 +501,26 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                   )}
 
                   {userRole === 'admin' && eventStatus === 'pending' && member.role !== 'admin' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeMember(member.id)}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
+                    <>
+                      {member.status === 'invited' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeUnjoinedMember(member.participant_id)}
+                          title="Rimuovi invito"
+                        >
+                          <UserX className="w-4 h-4 text-destructive" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeMember(member.id)}
+                        title="Rimuovi partecipante"
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>

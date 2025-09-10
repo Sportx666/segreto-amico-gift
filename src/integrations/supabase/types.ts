@@ -720,6 +720,17 @@ export type Database = {
       }
     }
     Functions: {
+      create_or_get_join_token: {
+        Args: {
+          _event_id: string
+          _participant_id: string
+          _ttl_minutes?: number
+        }
+        Returns: {
+          token: string
+          url: string
+        }[]
+      }
       fix_event_membership_duplicates: {
         Args: { _event_id: string; _profile_id: string }
         Returns: Json
@@ -748,6 +759,10 @@ export type Database = {
       is_event_member: {
         Args: { eid: string; uid: string }
         Returns: boolean
+      }
+      remove_unjoined_participant: {
+        Args: { _event_id: string; _participant_id: string }
+        Returns: Json
       }
       update_profile_display_name: {
         Args: { _name: string; _profile_id: string }

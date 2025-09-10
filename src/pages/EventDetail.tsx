@@ -14,6 +14,7 @@ import { EventMembers } from "@/components/EventMembers";
 import { EventExclusions } from "@/components/EventExclusions";
 import { EventDraw } from "@/components/EventDraw";
 import { EventShare } from "@/components/EventShare";
+import { YourAssignment } from "@/components/YourAssignment";
 import { ChatManager } from "@/components/ChatManager";
 import { getOrCreateParticipantId } from "@/lib/participants";
 import { debugLog, isDebug } from "@/lib/debug";
@@ -367,15 +368,17 @@ export default function EventDetail() {
         {/* Sticky Tabs */}
         <div className="sticky top-0 z-40 bg-gradient-subtle/80 backdrop-blur-sm pb-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5 bg-white/80 backdrop-blur-sm shadow-card">
+            <TabsList className={`grid w-full ${event.draw_status === 'completed' ? 'grid-cols-4' : 'grid-cols-5'} bg-white/80 backdrop-blur-sm shadow-card`}>
               <TabsTrigger value="partecipanti" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 <span className="hidden sm:inline">Partecipanti</span>
               </TabsTrigger>
-              <TabsTrigger value="esclusioni" className="flex items-center gap-2">
-                <Ban className="w-4 h-4" />
-                <span className="hidden sm:inline">Esclusioni</span>
-              </TabsTrigger>
+              {event.draw_status !== 'completed' && (
+                <TabsTrigger value="esclusioni" className="flex items-center gap-2">
+                  <Ban className="w-4 h-4" />
+                  <span className="hidden sm:inline">Esclusioni</span>
+                </TabsTrigger>
+              )}
               <TabsTrigger value="sorteggio" className="flex items-center gap-2">
                 <Shuffle className="w-4 h-4" />
                 <span className="hidden sm:inline">Sorteggio</span>
@@ -384,9 +387,9 @@ export default function EventDetail() {
                 <MessageCircle className="w-4 h-4" />
                 <span className="hidden sm:inline">Chat</span>
               </TabsTrigger>
-              <TabsTrigger value="condividi" className="flex items-center gap-2">
-                <Share2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Condividi</span>
+              <TabsTrigger value="assegnazione" className="flex items-center gap-2">
+                <Gift className="w-4 h-4" />
+                <span className="hidden sm:inline">Il tuo abbinamento</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -398,9 +401,11 @@ export default function EventDetail() {
             <EventMembers eventId={event.id} userRole={userRole} eventStatus={event.draw_status} />
           </TabsContent>
 
-          <TabsContent value="esclusioni">
-            <EventExclusions eventId={event.id} userRole={userRole} />
-          </TabsContent>
+          {event.draw_status !== 'completed' && (
+            <TabsContent value="esclusioni">
+              <EventExclusions eventId={event.id} userRole={userRole} />
+            </TabsContent>
+          )}
 
           <TabsContent value="sorteggio">
             {userRole === 'admin' ? (
@@ -418,8 +423,11 @@ export default function EventDetail() {
             <ChatManager eventId={event.id} eventStatus={event.draw_status} />
           </TabsContent>
 
-          <TabsContent value="condividi">
-            <EventShare event={event} />
+          <TabsContent value="assegnazione">
+            <YourAssignment 
+              eventId={event.id} 
+              eventStatus={event.draw_status}
+            />
           </TabsContent>
         </Tabs>
       </div>
