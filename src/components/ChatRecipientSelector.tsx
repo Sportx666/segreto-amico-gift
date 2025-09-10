@@ -37,18 +37,15 @@ export function ChatRecipientSelector({ eventId, onChatStart, isOpen, onOpenChan
   }, [isOpen, eventId]);
 
   const fetchEventMembers = async () => {
-    let currentParticipant = null;
     try {
       setLoading(true);
       
       // Get current user's participant ID to exclude them
-      const { data: participant } = await supabase
+      const { data: currentParticipant } = await supabase
         .from('participants')
         .select('id')
         .eq('profile_id', user?.id)
         .single();
-      
-      currentParticipant = participant;
 
       // Get all event members except current user
       const { data, error } = await supabase
@@ -58,7 +55,7 @@ export function ChatRecipientSelector({ eventId, onChatStart, isOpen, onOpenChan
           anonymous_name,
           participants!inner(
             id,
-            profiles(
+            profiles!inner(
               display_name
             )
           )
@@ -69,18 +66,16 @@ export function ChatRecipientSelector({ eventId, onChatStart, isOpen, onOpenChan
 
       if (error) throw error;
 
-      const formattedMembers = data?.map(member => ({
+      const formattedMembers = data.map(member => ({
         id: member.participant_id,
-        display_name: member.participants?.profiles?.display_name || 'Senza nome',
+        display_name: member.participants.profiles.display_name || 'Senza nome',
         anonymous_name: member.anonymous_name || 'Membro',
         participant_id: member.participant_id
-      })) || [];
+      }));
 
       setMembers(formattedMembers);
-      console.log('Formatted members:', formattedMembers);
     } catch (error) {
       console.error('Error fetching event members:', error);
-      console.log('EventId:', eventId, 'CurrentParticipant:', currentParticipant);
       toast.error('Errore nel caricamento dei membri');
     } finally {
       setLoading(false);
