@@ -2,17 +2,17 @@
  * Formatting utilities
  */
 
-export function formatDate(dateString: string | null): string {
+export function formatDate(dateString: string | null, locale = 'it-IT'): string {
   if (!dateString) return 'Data da definire';
-  return new Date(dateString).toLocaleDateString('it-IT', {
+  return new Date(dateString).toLocaleDateString(locale, {
     day: 'numeric',
     month: 'long',
     year: 'numeric'
   });
 }
 
-export function formatCurrency(amount: number, currency = 'EUR'): string {
-  return new Intl.NumberFormat('it-IT', {
+export function formatCurrency(amount: number, currency = 'EUR', locale = 'it-IT'): string {
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
   }).format(amount);

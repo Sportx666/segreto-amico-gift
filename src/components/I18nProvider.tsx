@@ -5,7 +5,14 @@ interface I18nProviderProps {
   children: ReactNode;
 }
 
+const isI18nEnabled = import.meta.env.VITE_I18N_ENABLED !== 'false';
+
 export function I18nProvider({ children }: I18nProviderProps) {
+  // If i18n is disabled, just render children without provider context
+  if (!isI18nEnabled) {
+    return <>{children}</>;
+  }
+
   const [language, setLanguageState] = useState<Language>(getDefaultLanguage);
 
   const setLanguage = (lang: Language) => {

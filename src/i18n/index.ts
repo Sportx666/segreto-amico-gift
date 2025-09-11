@@ -21,7 +21,18 @@ export interface I18nContextType {
 
 export const I18nContext = createContext<I18nContextType | null>(null);
 
+const isI18nEnabled = import.meta.env.VITE_I18N_ENABLED !== 'false';
+
 export const useI18n = () => {
+  if (!isI18nEnabled) {
+    // Return Italian-only context when disabled
+    return {
+      language: 'it' as Language,
+      setLanguage: () => {},
+      t: (key: string) => getTranslation(translations.it, key)
+    };
+  }
+  
   const context = useContext(I18nContext);
   if (!context) {
     throw new Error('useI18n must be used within I18nProvider');

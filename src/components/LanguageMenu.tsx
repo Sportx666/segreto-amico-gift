@@ -3,7 +3,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useI18n } from '@/i18n';
 import { Globe } from 'lucide-react';
 
+const isI18nEnabled = import.meta.env.VITE_I18N_ENABLED !== 'false';
+
 export function LanguageMenu() {
+  // Hide language menu when i18n is disabled
+  if (!isI18nEnabled) {
+    return null;
+  }
+
   const { language, setLanguage } = useI18n();
 
   const languages = [
