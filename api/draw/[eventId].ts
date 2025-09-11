@@ -18,16 +18,50 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    // Load members
+    // Check DEV bypass flag (server-side only)
+    const devBypass = process.env.DEV_ALLOW_UNAUTH_DRAW === '1';
+    
+    // Load members with their profile information for validation
     const { data: members, error: membersError } = await supabase
       .from('event_members')
-      .select('id, participant_id')
+      .select(`
+        id,
+        participant_id,
+        participants (
+          id,
+          profile_id,
+          profiles (
+            id,
+            display_name
+          )
+        )
+      `)
       .eq('event_id', eventId)
       .eq('status', 'joined');
     if (membersError) throw membersError;
     if (!members || members.length < 2) {
       return res.status(400).json({ error: 'Servono almeno 2 partecipanti per il sorteggio' });
     }
+
+    // Validate that all participants have authenticated profiles (unless dev bypass is enabled)
+    if (!devBypass) {
+      const unauthenticatedParticipants: string[] = [];
+      
+      for (const member of members) {
+        const participant = member.participants;
+        if (!participant?.profile_id || !participant.profiles) {
+          const displayName = participant?.profiles?.display_name || 'Partecipante senza nome';
+          unauthenticatedParticipants.push(displayName);
+        }
+      }
+      
+      if (unauthenticatedParticipants.length > 0) {
+        return res.status(400).json({ 
+          error: `Impossibile eseguire il sorteggio. I seguenti partecipanti non hanno un account autenticato: ${unauthenticatedParticipants.join(', ')}. Invitali a registrarsi prima di procedere con il sorteggio.`
+        });
+      }
+    }
+
     const giverArr: Member[] = members.map(m => ({ id: m.id, participantId: m.participant_id }));
     const receiverArr: Member[] = giverArr;
     const memberToParticipant = new Map<string, string>();
