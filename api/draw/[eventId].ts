@@ -14,65 +14,26 @@ export default async function handler(req: any, res: any) {
   try {
     supabase = createServiceClient();
   } catch (e: any) {
-    console.error('Supabase service client creation failed:', e);
     return res.status(500).json({ error: e.message || 'Server configuration error' });
   }
 
-  console.log('Starting draw for event:', eventId);
-
   try {
-    // Load members with profile validation
+    // Load members
     const { data: members, error: membersError } = await supabase
       .from('event_members')
-      .select(`
-        id, 
-        participant_id,
-        participants!inner(
-          profile_id,
-          profiles(display_name)
-        )
-      `)
+      .select('id, participant_id')
       .eq('event_id', eventId)
       .eq('status', 'joined');
     if (membersError) throw membersError;
     if (!members || members.length < 2) {
       return res.status(400).json({ error: 'Servono almeno 2 partecipanti per il sorteggio' });
     }
-
-    // Check if we should validate authenticated participants
-    const allowUnauthenticated = process.env.ALLOW_UNAUTHENTICATED_DRAW === 'true';
-    
-    if (!allowUnauthenticated) {
-      // Validate all participants have authenticated profiles
-      const unauthenticatedMembers = [];
-      for (const member of members) {
-        const profileId = member.participants?.profile_id;
-        if (!profileId) {
-          unauthenticatedMembers.push(member.participants?.profiles?.display_name || 'Partecipante sconosciuto');
-          continue;
-        }
-        
-        // Check if profile exists in auth.users
-        const { data: authUser } = await supabase.auth.admin.getUserById(profileId);
-        if (!authUser.user) {
-          unauthenticatedMembers.push(member.participants?.profiles?.display_name || 'Partecipante sconosciuto');
-        }
-      }
-
-      if (unauthenticatedMembers.length > 0) {
-        return res.status(400).json({ 
-          error: `Alcuni partecipanti non hanno un account autenticato: ${unauthenticatedMembers.join(', ')}. Tutti i partecipanti devono essere registrati prima del sorteggio.`
-        });
-      }
-    } else {
-      console.log('Bypassing auth validation due to ALLOW_UNAUTHENTICATED_DRAW flag');
-    }
-
     const giverArr: Member[] = members.map(m => ({ id: m.id, participantId: m.participant_id }));
     const receiverArr: Member[] = giverArr;
-    console.log('Loaded members:', giverArr.length);
+    const memberToParticipant = new Map<string, string>();
+    giverArr.forEach(m => memberToParticipant.set(m.id, m.participantId));
 
-    // Load exclusions (giver_id and blocked_id are already participant IDs)
+    // Load exclusions
     const { data: exclusions } = await supabase
       .from('exclusions')
       .select('giver_id, blocked_id')
@@ -80,11 +41,10 @@ export default async function handler(req: any, res: any) {
       .eq('active', true);
     const exclusionSet = new Set<string>();
     (exclusions || []).forEach(ex => {
-      if (ex.giver_id && ex.blocked_id) {
-        exclusionSet.add(`${ex.giver_id}|${ex.blocked_id}`);
-      }
+      const g = memberToParticipant.get(ex.giver_id);
+      const r = memberToParticipant.get(ex.blocked_id);
+      if (g && r) exclusionSet.add(`${g}|${r}`);
     });
-    console.log('Loaded exclusions:', exclusions?.length || 0, 'active exclusions');
 
     // Anti-recurrence
     const antiSet = new Set<string>();
@@ -144,10 +104,7 @@ export default async function handler(req: any, res: any) {
 
     return res.status(200).json({ assignedCount: pairs.length });
   } catch (error: any) {
-    console.error('Draw error for event', eventId, ':', error);
-    return res.status(500).json({ 
-      error: error.message || 'Errore interno del server',
-      details: error.code || error.name || 'Unknown error type'
-    });
+    console.error('draw error', error);
+    return res.status(500).json({ error: error.message || 'Errore interno del server' });
   }
 }

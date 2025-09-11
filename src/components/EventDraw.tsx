@@ -95,15 +95,7 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
         }
       });
 
-      let result;
-      try {
-        result = await response.json();
-      } catch (parseError) {
-        // If JSON parsing fails (e.g., HTML error page), get text content
-        const textContent = await response.text();
-        console.error('Failed to parse JSON response:', textContent);
-        throw new Error(`Server error (${response.status}): Failed to execute draw. Check server configuration.`);
-      }
+      const result = await response.json();
 
       if (!response.ok || !result.assignedCount) {
         throw new Error(result.error || "Errore durante il sorteggio");
