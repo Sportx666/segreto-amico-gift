@@ -1,4 +1,43 @@
-# Welcome to your Lovable project
+# Segreto Amico Gift Exchange
+
+A modern web application for organizing Secret Santa gift exchanges among friends and family.
+
+## Development & Testing
+
+### Test Data Seeding
+
+For local development and testing, use the provided seed data:
+
+```bash
+# Load test fixtures (after schema setup)
+supabase db reset
+psql -h localhost -p 54322 -U postgres -d postgres -f supabase/seed_test.sql
+
+# Or using Supabase CLI
+supabase db push
+supabase db seed
+```
+
+### Reset Test Data (Local/UAT Only)
+
+For clean testing state during development:
+
+```sql
+-- Clear all test data and start fresh
+SELECT public.reset_test_data();
+
+-- Then reload seed data
+\i supabase/seed_test.sql
+```
+
+**Test Data Includes:**
+- 4 user profiles (1 admin + 3 members) 
+- 2 events: "Natale 2024" (open) + "Compleanno Elena" (completed)
+- Event memberships, wishlists with items
+- Exclusions, assignments, join tokens
+- Notifications (read/unread mix)
+
+**Safety Note:** `reset_test_data()` is blocked in production databases.
 
 ## Project info
 
