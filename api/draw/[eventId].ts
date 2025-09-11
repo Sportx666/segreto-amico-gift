@@ -39,26 +39,33 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'Servono almeno 2 partecipanti per il sorteggio' });
     }
 
-    // Validate all participants have authenticated profiles
-    const unauthenticatedMembers = [];
-    for (const member of members) {
-      const profileId = member.participants?.profile_id;
-      if (!profileId) {
-        unauthenticatedMembers.push(member.participants?.profiles?.display_name || 'Partecipante sconosciuto');
-        continue;
+    // Check if we should validate authenticated participants
+    const allowUnauthenticated = process.env.ALLOW_UNAUTHENTICATED_DRAW === 'true';
+    
+    if (!allowUnauthenticated) {
+      // Validate all participants have authenticated profiles
+      const unauthenticatedMembers = [];
+      for (const member of members) {
+        const profileId = member.participants?.profile_id;
+        if (!profileId) {
+          unauthenticatedMembers.push(member.participants?.profiles?.display_name || 'Partecipante sconosciuto');
+          continue;
+        }
+        
+        // Check if profile exists in auth.users
+        const { data: authUser } = await supabase.auth.admin.getUserById(profileId);
+        if (!authUser.user) {
+          unauthenticatedMembers.push(member.participants?.profiles?.display_name || 'Partecipante sconosciuto');
+        }
       }
-      
-      // Check if profile exists in auth.users
-      const { data: authUser } = await supabase.auth.admin.getUserById(profileId);
-      if (!authUser.user) {
-        unauthenticatedMembers.push(member.participants?.profiles?.display_name || 'Partecipante sconosciuto');
-      }
-    }
 
-    if (unauthenticatedMembers.length > 0) {
-      return res.status(400).json({ 
-        error: `Alcuni partecipanti non hanno un account autenticato: ${unauthenticatedMembers.join(', ')}. Tutti i partecipanti devono essere registrati prima del sorteggio.`
-      });
+      if (unauthenticatedMembers.length > 0) {
+        return res.status(400).json({ 
+          error: `Alcuni partecipanti non hanno un account autenticato: ${unauthenticatedMembers.join(', ')}. Tutti i partecipanti devono essere registrati prima del sorteggio.`
+        });
+      }
+    } else {
+      console.log('Bypassing auth validation due to ALLOW_UNAUTHENTICATED_DRAW flag');
     }
 
     const giverArr: Member[] = members.map(m => ({ id: m.id, participantId: m.participant_id }));
