@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Mail, Gift, Chrome } from "lucide-react";
+import { getOAuthRedirectUrl, getMagicLinkRedirectUrl } from "@/lib/auth-urls";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -35,7 +36,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth?next=${encodeURIComponent(next)}`
+          redirectTo: getOAuthRedirectUrl(next)
         }
       });
 
@@ -58,7 +59,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth?next=${encodeURIComponent(next)}`
+          emailRedirectTo: getMagicLinkRedirectUrl(next)
         }
       });
 
