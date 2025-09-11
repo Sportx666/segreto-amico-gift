@@ -18,6 +18,23 @@ supabase db push
 supabase db seed
 ```
 
+### UAT Testing
+
+For smoke testing against UAT environment:
+
+```bash
+# Install Playwright (first time only)
+npx playwright install
+
+# Run smoke tests (requires .env.uat.local)
+npm run test:uat
+
+# Run with browser UI for debugging
+npm run test:uat:headed
+```
+
+Copy `.env.uat.example` to `.env.uat.local` and configure your UAT environment URLs.
+
 ### Reset Test Data (Local/UAT Only)
 
 For clean testing state during development:
