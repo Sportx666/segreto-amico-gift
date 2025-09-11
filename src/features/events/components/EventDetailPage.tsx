@@ -3,8 +3,9 @@
  */
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "@/components/AuthProvider";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { supabase } from "@/integrations/supabase/client";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,7 +41,8 @@ interface Event {
 
 export default function EventDetailPage() {
   const { id } = useParams();
-  const { user, loading } = useAuth();
+  // Authentication guard - will redirect if not authenticated  
+  const { user, loading: authLoading, isAuthenticated } = useAuthGuard();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("partecipanti");
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -59,18 +61,14 @@ export default function EventDetailPage() {
   });
 
   useEffect(() => {
-    if (loading) return;
+    // Skip redirect logic since useAuthGuard handles authentication
+    if (authLoading) return;
 
     if (!id) {
       navigate("/events");
       return;
     }
-
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-  }, [user, id, loading, navigate]);
+  }, [id, authLoading, navigate]);
 
   const handleRevealAnimation = (name?: string) => {
     if (name) setRecipientName(name);
@@ -112,7 +110,21 @@ export default function EventDetailPage() {
     }
   };
 
-  if (loading || eventLoading) {
+  // Show loading spinner while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // Auth guard will handle redirects, this won't be reached if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  if (eventLoading) {
     return (
       <div className="min-h-screen bg-gradient-subtle py-6">
         <div className="container max-w-6xl">

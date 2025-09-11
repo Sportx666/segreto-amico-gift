@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/components/AuthProvider";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useI18n } from "@/i18n";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,8 @@ import { Trash2, Upload, User } from "lucide-react";
 import { NotificationSettings } from '@/components/NotificationSettings';
 
 const Profile = () => {
-  const { user } = useAuth();
+  // Authentication guard - will redirect if not authenticated
+  const { user, loading: authLoading, isAuthenticated } = useAuthGuard();
   const { t } = useI18n();
   const [displayName, setDisplayName] = useState("");
   const [address, setAddress] = useState("");
@@ -147,7 +149,19 @@ const Profile = () => {
     }
   };
 
-  if (!user) return null;
+  // Show loading spinner while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // Auth guard will handle redirects, this won't be reached if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="container mx-auto px-4 md:px-6 py-4 md:py-6">

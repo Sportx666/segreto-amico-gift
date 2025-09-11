@@ -3,6 +3,8 @@
  */
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { IdeasHeader } from "@/components/IdeasHeader";
 import { SearchBar } from "@/components/SearchBar";
 import { ProductsGrid } from "@/components/ProductsGrid";
@@ -30,6 +32,8 @@ interface IdeasPageProps {
 }
 
 export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
+  // Authentication guard - will redirect if not authenticated
+  const { user, loading: authLoading, isAuthenticated } = useAuthGuard();
   const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -92,6 +96,20 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
       setSelectedProduct(product);
     }
   };
+
+  // Show loading spinner while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // Auth guard will handle redirects, this won't be reached if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-subtle py-6">

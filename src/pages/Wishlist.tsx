@@ -2,6 +2,8 @@ import { useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
@@ -49,6 +51,9 @@ interface WishlistRow {
 }
 
 export default function Wishlist() {
+  // Authentication guard - will redirect if not authenticated
+  const { user, loading: authLoading, isAuthenticated } = useAuthGuard();
+
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedWishlistId, setSelectedWishlistId] = useState<string | null>(null);
@@ -74,9 +79,6 @@ export default function Wishlist() {
   const { data: wishlists } = useQuery({
     queryKey: ["wishlists"],
     queryFn: async (): Promise<WishlistRow[]> => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
       if (!user) return [];
 
       const { data: participant } = await supabase
@@ -96,14 +98,12 @@ export default function Wishlist() {
       if (error) throw error;
       return data || [];
     },
+    enabled: isAuthenticated,
   });
 
   const { data: wishlistItems, isLoading } = useQuery({
     queryKey: ["wishlist-items", selectedWishlistId ?? "all"],
     queryFn: async (): Promise<WishlistItemRow[]> => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
       const { data: participant } = await supabase
@@ -128,6 +128,7 @@ export default function Wishlist() {
       if (error) throw error;
       return data || [];
     },
+    enabled: isAuthenticated,
   });
 
   const [isSearching, setIsSearching] = useState(false);
@@ -161,7 +162,6 @@ export default function Wishlist() {
   const { data: events } = useQuery({
     queryKey: ['events-for-wishlists'],
     queryFn: async (): Promise<EventRow[]> => {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
       const { data: participant } = await supabase
         .from('participants')
@@ -182,7 +182,8 @@ export default function Wishlist() {
         .in('id', ids);
       if (eventsErr) throw eventsErr;
       return (eventsData || []) as EventRow[];
-    }
+    },
+    enabled: isAuthenticated,
   });
 
   const addManualToWishlist = async (
@@ -196,9 +197,6 @@ export default function Wishlist() {
     }
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
       if (!user) {
         toast.error("Devi essere autenticato");
         return;
@@ -252,9 +250,6 @@ export default function Wishlist() {
     }
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
       if (!user) {
         toast.error("Devi essere autenticato");
         return;
@@ -302,9 +297,6 @@ export default function Wishlist() {
 
   const handleAddFromSearch = async (product: Product) => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
       if (!user) {
         toast.error("Devi essere autenticato");
         return;
@@ -375,6 +367,20 @@ export default function Wishlist() {
       toast.error("Errore nella rimozione del prodotto");
     }
   };
+
+  // Show loading spinner while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // Auth guard will handle redirects, this won't be reached if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   if (isLoading) {
     return (
