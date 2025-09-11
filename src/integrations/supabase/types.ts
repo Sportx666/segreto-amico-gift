@@ -185,6 +185,7 @@ export type Database = {
           anonymous_email: string | null
           anonymous_name: string | null
           created_at: string | null
+          display_name: string | null
           event_id: string | null
           id: string
           join_token: string | null
@@ -197,6 +198,7 @@ export type Database = {
           anonymous_email?: string | null
           anonymous_name?: string | null
           created_at?: string | null
+          display_name?: string | null
           event_id?: string | null
           id?: string
           join_token?: string | null
@@ -209,6 +211,7 @@ export type Database = {
           anonymous_email?: string | null
           anonymous_name?: string | null
           created_at?: string | null
+          display_name?: string | null
           event_id?: string | null
           id?: string
           join_token?: string | null
@@ -759,6 +762,14 @@ export type Database = {
       is_event_member: {
         Args: { eid: string; uid: string }
         Returns: boolean
+      }
+      list_event_members: {
+        Args: { _event_id: string }
+        Returns: {
+          anonymous_name: string
+          event_display_name: string
+          participant_id: string
+        }[]
       }
       remove_unjoined_participant: {
         Args: { _event_id: string; _participant_id: string }

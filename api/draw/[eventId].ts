@@ -21,20 +21,49 @@ export default async function handler(req: any, res: any) {
   console.log('Starting draw for event:', eventId);
 
   try {
-    // Load members
+    // Load members with profile validation
     const { data: members, error: membersError } = await supabase
       .from('event_members')
-      .select('id, participant_id')
+      .select(`
+        id, 
+        participant_id,
+        participants!inner(
+          profile_id,
+          profiles(display_name)
+        )
+      `)
       .eq('event_id', eventId)
       .eq('status', 'joined');
     if (membersError) throw membersError;
     if (!members || members.length < 2) {
       return res.status(400).json({ error: 'Servono almeno 2 partecipanti per il sorteggio' });
     }
+
+    // Validate all participants have authenticated profiles
+    const unauthenticatedMembers = [];
+    for (const member of members) {
+      const profileId = member.participants?.profile_id;
+      if (!profileId) {
+        unauthenticatedMembers.push(member.participants?.profiles?.display_name || 'Partecipante sconosciuto');
+        continue;
+      }
+      
+      // Check if profile exists in auth.users
+      const { data: authUser } = await supabase.auth.admin.getUserById(profileId);
+      if (!authUser.user) {
+        unauthenticatedMembers.push(member.participants?.profiles?.display_name || 'Partecipante sconosciuto');
+      }
+    }
+
+    if (unauthenticatedMembers.length > 0) {
+      return res.status(400).json({ 
+        error: `Alcuni partecipanti non hanno un account autenticato: ${unauthenticatedMembers.join(', ')}. Tutti i partecipanti devono essere registrati prima del sorteggio.`
+      });
+    }
+
     const giverArr: Member[] = members.map(m => ({ id: m.id, participantId: m.participant_id }));
     const receiverArr: Member[] = giverArr;
-    const memberToParticipant = new Map<string, string>();
-    giverArr.forEach(m => memberToParticipant.set(m.id, m.participantId));
+    console.log('Loaded members:', giverArr.length);
 
     // Load exclusions (giver_id and blocked_id are already participant IDs)
     const { data: exclusions } = await supabase
