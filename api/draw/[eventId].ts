@@ -14,8 +14,11 @@ export default async function handler(req: any, res: any) {
   try {
     supabase = createServiceClient();
   } catch (e: any) {
+    console.error('Supabase service client creation failed:', e);
     return res.status(500).json({ error: e.message || 'Server configuration error' });
   }
+
+  console.log('Starting draw for event:', eventId);
 
   try {
     // Load members
@@ -33,7 +36,7 @@ export default async function handler(req: any, res: any) {
     const memberToParticipant = new Map<string, string>();
     giverArr.forEach(m => memberToParticipant.set(m.id, m.participantId));
 
-    // Load exclusions
+    // Load exclusions (giver_id and blocked_id are already participant IDs)
     const { data: exclusions } = await supabase
       .from('exclusions')
       .select('giver_id, blocked_id')
@@ -41,10 +44,11 @@ export default async function handler(req: any, res: any) {
       .eq('active', true);
     const exclusionSet = new Set<string>();
     (exclusions || []).forEach(ex => {
-      const g = memberToParticipant.get(ex.giver_id);
-      const r = memberToParticipant.get(ex.blocked_id);
-      if (g && r) exclusionSet.add(`${g}|${r}`);
+      if (ex.giver_id && ex.blocked_id) {
+        exclusionSet.add(`${ex.giver_id}|${ex.blocked_id}`);
+      }
     });
+    console.log('Loaded exclusions:', exclusions?.length || 0, 'active exclusions');
 
     // Anti-recurrence
     const antiSet = new Set<string>();
@@ -104,7 +108,10 @@ export default async function handler(req: any, res: any) {
 
     return res.status(200).json({ assignedCount: pairs.length });
   } catch (error: any) {
-    console.error('draw error', error);
-    return res.status(500).json({ error: error.message || 'Errore interno del server' });
+    console.error('Draw error for event', eventId, ':', error);
+    return res.status(500).json({ 
+      error: error.message || 'Errore interno del server',
+      details: error.code || error.name || 'Unknown error type'
+    });
   }
 }
