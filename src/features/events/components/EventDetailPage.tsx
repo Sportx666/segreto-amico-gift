@@ -80,16 +80,21 @@ export default function EventDetailPage() {
         try {
           const { data: assignment } = await supabase
             .from('assignments')
-            .select(`
-              receiver_id,
-              event_members!inner(anonymous_name)
-            `)
+            .select('receiver_id')
             .eq('event_id', event.id)
             .eq('giver_id', user.id)
             .single();
 
           if (assignment) {
-            setAssignedName(assignment.event_members.anonymous_name || 'Utente Anonimo');
+            // Get the receiver's anonymous name from event_members
+            const { data: member } = await supabase
+              .from('event_members')
+              .select('anonymous_name')
+              .eq('event_id', event.id)
+              .eq('participant_id', assignment.receiver_id)
+              .single();
+
+            setAssignedName(member?.anonymous_name || 'Utente Anonimo');
             setShowFirstReveal(true);
           }
         } catch (error) {
