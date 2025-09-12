@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,11 @@ interface ChatManagerProps {
   eventStatus: string;
 }
 
-export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
+export interface ChatManagerHandle {
+  handleChatStart: (recipientId: string, recipientName: string) => void;
+}
+
+export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ eventId, eventStatus }, ref) => {
   const [activeChannel, setActiveChannel] = useState<string>('event');
   const [activeChats, setActiveChats] = useState<ActiveChat[]>([]);
   const [messageText, setMessageText] = useState('');
@@ -81,6 +85,10 @@ export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
       refetch();
     }
   }, [activeChannel]);
+
+  useImperativeHandle(ref, () => ({
+    handleChatStart
+  }));
 
   const canUsePairChat = true; // Private chat is always available
 
@@ -391,4 +399,4 @@ export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
       />
     </div>
   );
-}
+});

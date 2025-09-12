@@ -11,6 +11,7 @@ import { getOrCreateParticipantId } from "@/lib/participants";
 interface YourAssignmentProps {
   eventId: string;
   eventStatus: string;
+  onStartChat?: (recipientId: string, recipientName: string) => void;
 }
 
 interface Assignment {
@@ -30,7 +31,7 @@ interface WishlistItem {
   is_purchased: boolean;
 }
 
-export const YourAssignment = ({ eventId, eventStatus }: YourAssignmentProps) => {
+export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssignmentProps) => {
   const { user } = useAuth();
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
@@ -209,11 +210,12 @@ export const YourAssignment = ({ eventId, eventStatus }: YourAssignmentProps) =>
               <p className="text-muted-foreground mb-4">
                 {assignment.receiver_name} non ha ancora aggiunto nulla alla sua lista dei desideri.
               </p>
-              <Button asChild variant="outline">
-                <a href="/ideas">
-                  <Gift className="w-4 h-4 mr-2" />
-                  Suggerisci un'idea
-                </a>
+              <Button 
+                variant="outline"
+                onClick={() => onStartChat?.(assignment.receiver_id, assignment.receiver_name)}
+              >
+                <Gift className="w-4 h-4 mr-2" />
+                Suggerisci un'idea
               </Button>
             </div>
           ) : (
