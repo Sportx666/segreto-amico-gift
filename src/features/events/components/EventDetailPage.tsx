@@ -118,6 +118,13 @@ export default function EventDetailPage() {
   const [assignedName, setAssignedName] = useState<string>('');
   const chatManagerRef = useRef<ChatManagerHandle>(null);
 
+  const handleStartChat = (recipientId: string, recipientName: string) => {
+    setActiveTab('chat');
+    setTimeout(() => {
+      chatManagerRef.current?.handleChatStart(recipientId, recipientName);
+    }, 100);
+  };
+
   const handleDeleteEvent = async () => {
     if (!event) return;
     
@@ -350,10 +357,10 @@ export default function EventDetailPage() {
           </TabsContent>
 
           <TabsContent value="chat">
-            <ChatManager 
+            <ChatManager
               ref={chatManagerRef}
-              eventId={event.id} 
-              eventStatus={event.draw_status} 
+              eventId={event.id}
+              eventStatus={event.draw_status}
             />
           </TabsContent>
 
@@ -361,14 +368,7 @@ export default function EventDetailPage() {
             <YourAssignment
               eventId={event.id}
               eventStatus={event.draw_status}
-              onStartChat={(recipientId, recipientName) => {
-                // Switch to chat tab first, then start the chat
-                setActiveTab('chat');
-                // Use setTimeout to ensure tab switch completes before starting chat
-                setTimeout(() => {
-                  chatManagerRef.current?.handleChatStart(recipientId, recipientName);
-                }, 100);
-              }}
+              onStartChat={handleStartChat}
             />
           </TabsContent>
         </Tabs>

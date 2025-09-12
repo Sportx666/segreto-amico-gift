@@ -4,7 +4,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Gift, ExternalLink, Calendar, ShoppingCart } from "lucide-react";
+import { Gift, ExternalLink, Calendar, ShoppingCart, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { getOrCreateParticipantId } from "@/lib/participants";
 
@@ -210,12 +210,11 @@ export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssign
               <p className="text-muted-foreground mb-4">
                 {assignment.receiver_name} non ha ancora aggiunto nulla alla sua lista dei desideri.
               </p>
-              <Button 
-                variant="outline"
+              <Button
                 onClick={() => onStartChat?.(assignment.receiver_id, assignment.receiver_name)}
               >
-                <Gift className="w-4 h-4 mr-2" />
-                Suggerisci un'idea
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Apri chat
               </Button>
             </div>
           ) : (
