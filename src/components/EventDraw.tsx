@@ -87,21 +87,16 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
 
     setIsDrawing(true);
     try {
-      // Call the server-side draw endpoint
-      const response = await fetch(`/api/draw/${eventId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+      // Call the Supabase edge function
+      const { data, error } = await supabase.functions.invoke('draw', {
+        body: { eventId }
       });
 
-      const result = await response.json();
-
-      if (!response.ok || !result.assignedCount) {
-        throw new Error(result.error || "Errore durante il sorteggio");
+      if (error || !data?.assignedCount) {
+        throw new Error((error as any)?.message || (data as any)?.error || "Errore durante il sorteggio");
       }
 
-      toast.success(`Sorteggio completato! ${result.assignedCount} assegnazioni create.`);
+      toast.success(`Sorteggio completato! ${data.assignedCount} assegnazioni create.`);
       await fetchData();
       onStatusChange();
 
