@@ -9,7 +9,7 @@ import { useChat } from '@/hooks/useChat';
 import { useNickname } from '@/hooks/useNickname';
 import { NicknameManager } from './NicknameManager';
 import { ChatRecipientSelector } from './ChatRecipientSelector';
-import { MessageCircle, Users, Heart, Send, ChevronUp, Plus, X } from 'lucide-react';
+import { MessageCircle, Users, Heart, Send, ChevronUp, Plus, X, Glasses} from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 
@@ -21,20 +21,20 @@ interface ActiveChat {
 interface ChatManagerProps {
   eventId: string;
   eventStatus: string;
+  nickname?: string;
 }
 
 export interface ChatManagerHandle {
   handleChatStart: (recipientId: string, recipientName: string) => void;
 }
 
-export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ eventId, eventStatus }, ref) => {
+export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ eventId, eventStatus, nickname}, ref) => {
   const [activeChannel, setActiveChannel] = useState<string>('event');
   const [activeChats, setActiveChats] = useState<ActiveChat[]>([]);
   const [messageText, setMessageText] = useState('');
   const [showRecipientSelector, setShowRecipientSelector] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { nickname: globalNickname } = useNickname(eventId);
 
   // Determine which chat to use based on active channel
   const isEventChannel = activeChannel === 'event';
@@ -172,7 +172,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                     value={`pair-${chat.recipientId}`}
                     className="flex items-center gap-2 relative"
                   >
-                    <Heart className="w-4 h-4" />
+                    <Glasses className="w-4 h-4" />
                     <span className="truncate max-w-20">{chat.recipientName}</span>
                     <Button
                       variant="ghost"
@@ -293,7 +293,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                     <div className="space-y-4 pb-4">
                       {loading && messages.length === 0 && (
                         <div className="space-y-4">
-                          {[1, 2].map((i) => (
+                          {[1, 2, 3].map((i) => (
                             <div key={i} className="flex items-start gap-3 mb-4 animate-pulse">
                               <div className="w-8 h-8 rounded-full bg-muted"></div>
                               <div className="flex-1 min-w-0">
@@ -307,12 +307,6 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                           ))}
                         </div>
                       )}
-                      <div className="text-center py-4">
-                        <Badge variant="secondary" className="text-xs">
-                          Chat privata con {chat.recipientName} (tu sei "{globalNickname.nickname || 'Anonimo'}")
-                        </Badge>
-                      </div>
-
                       {hasMore && (
                         <div className="text-center">
                           <Button variant="outline" size="sm" onClick={loadMore} disabled={loading}>
@@ -374,7 +368,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                         ref={inputRef}
                         value={messageText}
                         onChange={(e) => setMessageText(e.target.value)}
-                        placeholder={`Messaggio privato come "${globalNickname.nickname}"...`}
+                        placeholder={`Messaggio privato come "${nickname}"...`}
                         maxLength={500}
                         disabled={sending}
                       />

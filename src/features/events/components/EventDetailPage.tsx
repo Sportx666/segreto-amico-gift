@@ -28,6 +28,7 @@ import { formatDate } from "@/utils/format";
 import { debugLog, isDebug } from "@/lib/debug";
 import { useEvent, useEventRole } from "../hooks/useEvent";
 import { ApiService } from "@/services/api";
+import { useNickname } from "@/hooks/useNickname";
 
 interface Event {
   id: string;
@@ -53,6 +54,7 @@ export default function EventDetailPage() {
   // Use new hooks
   const { data: event, isLoading: eventLoading } = useEvent(id);
   const { data: eventRole } = useEventRole(id);
+  const { nickname } = useNickname(event?.id);
 
   // Reveal animation hook
   const { shouldShow, isPlaying, startAnimation } = useRevealAnimation({

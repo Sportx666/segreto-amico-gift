@@ -15,6 +15,7 @@ interface EventDrawProps {
     draw_status: string;
     name: string;
     date: string | null;
+    draw_date?: string | null;
   };
   onStatusChange: () => void;
 }
@@ -43,10 +44,44 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
   const [isDrawing, setIsDrawing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [canDraw, setCanDraw] = useState(false);
+  const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
     fetchData();
   }, [eventId]);
+
+  useEffect(() => {
+    if (!event.draw_date || event.draw_status === 'completed') {
+      setTimeLeft("");
+      return;
+    }
+
+    const target = new Date(event.draw_date).getTime();
+
+    let timer: ReturnType<typeof setInterval>;
+
+    const updateTime = () => {
+      const now = Date.now();
+      const diff = target - now;
+
+      if (diff <= 0) {
+        setTimeLeft("0d 0h 0m 0s");
+        clearInterval(timer);
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+    };
+
+    timer = setInterval(updateTime, 1000);
+    updateTime();
+
+    return () => clearInterval(timer);
+  }, [event.draw_date, event.draw_status]);
 
   const fetchData = async () => {
     try {
@@ -186,7 +221,9 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
                   <div>
                     <p className="font-semibold text-orange-700">In Attesa del Sorteggio</p>
                     <p className="text-sm text-muted-foreground">
-                      Il sorteggio non è ancora stato effettuato
+                      {event.draw_date
+                        ? `Il sorteggio avverrà tra ${timeLeft}`
+                        : "Il sorteggio non è ancora stato effettuato"}
                     </p>
                   </div>
                 </>
