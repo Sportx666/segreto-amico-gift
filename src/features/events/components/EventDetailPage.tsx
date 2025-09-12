@@ -28,6 +28,7 @@ import { formatDate } from "@/utils/format";
 import { debugLog, isDebug } from "@/lib/debug";
 import { useEvent, useEventRole } from "../hooks/useEvent";
 import { ApiService } from "@/services/api";
+import { useNickname } from "@/hooks/useNickname";
 
 export default function EventDetailPage() {
   const { id } = useParams();
@@ -41,6 +42,7 @@ export default function EventDetailPage() {
   // Use new hooks
   const { data: event, isLoading: eventLoading } = useEvent(id);
   const { data: eventRole } = useEventRole(id);
+  const { nickname } = useNickname(event?.id);
 
   // Reveal animation hook
   const { shouldShow, isPlaying, startAnimation } = useRevealAnimation({
@@ -115,6 +117,13 @@ export default function EventDetailPage() {
   const [showFirstReveal, setShowFirstReveal] = useState(false);
   const [assignedName, setAssignedName] = useState<string>('');
   const chatManagerRef = useRef<ChatManagerHandle>(null);
+
+  const handleStartChat = (recipientId: string, recipientName: string) => {
+    setActiveTab('chat');
+    setTimeout(() => {
+      chatManagerRef.current?.handleChatStart(recipientId, recipientName);
+    }, 100);
+  };
 
   const handleDeleteEvent = async () => {
     if (!event) return;
@@ -380,10 +389,10 @@ export default function EventDetailPage() {
           </TabsContent>
 
           <TabsContent value="chat">
-            <ChatManager 
+            <ChatManager
               ref={chatManagerRef}
-              eventId={event.id} 
-              eventStatus={event.draw_status} 
+              eventId={event.id}
+              eventStatus={event.draw_status}
             />
           </TabsContent>
 
@@ -391,14 +400,7 @@ export default function EventDetailPage() {
             <YourAssignment
               eventId={event.id}
               eventStatus={event.draw_status}
-              onStartChat={(recipientId, recipientName) => {
-                // Switch to chat tab first, then start the chat
-                setActiveTab('chat');
-                // Use setTimeout to ensure tab switch completes before starting chat
-                setTimeout(() => {
-                  chatManagerRef.current?.handleChatStart(recipientId, recipientName);
-                }, 100);
-              }}
+              onStartChat={handleStartChat}
             />
           </TabsContent>
         </Tabs>

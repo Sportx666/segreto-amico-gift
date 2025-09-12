@@ -104,6 +104,7 @@ export function useChat(eventId?: string, channel: 'event' | 'pair' = 'event', r
 
   useEffect(() => {
     if (eventId) {
+      setMessages([]);
       setOffset(0);
       fetchMessages(false);
     }
