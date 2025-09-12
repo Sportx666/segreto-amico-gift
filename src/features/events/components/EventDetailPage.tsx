@@ -299,7 +299,7 @@ export default function EventDetailPage() {
                   <span className="hidden sm:inline">Esclusioni</span>
                 </TabsTrigger>
               ) || (
-                  <TabsTrigger value="assegnazione" className="flex items-center gap-2 animate-pulse bg-gradient-to-r from-primary/20 to-accent/20 hover:from-primary/30 hover:to-accent/30 transition-all duration-300">
+                  <TabsTrigger value="assegnazione" className="flex items-center gap-2 bg-accent/20 hover:bg-accent/30 transition-all duration-300">
                     <Gift className="w-4 h-4 animate-bounce" />
                     <span className="hidden sm:inline font-semibold">Il tuo abbinamento</span>
                   </TabsTrigger>
