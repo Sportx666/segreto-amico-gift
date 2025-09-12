@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, Users, Gift, Share2, Shuffle, Ban, ImageUp, Trash2, MessageCircle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { uploadImage, resizeToWebP } from "@/lib/upload";
 import { EventMembers } from "@/components/EventMembers";
@@ -20,6 +21,7 @@ import { EventShare } from "@/components/EventShare";
 import { YourAssignment } from "@/components/YourAssignment";
 import { ChatManager } from "@/components/ChatManager";
 import { UserAssignment } from "@/components/UserAssignment";
+import { FirstDrawRevealDialog } from "@/components/FirstDrawRevealDialog";
 import { useRevealAnimation } from "@/hooks/useRevealAnimation";
 import { RevealAnimation } from "@/components/RevealAnimation";
 import { formatDate } from "@/utils/format";
@@ -70,12 +72,45 @@ export default function EventDetailPage() {
     }
   }, [id, authLoading, navigate]);
 
+  // Check for first draw reveal when event draw is completed
+  useEffect(() => {
+    if (event?.draw_status === 'completed' && user) {
+      // Fetch user's assignment to show in reveal dialog
+      const fetchAssignment = async () => {
+        try {
+          const { data: assignment } = await supabase
+            .from('assignments')
+            .select(`
+              receiver_id,
+              event_members!inner(anonymous_name)
+            `)
+            .eq('event_id', event.id)
+            .eq('giver_id', user.id)
+            .single();
+
+          if (assignment) {
+            setAssignedName(assignment.event_members.anonymous_name || 'Utente Anonimo');
+            setShowFirstReveal(true);
+          }
+        } catch (error) {
+          console.error('Error fetching assignment for reveal:', error);
+        }
+      };
+
+      fetchAssignment();
+    }
+  }, [event?.draw_status, event?.id, user]);
+
   const handleRevealAnimation = (name?: string) => {
     if (name) setRecipientName(name);
     if (shouldShow) {
       startAnimation();
     }
   };
+
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showFirstReveal, setShowFirstReveal] = useState(false);
+  const [assignedName, setAssignedName] = useState<string>('');
 
   const handleDeleteEvent = async () => {
     if (!event) return;
@@ -97,6 +132,7 @@ export default function EventDetailPage() {
     } catch (error) {
       ApiService.handleError(error, 'delete_event', "Errore nella rimozione dell'evento");
     }
+    setShowDeleteDialog(false);
   };
 
   const getStatusBadge = (status: string) => {
@@ -222,7 +258,7 @@ export default function EventDetailPage() {
                     <Button
                       size="sm"
                       variant="destructive"
-                      onClick={handleDeleteEvent}
+                      onClick={() => setShowDeleteDialog(true)}
                       className="hidden sm:flex"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
@@ -232,7 +268,7 @@ export default function EventDetailPage() {
                     <Button
                       size="sm"
                       variant="destructive"
-                      onClick={handleDeleteEvent}
+                      onClick={() => setShowDeleteDialog(true)}
                       className="sm:hidden"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -258,9 +294,9 @@ export default function EventDetailPage() {
                   <span className="hidden sm:inline">Esclusioni</span>
                 </TabsTrigger>
               ) || (
-                  <TabsTrigger value="assegnazione" className="flex items-center gap-2">
-                    <Gift className="w-4 h-4" />
-                    <span className="hidden sm:inline">Il tuo abbinamento</span>
+                  <TabsTrigger value="assegnazione" className="flex items-center gap-2 animate-pulse bg-gradient-to-r from-primary/20 to-accent/20 hover:from-primary/30 hover:to-accent/30 transition-all duration-300">
+                    <Gift className="w-4 h-4 animate-bounce" />
+                    <span className="hidden sm:inline font-semibold">Il tuo abbinamento</span>
                   </TabsTrigger>
                 )}
               <TabsTrigger value="sorteggio" className="flex items-center gap-2">
@@ -294,7 +330,8 @@ export default function EventDetailPage() {
                 userRole={userRole} 
                 event={event} 
                 onStatusChange={() => {
-                  // Refetch event data
+                  // Reload the page after draw completion/reset
+                  window.location.reload();
                 }} 
               />
             ) : (
@@ -327,6 +364,34 @@ export default function EventDetailPage() {
           // Animation completed, component will handle cleanup
         }}
       />
+
+      {/* First Draw Reveal Dialog */}
+      {showFirstReveal && (
+        <FirstDrawRevealDialog
+          eventId={event.id}
+          assignedName={assignedName}
+          onClose={() => setShowFirstReveal(false)}
+        />
+      )}
+
+      {/* Delete Event Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma Eliminazione</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler eliminare l'evento "{event.name}"? 
+              Questa azione non può essere annullata e rimuoverà tutti i dati associati inclusi messaggi, assegnazioni e liste dei desideri.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteEvent} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Elimina Evento
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

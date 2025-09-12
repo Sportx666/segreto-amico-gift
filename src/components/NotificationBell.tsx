@@ -25,10 +25,24 @@ export function NotificationBell() {
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
   const [open, setOpen] = useState(false);
 
-  const handleNotificationClick = async (notificationId: string, isRead: boolean) => {
+  const handleNotificationClick = async (notificationId: string, isRead: boolean, notification: any) => {
     if (!isRead) {
       await markAsRead(notificationId);
     }
+    
+    // Handle navigation based on notification type
+    if (notification.type === 'assignment' && notification.body.includes('evento')) {
+      // Extract event ID from notification body if available
+      // For now, navigate to events page
+      window.location.href = '/events';
+    } else if (notification.type === 'event') {
+      window.location.href = '/events';
+    } else if (notification.type === 'chat') {
+      // Navigate to the specific event if event ID is available
+      window.location.href = '/events';
+    }
+    
+    setOpen(false);
   };
 
   const handleMarkAllRead = async () => {
@@ -93,7 +107,7 @@ export function NotificationBell() {
                       "p-4 cursor-pointer hover:bg-muted/50 transition-colors",
                       !isRead && "bg-blue-50/50 border-l-2 border-l-primary"
                     )}
-                    onClick={() => handleNotificationClick(notification.id, isRead)}
+                    onClick={() => handleNotificationClick(notification.id, isRead, notification)}
                   >
                     <div className="flex gap-3">
                       <div className={cn("mt-0.5", typeColors[notification.type])}>

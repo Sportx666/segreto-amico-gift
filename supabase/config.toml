@@ -2,3 +2,6 @@ project_id = "eociecgrdwllggcohmko"
 
 [functions.draw]
 verify_jwt = true
+
+[functions.auto-draw-scheduler]
+verify_jwt = false

@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Shuffle, CheckCircle, AlertTriangle, Users, Gift } from "lucide-react";
 import { toast } from "sonner";
+import { AutoDrawToggle } from "@/components/AutoDrawToggle";
 
 interface EventDrawProps {
   eventId: string;
@@ -13,6 +14,7 @@ interface EventDrawProps {
   event: {
     draw_status: string;
     name: string;
+    date: string | null;
   };
   onStatusChange: () => void;
 }
@@ -287,6 +289,14 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
           </CardContent>
         </Card>
       )}
+
+      {/* Auto Draw Toggle */}
+      <AutoDrawToggle 
+        eventId={eventId}
+        eventDate={event.date}
+        drawStatus={event.draw_status}
+        isAdmin={userRole === 'admin'}
+      />
 
       {/* Privacy Notice */}
       <Card className="border-amber-200 bg-amber-50">

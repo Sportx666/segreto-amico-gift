@@ -185,8 +185,24 @@ export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
             <TabsContent value="event" className="mt-0">
               <div className="flex flex-col h-[500px]">
                 {/* Messages Area */}
-                <ScrollArea className={`flex-1 px-6 ${loading ? 'pointer-events-none opacity-60' : ''}`}>
+                <ScrollArea className="flex-1 px-6">
                   <div className="space-y-4 pb-4">
+                    {loading && messages.length === 0 && (
+                      <div className="space-y-4">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="flex items-start gap-3 mb-4 animate-pulse">
+                            <div className="w-8 h-8 rounded-full bg-muted"></div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="h-4 bg-muted rounded w-20"></div>
+                                <div className="h-3 bg-muted rounded w-12"></div>
+                              </div>
+                              <div className="h-8 bg-muted rounded-lg w-3/4"></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     {hasMore && (
                       <div className="text-center">
                         <Button variant="outline" size="sm" onClick={loadMore} disabled={loading}>
@@ -265,8 +281,24 @@ export function ChatManager({ eventId, eventStatus }: ChatManagerProps) {
               <TabsContent key={chat.recipientId} value={`pair-${chat.recipientId}`} className="mt-0">
                 <div className="flex flex-col h-[500px]">
                   {/* Private Messages Area */}
-                  <ScrollArea className={`flex-1 px-6 ${loading ? 'pointer-events-none opacity-60' : ''}`}>
+                  <ScrollArea className="flex-1 px-6">
                     <div className="space-y-4 pb-4">
+                      {loading && messages.length === 0 && (
+                        <div className="space-y-4">
+                          {[1, 2].map((i) => (
+                            <div key={i} className="flex items-start gap-3 mb-4 animate-pulse">
+                              <div className="w-8 h-8 rounded-full bg-muted"></div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <div className="h-4 bg-muted rounded w-20"></div>
+                                  <div className="h-3 bg-muted rounded w-12"></div>
+                                </div>
+                                <div className="h-8 bg-muted rounded-lg w-2/3"></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <div className="text-center py-4">
                         <Badge variant="secondary" className="text-xs">
                           Chat privata con {chat.recipientName} (tu sei "{globalNickname.nickname || 'Anonimo'}")
