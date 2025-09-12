@@ -362,9 +362,12 @@ export default function EventDetailPage() {
               eventId={event.id}
               eventStatus={event.draw_status}
               onStartChat={(recipientId, recipientName) => {
-                // Start chat and switch to chat tab
-                chatManagerRef.current?.handleChatStart(recipientId, recipientName);
+                // Switch to chat tab first, then start the chat
                 setActiveTab('chat');
+                // Use setTimeout to ensure tab switch completes before starting chat
+                setTimeout(() => {
+                  chatManagerRef.current?.handleChatStart(recipientId, recipientName);
+                }, 100);
               }}
             />
           </TabsContent>
