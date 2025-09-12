@@ -308,7 +308,7 @@ Deno.serve(async (req: Request) => {
 
     const { error: insertError } = await supabase
       .from('assignments')
-      .insert(pairs.map(p => ({ event_id: eventId, giver_id: p.giver, receiver_id: p.receiver })));
+      .insert(pairs.map(p => ({ event_id: eventId, giver_id: p.giver, receiver_id: p.receiver, first_reveal_pending: true })));
     if (insertError) {
       console.error('Insert assignments error', insertError);
       return new Response(

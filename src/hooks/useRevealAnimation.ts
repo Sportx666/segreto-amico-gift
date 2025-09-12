@@ -66,6 +66,17 @@ export function useRevealAnimation({ eventId, onComplete }: RevealAnimationOptio
         console.error('Error updating reveal status:', error);
       }
 
+      // Set first_reveal_pending to false for user's assignment
+      const { error: assignmentError } = await supabase
+        .from('assignments')
+        .update({ first_reveal_pending: false })
+        .eq('event_id', eventId)
+        .eq('giver_id', participantId);
+
+      if (assignmentError) {
+        console.error('Error updating assignment reveal status:', assignmentError);
+      }
+
       // Animation duration - can be customized
       setTimeout(() => {
         setIsPlaying(false);

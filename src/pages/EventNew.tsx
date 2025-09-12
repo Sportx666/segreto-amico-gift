@@ -14,6 +14,7 @@ const EventNew = () => {
   const [name, setName] = useState("");
   const [budget, setBudget] = useState<number | "">("");
   const [date, setDate] = useState("");
+  const [drawDate, setDrawDate] = useState("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
@@ -58,6 +59,7 @@ const EventNew = () => {
           name: name.trim(),
           budget: budget || null,
           date: date || null,
+          draw_date: drawDate || null,
           join_code: codeData,
           admin_profile_id: user.id
         })
@@ -215,6 +217,16 @@ const EventNew = () => {
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="drawDate">Data automatica del sorteggio</Label>
+                <Input
+                  id="drawDate"
+                  type="date"
+                  value={drawDate}
+                  onChange={(e) => setDrawDate(e.target.value)}
                 />
               </div>
 

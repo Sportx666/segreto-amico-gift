@@ -19,6 +19,7 @@ export interface Event {
   created_at: string;
   cover_image_url?: string | null;
   admin_profile_id: string;
+  draw_date: string | null;
 }
 
 export interface EventMember {
@@ -75,6 +76,7 @@ export interface Assignment {
   giver_id: string;
   receiver_id: string;
   generated_on: string;
+  first_reveal_pending: boolean;
 }
 
 // API Response types

@@ -62,6 +62,7 @@ export type Database = {
       assignments: {
         Row: {
           event_id: string | null
+          first_reveal_pending: boolean | null
           generated_on: string | null
           giver_id: string | null
           id: string
@@ -69,6 +70,7 @@ export type Database = {
         }
         Insert: {
           event_id?: string | null
+          first_reveal_pending?: boolean | null
           generated_on?: string | null
           giver_id?: string | null
           id?: string
@@ -76,6 +78,7 @@ export type Database = {
         }
         Update: {
           event_id?: string | null
+          first_reveal_pending?: boolean | null
           generated_on?: string | null
           giver_id?: string | null
           id?: string
@@ -245,6 +248,7 @@ export type Database = {
           cover_image_url: string | null
           created_at: string | null
           date: string | null
+          draw_date: string | null
           draw_status: string | null
           id: string
           join_code: string | null
@@ -258,6 +262,7 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string | null
           date?: string | null
+          draw_date?: string | null
           draw_status?: string | null
           id?: string
           join_code?: string | null
@@ -271,6 +276,7 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string | null
           date?: string | null
+          draw_date?: string | null
           draw_status?: string | null
           id?: string
           join_code?: string | null
