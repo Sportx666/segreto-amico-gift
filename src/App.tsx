@@ -14,6 +14,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Events from "./pages/Events";
 import EventNew from "./pages/EventNew";
+import EventEdit from "./pages/EventEdit";
 import EventDetail from "./pages/EventDetail";
 import EventJoin from "./pages/EventJoin";
 import NotFound from "./pages/NotFound";
@@ -56,6 +57,7 @@ const AppContent = () => {
             <Route path="/auth" element={<Auth />} />
             <Route path="/events" element={<Events showMobileFeed={showMobileFeed} />} />
             <Route path="/events/new" element={<EventNew />} />
+            <Route path="/events/:id/edit" element={<EventEdit />} />
             <Route path="/events/:id" element={<EventDetail />} />
             <Route path="/join/:token" element={<EventJoin />} />
             <Route path="/ideas" element={<Ideas showMobileFeed={showMobileFeed} />} />

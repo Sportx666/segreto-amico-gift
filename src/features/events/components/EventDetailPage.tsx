@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Users, Gift, Share2, Shuffle, Ban, ImageUp, Trash2, MessageCircle } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Gift, Share2, Shuffle, Ban, ImageUp, Trash2, MessageCircle, Edit } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { uploadImage, resizeToWebP } from "@/lib/upload";
@@ -28,18 +28,6 @@ import { formatDate } from "@/utils/format";
 import { debugLog, isDebug } from "@/lib/debug";
 import { useEvent, useEventRole } from "../hooks/useEvent";
 import { ApiService } from "@/services/api";
-
-interface Event {
-  id: string;
-  name: string;
-  date: string | null;
-  budget: number | null;
-  draw_status: string;
-  amazon_marketplace: string;
-  join_code: string;
-  created_at: string;
-  cover_image_url?: string | null;
-}
 
 export default function EventDetailPage() {
   const { id } = useParams();
@@ -78,14 +66,24 @@ export default function EventDetailPage() {
       // Fetch user's assignment to show in reveal dialog
       const fetchAssignment = async () => {
         try {
-          const { data: assignment } = await supabase
-            .from('assignments')
-            .select('receiver_id')
-            .eq('event_id', event.id)
-            .eq('giver_id', user.id)
+          // Get participant ID first
+          const { data: participant } = await supabase
+            .from('participants')
+            .select('id')
+            .eq('profile_id', user.id)
             .single();
 
-          if (assignment) {
+          if (!participant) return;
+
+          // Check if first_reveal_pending is true for this user's assignment
+          const { data: assignment } = await supabase
+            .from('assignments')
+            .select('receiver_id, first_reveal_pending')
+            .eq('event_id', event.id)
+            .eq('giver_id', participant.id)
+            .single();
+
+          if (assignment && assignment.first_reveal_pending) {
             // Get the receiver's anonymous name from event_members
             const { data: member } = await supabase
               .from('event_members')
@@ -213,11 +211,21 @@ export default function EventDetailPage() {
                 <h1 className="text-2xl md:text-4xl font-bold text-white">
                   {event.name}
                 </h1>
-                <div className="flex items-center gap-2 text-white/90">
-                  <Calendar className="w-4 h-4" />
-                  <span className="text-sm md:text-base">
-                    {formatDate(event.date)}
-                  </span>
+                <div className="flex flex-col gap-1 text-white/90">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    <span className="text-sm md:text-base">
+                      {formatDate(event.date)}
+                    </span>
+                  </div>
+                  {event.draw_date && (
+                    <div className="flex items-center gap-2">
+                      <Shuffle className="w-4 h-4" />
+                      <span className="text-xs md:text-sm opacity-80">
+                        Sorteggio: {formatDate(event.draw_date)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -259,6 +267,28 @@ export default function EventDetailPage() {
 
               {/* Admin Controls */}
               <div className="flex items-center gap-2">
+                {userRole === 'admin' && event.draw_status !== 'completed' && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate(`/events/${event.id}/edit`)}
+                      className="hidden sm:flex"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Modifica Evento
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate(`/events/${event.id}/edit`)}
+                      className="sm:hidden"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
                 {userRole === 'admin' && (
                   <>
                     <Button

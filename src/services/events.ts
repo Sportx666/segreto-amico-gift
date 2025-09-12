@@ -16,6 +16,7 @@ export type Event = {
   created_at: string;
   cover_image_url?: string | null;
   admin_profile_id: string;
+  draw_date?: string | null;
 };
 
 export type EventMember = {

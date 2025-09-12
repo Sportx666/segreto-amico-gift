@@ -7,7 +7,7 @@ import { AdSlot } from "@/components/AdSlot";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonGrid } from "@/components/ui/skeleton-grid";
-import { Plus, Calendar, Users, Euro } from "lucide-react";
+import { Plus, Calendar, Users, Euro, Edit, Shuffle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/components/AuthProvider";
 import { getOrCreateParticipantId } from "@/lib/participants";
@@ -22,6 +22,8 @@ interface Event {
   join_code: string | null;
   created_at: string;
   cover_image_url?: string | null;
+  draw_date?: string | null;
+  admin_profile_id?: string;
 }
 
 interface EventsProps {
@@ -155,8 +157,9 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
             
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {events.map((event) => (
-                <Link key={event.id} to={`/events/${event.id}`} className="group">
-                  <Card className="group-hover:shadow-elegant transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm shadow-card overflow-hidden">
+                <div key={event.id} className="group relative">
+                  <Link to={`/events/${event.id}`} className="block">
+                    <Card className="group-hover:shadow-elegant transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm shadow-card overflow-hidden">
                     {/* Event Cover Image */}
                     <div className="aspect-16-9 overflow-hidden bg-gradient-primary relative">
                       {event.cover_image_url ? (
@@ -170,8 +173,20 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
                           <Calendar className="w-12 h-12 text-white/80" />
                         </div>
                       )}
-                      {/* Status Badge Overlay */}
-                      <div className="absolute top-3 right-3">
+                      {/* Status Badge and Edit Button Overlay */}
+                      <div className="absolute top-3 right-3 flex items-center gap-2">
+                        {event.admin_profile_id === user?.id && event.draw_status !== 'completed' && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              navigate(`/events/${event.id}/edit`);
+                            }}
+                            className="p-1.5 bg-white/90 hover:bg-white text-gray-700 rounded-full transition-colors"
+                            title="Modifica evento"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </button>
+                        )}
                         <span className={`px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${
                           event.draw_status === 'pending' ? 'bg-accent/90 text-accent-foreground' :
                           event.draw_status === 'drawn' ? 'bg-primary/90 text-primary-foreground' :
@@ -204,6 +219,15 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
                             })}</span>
                           </div>
                         )}
+                        {event.draw_date && (
+                          <div className="flex items-center gap-1 text-xs">
+                            <Shuffle className="w-3 h-3" />
+                            <span>Sorteggio: {new Date(event.draw_date).toLocaleDateString("it-IT", { 
+                              day: 'numeric', 
+                              month: 'short' 
+                            })}</span>
+                          </div>
+                        )}
                         {event.join_code && (
                           <div className="flex items-center gap-1">
                             <Users className="w-4 h-4" />
@@ -213,7 +237,8 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
                       </div>
                     </CardContent>
                   </Card>
-                </Link>
+                  </Link>
+                </div>
               ))}
             </div>
           </>

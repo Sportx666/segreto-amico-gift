@@ -25,21 +25,21 @@ export function useRevealAnimation({ eventId, onComplete }: RevealAnimationOptio
       // Get participant ID
       const participantId = await getOrCreateParticipantId(user.id);
 
-      // Check if reveal has been shown for this user and event
-      const { data: memberData, error } = await supabase
-        .from('event_members')
-        .select('reveal_shown')
+      // Check if first_reveal_pending is true for this user's assignment
+      const { data: assignmentData, error: assignmentError } = await supabase
+        .from('assignments')
+        .select('first_reveal_pending')
         .eq('event_id', eventId)
-        .eq('participant_id', participantId)
+        .eq('giver_id', participantId)
         .maybeSingle();
 
-      if (error) {
-        console.error('Error checking reveal status:', error);
+      if (assignmentError) {
+        console.error('Error checking assignment reveal status:', assignmentError);
         return;
       }
 
-      // Show animation if not yet shown
-      if (memberData && !memberData.reveal_shown) {
+      // Show animation if first_reveal_pending is true
+      if (assignmentData && assignmentData.first_reveal_pending) {
         setShouldShow(true);
       }
     } catch (error) {
