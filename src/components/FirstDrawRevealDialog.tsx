@@ -20,26 +20,44 @@ export function FirstDrawRevealDialog({ eventId, assignedName, onClose }: FirstD
         const { data: user } = await supabase.auth.getUser();
         if (!user.user) return;
 
-        // Check if user has already seen the reveal for this event
-        const { data: member, error } = await supabase
+        // 1) Find this user's participant id
+        const { data: participant, error: pErr } = await supabase
+          .from('participants')
+          .select('id')
+          .eq('profile_id', user.user.id)
+          .maybeSingle(); // or .maybeSingle() if it might not exist
+
+        if (pErr || !participant) {
+          throw pErr ?? new Error('Participant not found for current user');
+        }
+
+        // 2) Check reveal flag for that participant in this event
+        const { data: member, error: mErr } = await supabase
           .from('event_members')
           .select('reveal_shown')
           .eq('event_id', eventId)
-          .eq('participant_id', user.user.id)
-          .single();
+          .eq('participant_id', participant.id)
+          .maybeSingle(); // returns null if not found without throwing
 
-        if (error || !member) return;
+        if (mErr) throw mErr;
 
         if (!member.reveal_shown && assignedName) {
           setShouldShow(true);
           setIsVisible(true);
-          
+
           // Mark as shown
           await supabase
             .from('event_members')
             .update({ reveal_shown: true })
             .eq('event_id', eventId)
-            .eq('participant_id', user.user.id);
+            .eq('participant_id', participant.id);
+
+          await supabase
+            .from('assignments')
+            .update({ first_reveal_pending: false })
+            .eq('event_id', eventId)
+            .eq('giver_id', participant.id);
+
 
           // Trigger confetti after a short delay
           setTimeout(() => {
