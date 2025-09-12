@@ -12,7 +12,6 @@ import { ChatRecipientSelector } from './ChatRecipientSelector';
 import { MessageCircle, Users, Heart, Send, ChevronUp, Plus, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ActiveChat {
   recipientId: string;
@@ -25,7 +24,7 @@ interface ChatManagerProps {
 }
 
 export interface ChatManagerHandle {
-  handleChatStart: (recipientId: string, recipientName: string) => Promise<void>;
+  handleChatStart: (recipientId: string, recipientName: string) => void;
 }
 
 export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ eventId, eventStatus }, ref) => {
@@ -55,7 +54,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
     activeChat?.recipientId
   );
 
-  const handleChatStart = async (recipientId: string, recipientName?: string) => {
+  const handleChatStart = (recipientId: string, recipientName?: string) => {
     // Get recipient name from event members
     const chatId = `pair-${recipientId}`;
     
@@ -67,34 +66,9 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
         recipientName: recipientName || 'Utente Anonimo',
       };
       setActiveChats(prev => [...prev, newChat]);
-      
-      // Switch to the new chat channel
-      setActiveChannel(chatId);
-      
-      // Send an initial message to actually start the conversation
-      try {
-        const session = await supabase.auth.getSession();
-        if (session.data.session?.access_token) {
-          await fetch('https://eociecgrdwllggcohmko.supabase.co/functions/v1/chat-send', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${session.data.session.access_token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              eventId,
-              channel: 'pair',
-              content: `Ciao ${recipientName || 'Utente'}! Hai delle idee per dei regali? Fammi sapere cosa ti piacerebbe ricevere! 🎁`,
-              recipientId,
-            }),
-          });
-        }
-      } catch (error) {
-        console.error('Error sending initial message:', error);
-      }
-    } else {
-      setActiveChannel(chatId);
     }
+    
+    setActiveChannel(chatId);
   };
 
   const handleCloseChat = (recipientId: string) => {
