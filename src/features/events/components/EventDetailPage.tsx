@@ -1,7 +1,7 @@
 /**
  * Refactored EventDetail page with better separation of concerns
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +19,7 @@ import { EventExclusions } from "@/components/EventExclusions";
 import { EventDraw } from "@/components/EventDraw";
 import { EventShare } from "@/components/EventShare";
 import { YourAssignment } from "@/components/YourAssignment";
-import { ChatManager } from "@/components/ChatManager";
+import { ChatManager, ChatManagerHandle } from "@/components/ChatManager";
 import { UserAssignment } from "@/components/UserAssignment";
 import { FirstDrawRevealDialog } from "@/components/FirstDrawRevealDialog";
 import { useRevealAnimation } from "@/hooks/useRevealAnimation";
@@ -116,6 +116,7 @@ export default function EventDetailPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showFirstReveal, setShowFirstReveal] = useState(false);
   const [assignedName, setAssignedName] = useState<string>('');
+  const chatManagerRef = useRef<ChatManagerHandle>(null);
 
   const handleDeleteEvent = async () => {
     if (!event) return;
@@ -349,13 +350,22 @@ export default function EventDetailPage() {
           </TabsContent>
 
           <TabsContent value="chat">
-            <ChatManager eventId={event.id} eventStatus={event.draw_status} />
+            <ChatManager 
+              ref={chatManagerRef}
+              eventId={event.id} 
+              eventStatus={event.draw_status} 
+            />
           </TabsContent>
 
           <TabsContent value="assegnazione">
             <YourAssignment
               eventId={event.id}
               eventStatus={event.draw_status}
+              onStartChat={(recipientId, recipientName) => {
+                // Start chat and switch to chat tab
+                chatManagerRef.current?.handleChatStart(recipientId, recipientName);
+                setActiveTab('chat');
+              }}
             />
           </TabsContent>
         </Tabs>
