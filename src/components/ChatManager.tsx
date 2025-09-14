@@ -41,9 +41,35 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
   const [searchParams, setSearchParams] = useSearchParams();
   const { nickname: nickData } = useNickname(eventId);
   const [promptedNickname, setPromptedNickname] = useState(false);
+  
   // Determine which chat to use based on active channel
   const isEventChannel = activeChannel === 'event';
   const activeChat = activeChats.find(chat => `pair-${chat.recipientId}` === activeChannel);
+  
+  // Handle openChat prop from YourAssignment
+  useEffect(() => {
+    if (openChat?.recipientId) {
+      handleChatStart(openChat.recipientId, openChat.recipientName);
+      onOpenChatConsumed?.();
+    }
+  }, [openChat]);
+  
+  // Read dm parameter on mount to restore DM state
+  useEffect(() => {
+    const dmParam = searchParams.get('dm');
+    if (dmParam && dmParam !== 'event') {
+      // Find or create the chat for this recipient
+      const existingChat = activeChats.find(chat => chat.recipientId === dmParam);
+      if (!existingChat) {
+        const newChat: ActiveChat = {
+          recipientId: dmParam,
+          recipientName: 'Utente Anonimo', // Will be updated when we get member data
+        };
+        setActiveChats(prev => [...prev, newChat]);
+      }
+      setActiveChannel(`pair-${dmParam}`);
+    }
+  }, []); // Only run on mount
   
   const {
     messages,

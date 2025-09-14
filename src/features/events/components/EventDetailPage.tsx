@@ -116,13 +116,16 @@ export default function EventDetailPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showFirstReveal, setShowFirstReveal] = useState(false);
   const [assignedName, setAssignedName] = useState<string>('');
+  const [openChat, setOpenChat] = useState<{ recipientId: string; recipientName?: string } | null>(null);
   const chatManagerRef = useRef<ChatManagerHandle>(null);
 
   const handleStartChat = (recipientId: string, recipientName: string) => {
     setActiveTab('chat');
-    setTimeout(() => {
-      chatManagerRef.current?.handleChatStart(recipientId, recipientName);
-    }, 100);
+    setOpenChat({ recipientId, recipientName });
+  };
+
+  const handleOpenChatConsumed = () => {
+    setOpenChat(null);
   };
 
   const handleDeleteEvent = async () => {
@@ -393,6 +396,8 @@ export default function EventDetailPage() {
               ref={chatManagerRef}
               eventId={event.id}
               eventStatus={event.draw_status}
+              openChat={openChat}
+              onOpenChatConsumed={handleOpenChatConsumed}
             />
           </TabsContent>
 
