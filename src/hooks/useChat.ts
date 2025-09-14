@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -21,43 +21,53 @@ export function useChat(eventId?: string, channel: 'event' | 'pair' = 'event', r
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [hasMore, setHasMore] = useState(false);
-  const [offset, setOffset] = useState(0);
+const [offset, setOffset] = useState(0);
+
+  // Track in-flight requests to avoid race conditions and stale updates
+  const fetchIdRef = useRef(0);
+  const controllerRef = useRef<AbortController | null>(null);
 
   const fetchMessages = useCallback(async (isLoadMore = false) => {
     if (!eventId || !session?.access_token) return;
-    
+    if (channel === 'pair' && !recipientId) return; // don't fetch pair messages without a recipient
+
+    // Abort any in-flight request
+    try { controllerRef.current?.abort(); } catch {}
+    const controller = new AbortController();
+    controllerRef.current = controller;
+
+    const fetchId = ++fetchIdRef.current;
+    const currentOffset = isLoadMore ? offset : 0;
+    const url = `https://eociecgrdwllggcohmko.supabase.co/functions/v1/chat-list?eventId=${eventId}&channel=${channel}&offset=${currentOffset}&limit=25${recipientId ? `&recipientId=${recipientId}` : ''}`;
+
     setLoading(true);
     try {
-      const currentOffset = isLoadMore ? offset : 0;
-      
-      const url = `https://eociecgrdwllggcohmko.supabase.co/functions/v1/chat-list?eventId=${eventId}&channel=${channel}&offset=${currentOffset}&limit=25${recipientId ? `&recipientId=${recipientId}` : ''}`;
       const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+        signal: controller.signal,
       });
 
       if (!response.ok) throw new Error('Failed to fetch messages');
-      
       const data = await response.json();
+
+      // Ignore stale responses
+      if (fetchId !== fetchIdRef.current) return;
 
       if (isLoadMore) {
         setMessages(prev => [...prev, ...data.messages]);
       } else {
-        setMessages(data.messages.reverse()); // API returns newest first, we want oldest first for display
+        setMessages(data.messages.reverse());
       }
-      
       setHasMore(data.hasMore);
       setOffset(currentOffset + data.messages.length);
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.name === 'AbortError') return; // ignore aborted
       console.error('Error fetching messages:', error);
-      console.log('Event ID:', eventId, 'Channel:', channel, 'Recipient ID:', recipientId);
-      console.log('Response details:', error);
       toast.error('Errore nel caricamento dei messaggi');
     } finally {
-      setLoading(false);
+      if (fetchId === fetchIdRef.current) setLoading(false);
     }
-  }, [eventId, channel, session, recipientId]);
+  }, [eventId, channel, session, recipientId, offset]);
 
   const sendMessage = useCallback(async (content: string) => {
     if (!eventId || !session?.access_token || !content.trim()) return false;
