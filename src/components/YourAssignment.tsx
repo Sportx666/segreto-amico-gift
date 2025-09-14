@@ -214,7 +214,7 @@ export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssign
                 onClick={() => onStartChat?.(assignment.receiver_id, assignment.receiver_name)}
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
-                Apri chat
+                Scrivigli un messaggio!
               </Button>
             </div>
           ) : (
