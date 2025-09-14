@@ -12,6 +12,8 @@ import { ChatRecipientSelector } from './ChatRecipientSelector';
 import { MessageCircle, Users, Heart, Send, ChevronUp, Plus, X, Glasses} from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface ActiveChat {
   recipientId: string;
@@ -21,21 +23,24 @@ interface ActiveChat {
 interface ChatManagerProps {
   eventId: string;
   eventStatus: string;
-  nickname?: string;
+  openChat?: { recipientId: string; recipientName?: string };
+  onOpenChatConsumed?: () => void;
 }
 
 export interface ChatManagerHandle {
   handleChatStart: (recipientId: string, recipientName: string) => void;
 }
 
-export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ eventId, eventStatus, nickname}, ref) => {
+export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ eventId, eventStatus, openChat, onOpenChatConsumed }, ref) => {
   const [activeChannel, setActiveChannel] = useState<string>('event');
   const [activeChats, setActiveChats] = useState<ActiveChat[]>([]);
   const [messageText, setMessageText] = useState('');
   const [showRecipientSelector, setShowRecipientSelector] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { nickname: nickData } = useNickname(eventId);
+  const [promptedNickname, setPromptedNickname] = useState(false);
   // Determine which chat to use based on active channel
   const isEventChannel = activeChannel === 'event';
   const activeChat = activeChats.find(chat => `pair-${chat.recipientId}` === activeChannel);
@@ -79,12 +84,22 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
     }
   };
 
-  // Reload messages when returning to event channel
+  // Sync URL and refetch when channel changes
   useEffect(() => {
     if (activeChannel === 'event') {
       refetch();
+      const params = new URLSearchParams(searchParams);
+      params.delete('dm');
+      setSearchParams(params);
+    } else {
+      const id = activeChat?.recipientId;
+      if (id) {
+        const params = new URLSearchParams(searchParams);
+        params.set('dm', id);
+        setSearchParams(params);
+      }
     }
-  }, [activeChannel]);
+  }, [activeChannel, activeChat?.recipientId]);
 
   useImperativeHandle(ref, () => ({
     handleChatStart
@@ -95,6 +110,12 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageText.trim() || sending) return;
+
+    // Prevent sending in private chat without a nickname
+    if (!isEventChannel && !nickData?.nickname) {
+      toast.error('Imposta il tuo nickname anonimo per inviare messaggi privati');
+      return;
+    }
 
     const success = await sendMessage(messageText);
     if (success) {
@@ -368,7 +389,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                         ref={inputRef}
                         value={messageText}
                         onChange={(e) => setMessageText(e.target.value)}
-                        placeholder={`Messaggio privato come "${nickname}"...`}
+                        placeholder={`Messaggio privato come "${nickData?.nickname ?? 'imposta il tuo nickname'}"...`}
                         maxLength={500}
                         disabled={sending}
                       />
