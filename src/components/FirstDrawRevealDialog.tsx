@@ -33,25 +33,19 @@ export function FirstDrawRevealDialog({ eventId, assignedName, onClose }: FirstD
 
         // 2) Check reveal flag for that participant in this event
         const { data: member, error: mErr } = await supabase
-          .from('event_members')
-          .select('reveal_shown')
+          .from('assignments')
+          .select('first_reveal_pending')
           .eq('event_id', eventId)
-          .eq('participant_id', participant.id)
+          .eq('giver_id', participant.id)
           .maybeSingle(); // returns null if not found without throwing
 
         if (mErr) throw mErr;
 
-        if (!member.reveal_shown && assignedName) {
+        if (member.first_reveal_pending && assignedName) {
           setShouldShow(true);
           setIsVisible(true);
 
           // Mark as shown
-          await supabase
-            .from('event_members')
-            .update({ reveal_shown: true })
-            .eq('event_id', eventId)
-            .eq('participant_id', participant.id);
-
           await supabase
             .from('assignments')
             .update({ first_reveal_pending: false })

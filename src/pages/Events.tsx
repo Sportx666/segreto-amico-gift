@@ -213,27 +213,19 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
                         {event.date && (
                           <div className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
-                            <span>{new Date(event.date).toLocaleDateString("it-IT", { 
+                            <span>Data Evento: {new Date(event.date).toLocaleDateString("it-IT", { 
                               day: 'numeric', 
                               month: 'short' 
                             })}</span>
                           </div>
-                        )}
-                        {event.draw_date && (
-                          <div className="flex items-center gap-1 text-xs">
-                            <Shuffle className="w-3 h-3" />
-                            <span>Sorteggio: {new Date(event.draw_date).toLocaleDateString("it-IT", { 
+                        )}                      
+                        <div className="flex items-center gap-1">
+                          <Shuffle className="w-3 h-3" />
+                          <span>Sorteggio: {event.draw_date && (new Date(event.draw_date).toLocaleDateString("it-IT", { 
                               day: 'numeric', 
                               month: 'short' 
-                            })}</span>
-                          </div>
-                        )}
-                        {event.join_code && (
-                          <div className="flex items-center gap-1">
-                            <Users className="w-4 h-4" />
-                            <span>#{event.join_code}</span>
-                          </div>
-                        )}
+                            })) || ('--/--')}</span>
+                          </div>                  
                       </div>
                     </CardContent>
                   </Card>

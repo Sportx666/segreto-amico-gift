@@ -193,7 +193,6 @@ export type Database = {
           id: string
           join_token: string | null
           participant_id: string | null
-          reveal_shown: boolean | null
           role: string | null
           status: string | null
         }
@@ -206,7 +205,6 @@ export type Database = {
           id?: string
           join_token?: string | null
           participant_id?: string | null
-          reveal_shown?: boolean | null
           role?: string | null
           status?: string | null
         }
@@ -219,7 +217,6 @@ export type Database = {
           id?: string
           join_token?: string | null
           participant_id?: string | null
-          reveal_shown?: boolean | null
           role?: string | null
           status?: string | null
         }

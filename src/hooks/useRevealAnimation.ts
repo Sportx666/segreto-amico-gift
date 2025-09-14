@@ -55,16 +55,6 @@ export function useRevealAnimation({ eventId, onComplete }: RevealAnimationOptio
     try {
       // Mark reveal as shown in database
       const participantId = await getOrCreateParticipantId(user.id);
-      
-      const { error } = await supabase
-        .from('event_members')
-        .update({ reveal_shown: true })
-        .eq('event_id', eventId)
-        .eq('participant_id', participantId);
-
-      if (error) {
-        console.error('Error updating reveal status:', error);
-      }
 
       // Set first_reveal_pending to false for user's assignment
       const { error: assignmentError } = await supabase
