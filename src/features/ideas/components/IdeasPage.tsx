@@ -45,6 +45,8 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
     queryKey: ['catalog-search', searchQuery],
     queryFn: () => searchProducts(searchQuery),
     enabled: !!searchQuery,
+    staleTime: 0, // Don't serve stale data
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 
   const handleSearch = (query: string) => {
