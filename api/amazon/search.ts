@@ -76,8 +76,6 @@ function addAffiliateTag(url: string): string {
   }
 }
 
-let mockCache: Item[] | null = null;
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -102,34 +100,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  // MOCK-FIRST (default) — load once via ESM dynamic import
+  // Check if Amazon API is enabled
   if (!enabled) {
-    try {
-      if (!mockCache) {
-        const mod = await import('./mock.mjs');
-        mockCache = (mod.default ?? []) as Item[];
-      }
-    } catch {
-      // tiny fallback if import fails for any reason
-      mockCache = [{
-        asin: 'FALLBACK001',
-        title: 'Esempio regalo',
-        image: 'https://via.placeholder.com/400?text=Regalo',
-        price: 9.99, currency: 'EUR',
-        url: addAffiliateTag('https://www.amazon.it/s?k=regalo'),
-        lastUpdated: new Date().toISOString(),
-      }];
-    }
-    const all = mockCache!;
-    const filtered = all.filter(i => i.title.toLowerCase().includes(query.toLowerCase()));
-    const pageSize = 10;
-    const start = (Number(page) - 1) * pageSize;
-    const items = filtered.slice(start, start + pageSize);
-    
-    // Cache mock results too
-    cache.set(cacheKey, { items, total: filtered.length, timestamp: Date.now() });
-    
-    return res.status(200).json({ items, total: filtered.length, page: Number(page), pageSize, mock: true });
+    return res.status(503).json({ 
+      error: 'Servizio Amazon temporaneamente non disponibile. Riprova più tardi.' 
+    });
   }
 
   try {

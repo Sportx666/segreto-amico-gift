@@ -73,7 +73,7 @@ class RainforestClient {
         throw new Error(data.error);
       }
 
-      const items: CatalogItem[] = (data.search_results || []).map((item: any) => {
+      let items: CatalogItem[] = (data.search_results || []).map((item: any) => {
         const asin = item.asin || extractAsinFromUrl(item.link);
         return {
           title: item.title || 'Unknown Title',
@@ -84,6 +84,11 @@ class RainforestClient {
           currency: item.price?.currency || 'EUR'
         };
       });
+
+      // Sort by price low to high when price filters are applied
+      if (minPrice !== undefined || maxPrice !== undefined) {
+        items = sortItemsByPrice(items, true);
+      }
 
       return {
         items,
@@ -99,42 +104,18 @@ class RainforestClient {
   }
 }
 
-// Fallback mock data for when APIs are unavailable
-const MOCK_ITEMS: CatalogItem[] = [
-  {
-    title: 'LEGO Creator Set di Costruzione',
-    imageUrl: 'https://via.placeholder.com/400?text=LEGO',
-    asin: 'MOCK001',
-    url: 'https://www.amazon.it/dp/MOCK001',
-    price: '49.99',
-    currency: 'EUR'
-  },
-  {
-    title: 'Libro di Ricette Italiane',
-    imageUrl: 'https://via.placeholder.com/400?text=Libro',
-    asin: 'MOCK002',
-    url: 'https://www.amazon.it/dp/MOCK002',
-    price: '19.99',
-    currency: 'EUR'
-  }
-];
-
 function extractAsinFromUrl(url: string): string | undefined {
   if (!url) return undefined;
   const match = url.match(/\/dp\/([A-Z0-9]{10})/i) || url.match(/\/gp\/product\/([A-Z0-9]{10})/i);
   return match?.[1];
 }
 
-function getMockResults(query: string, page: number): { items: CatalogItem[]; total: number } {
-  const filtered = MOCK_ITEMS.filter(item => 
-    item.title.toLowerCase().includes(query.toLowerCase())
-  );
-  
-  const pageSize = 10;
-  const start = (page - 1) * pageSize;
-  const items = filtered.slice(start, start + pageSize);
-  
-  return { items, total: filtered.length };
+function sortItemsByPrice(items: CatalogItem[], ascending: boolean = true): CatalogItem[] {
+  return items.sort((a, b) => {
+    const priceA = parseFloat(a.price || '0');
+    const priceB = parseFloat(b.price || '0');
+    return ascending ? priceA - priceB : priceB - priceA;
+  });
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -185,14 +166,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const domain = process.env.RAINFOREST_DOMAIN || 'amazon.it';
       
       if (!apiKey) {
-        console.warn('RAINFOREST_API_KEY not configured, falling back to mock data');
-        const mockResult = getMockResults(query, Number(page));
-        cache.set(cacheKey, { ...mockResult, timestamp: Date.now() });
-        return res.status(200).json({ 
-          ...mockResult, 
-          page: Number(page), 
-          pageSize: 10, 
-          mock: true 
+        return res.status(503).json({ 
+          error: 'Servizio di ricerca temporaneamente non disponibile. Riprova più tardi.' 
         });
       }
 
@@ -216,33 +191,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Return user-friendly error for rate limits
         if (error.message === 'API_RATE_LIMIT') {
           return res.status(429).json({ 
-            error: 'Limite di ricerche raggiunto. Riprova tra qualche minuto.',
-            fallback: true
+            error: 'Limite di ricerche raggiunto. Riprova tra qualche minuto.'
           });
         }
         
-        // For other errors, fall back to mock data
-        console.warn('Falling back to mock data due to API error');
-        const mockResult = getMockResults(query, Number(page));
-        cache.set(cacheKey, { ...mockResult, timestamp: Date.now() });
-        return res.status(200).json({ 
-          ...mockResult, 
-          page: Number(page), 
-          pageSize: 10, 
-          mock: true,
-          fallback: true
+        // For other errors, return error without fallback
+        return res.status(503).json({ 
+          error: 'Servizio di ricerca temporaneamente non disponibile. Riprova più tardi.'
         });
       }
     }
 
-    // Default fallback to mock data
-    const mockResult = getMockResults(query, Number(page));
-    cache.set(cacheKey, { ...mockResult, timestamp: Date.now() });
-    return res.status(200).json({ 
-      ...mockResult, 
-      page: Number(page), 
-      pageSize: 10, 
-      mock: true 
+    // No catalog provider configured
+    return res.status(503).json({ 
+      error: 'Servizio di ricerca non configurato. Contatta il supporto.' 
     });
 
   } catch (error: any) {
