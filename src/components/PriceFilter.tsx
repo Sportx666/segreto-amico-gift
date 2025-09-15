@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,15 +7,28 @@ import { Badge } from "@/components/ui/badge";
 import { EuroIcon, X, Filter } from "lucide-react";
 
 interface PriceFilterProps {
+  value?: { min?: number; max?: number };
   onFilter: (minPrice?: number, maxPrice?: number) => void;
   disabled?: boolean;
 }
 
-export const PriceFilter = ({ onFilter, disabled = false }: PriceFilterProps) => {
+export const PriceFilter = ({ value, onFilter, disabled = false }: PriceFilterProps) => {
   const [minPrice, setMinPrice] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState<string>("");
   const [appliedFilter, setAppliedFilter] = useState<{min?: number, max?: number} | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (value && (value.min !== undefined || value.max !== undefined)) {
+      setAppliedFilter(value.min || value.max ? { min: value.min, max: value.max } : null);
+      setMinPrice(value.min !== undefined ? String(value.min) : "");
+      setMaxPrice(value.max !== undefined ? String(value.max) : "");
+    } else {
+      setAppliedFilter(null);
+      setMinPrice("");
+      setMaxPrice("");
+    }
+  }, [value?.min, value?.max]);
 
   const handleApplyFilter = () => {
     const min = minPrice ? parseFloat(minPrice) : undefined;

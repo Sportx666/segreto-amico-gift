@@ -127,6 +127,7 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
             />
           </div>
           <PriceFilter 
+            value={priceFilter}
             onFilter={handlePriceFilter}
             disabled={isLoading || isFetching}
           />
