@@ -6,7 +6,7 @@ interface IdeasHeaderProps {
   onCategoryClick: (category: string) => void;
 }
 
-const PRICE_BUCKETS = [5, 10, 15, 20] as const;
+const PRICE_BUCKETS = [5, 10, 20, 50] as const;
 const CATEGORIES = [
   { id: "ufficio", name: "Ufficio" },
   { id: "cucina", name: "Cucina" },

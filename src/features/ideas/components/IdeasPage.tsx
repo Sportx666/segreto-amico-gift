@@ -56,8 +56,9 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
   };
 
   const handleBucketClick = (budget: number) => {
-    const query = `idee regalo sotto ${budget} euro`;
-    handleSearch(query);
+    const query = 'idee regalo';
+    setSearchQuery(query);
+    setPriceFilter({ min: undefined, max: budget });
   };
 
   const handleCategoryClick = (category: string) => {
