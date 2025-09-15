@@ -23,7 +23,38 @@ interface CacheEntry {
 
 const cache = new Map<string, CacheEntry>();
 const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
-const REQUEST_TIMEOUT = 10000; // 10 seconds
+const REQUEST_TIMEOUT = Number(Deno.env.get('RAINFOREST_TIMEOUT_MS') || 25000); // configurable timeout
+
+async function withRetry<T>(fn: () => Promise<T>, maxAttempts: number = 3): Promise<T> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const startTime = Date.now();
+    try {
+      const result = await fn();
+      const elapsed = Date.now() - startTime;
+      console.log(`Attempt ${attempt} succeeded in ${elapsed}ms`);
+      return result;
+    } catch (error: any) {
+      const elapsed = Date.now() - startTime;
+      console.log(`Attempt ${attempt} failed after ${elapsed}ms:`, error?.message || error);
+      
+      if (attempt === maxAttempts) throw error;
+      
+      // Retry on timeout, network errors, or 5xx responses
+      const shouldRetry = error?.name === 'AbortError' || 
+                         error?.message?.includes('timeout') ||
+                         error?.message?.includes('network') ||
+                         (error?.message?.includes('Rainforest API error') && error?.message?.match(/5\d\d/));
+      
+      if (!shouldRetry) throw error;
+      
+      // Exponential backoff: 800ms, 1600ms
+      const delay = 800 * attempt;
+      console.log(`Retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  throw new Error('Max attempts reached');
+}
 
 class RainforestClient {
   private apiKey: string;
@@ -35,61 +66,66 @@ class RainforestClient {
   }
 
   async search(query: string, page: number = 1, minPrice?: number, maxPrice?: number): Promise<{ items: CatalogItem[]; total: number }> {
-    const url = "https://api.rainforestapi.com/request";
-    const params = new URLSearchParams({
-      api_key: this.apiKey,
-      type: "search",
-      amazon_domain: this.domain,
-      search_term: query,
-      page: String(page),
-    });
-
-    if (minPrice !== undefined && minPrice > 0) params.append("min_price", String(minPrice));
-    if (maxPrice !== undefined && maxPrice > 0) params.append("max_price", String(maxPrice));
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-
-    try {
-      const response = await fetch(`${url}?${params}`, {
-        signal: controller.signal,
-        headers: { "User-Agent": "AmiciSegreto/1.0" },
+    return withRetry(async () => {
+      const url = "https://api.rainforestapi.com/request";
+      const params = new URLSearchParams({
+        api_key: this.apiKey,
+        type: "search",
+        amazon_domain: this.domain,
+        search_term: query,
+        page: String(page),
       });
-      clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        if (response.status === 429) throw new Error("API_RATE_LIMIT");
-        throw new Error(`Rainforest API error: ${response.status}`);
-      }
+      if (minPrice !== undefined && minPrice > 0) params.append("min_price", String(minPrice));
+      if (maxPrice !== undefined && maxPrice > 0) params.append("max_price", String(maxPrice));
 
-      const data = await response.json();
-      if ((data as any).error) throw new Error((data as any).error);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
-      let items: CatalogItem[] = ((data as any).search_results || []).map((item: any) => {
-        const asin = item.asin || extractAsinFromUrl(item.link);
+      try {
+        const response = await fetch(`${url}?${params}`, {
+          signal: controller.signal,
+          headers: { 
+            "User-Agent": "AmiciSegreto/1.0",
+            "Accept": "application/json"
+          },
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          if (response.status === 429) throw new Error("API_RATE_LIMIT");
+          throw new Error(`Rainforest API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if ((data as any).error) throw new Error((data as any).error);
+
+        let items: CatalogItem[] = ((data as any).search_results || []).map((item: any) => {
+          const asin = item.asin || extractAsinFromUrl(item.link);
+          return {
+            title: item.title || "Unknown Title",
+            imageUrl: item.image,
+            asin,
+            url: asin ? `https://www.${this.domain}/dp/${asin}` : item.link,
+            price: item.price?.value ? String(item.price.value) : undefined,
+            currency: item.price?.currency || "EUR",
+          } as CatalogItem;
+        });
+
+        if (minPrice !== undefined || maxPrice !== undefined) {
+          items = sortItemsByPrice(items, true);
+        }
+
         return {
-          title: item.title || "Unknown Title",
-          imageUrl: item.image,
-          asin,
-          url: asin ? `https://www.${this.domain}/dp/${asin}` : item.link,
-          price: item.price?.value ? String(item.price.value) : undefined,
-          currency: item.price?.currency || "EUR",
-        } as CatalogItem;
-      });
-
-      if (minPrice !== undefined || maxPrice !== undefined) {
-        items = sortItemsByPrice(items, true);
+          items,
+          total: (data as any).pagination?.total_results || items.length,
+        };
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if ((error as any).name === "AbortError") throw new Error("Request timeout");
+        throw error;
       }
-
-      return {
-        items,
-        total: (data as any).pagination?.total_results || items.length,
-      };
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if ((error as any).name === "AbortError") throw new Error("Request timeout");
-      throw error;
-    }
+    });
   }
 }
 
@@ -145,6 +181,7 @@ serve(async (req: Request) => {
     const provider = Deno.env.get("CATALOG_PROVIDER");
     console.log("CATALOG_PROVIDER:", provider);
     console.log("Available env vars:", Object.keys(Deno.env.toObject()).filter(key => key.includes('CATALOG') || key.includes('RAINFOREST')));
+    console.log("REQUEST_TIMEOUT:", REQUEST_TIMEOUT + "ms");
     
     if (provider === "rainforest") {
       const apiKey = Deno.env.get("RAINFOREST_API_KEY");
