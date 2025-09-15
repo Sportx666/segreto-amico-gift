@@ -119,58 +119,49 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const devBypass = (Deno.env.get('DEV_ALLOW_UNAUTH_DRAW') || '').trim() === '1';
-
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Auth check
+    // Auth check - authentication is always required
     const authHeader = req.headers.get('authorization');
-    if (!authHeader && !devBypass) {
+    if (!authHeader) {
       return new Response(
         JSON.stringify({ error: 'Missing authorization header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    let userId: string | null = null;
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-      if (authError || !user) {
-        if (!devBypass) {
-          return new Response(
-            JSON.stringify({ error: 'Invalid authentication' }),
-            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-      } else {
-        userId = user.id;
-      }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+    
+    const userId = user.id;
 
-    // Verify user is event admin (unless dev bypass)
-    if (!devBypass) {
-      const { data: event, error: eventErr } = await supabase
-        .from('events')
-        .select('admin_profile_id')
-        .eq('id', eventId)
-        .maybeSingle();
-      if (eventErr || !event) {
-        console.error('Event load error', eventErr);
-        return new Response(
-          JSON.stringify({ error: 'Evento non trovato' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      if (!userId || event.admin_profile_id !== userId) {
-        return new Response(
-          JSON.stringify({ error: 'Accesso negato: solo gli amministratori possono avviare il sorteggio' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+    // Verify user is event admin
+    const { data: event, error: eventErr } = await supabase
+      .from('events')
+      .select('admin_profile_id')
+      .eq('id', eventId)
+      .maybeSingle();
+    if (eventErr || !event) {
+      console.error('Event load error', eventErr);
+      return new Response(
+        JSON.stringify({ error: 'Evento non trovato' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (event.admin_profile_id !== userId) {
+      return new Response(
+        JSON.stringify({ error: 'Accesso negato: solo gli amministratori possono avviare il sorteggio' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Load members (joined only) with profile info
@@ -206,22 +197,21 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (!devBypass) {
-      const unauthenticated: string[] = [];
-      for (const m of members as any[]) {
-        const participant = (m as any).participants;
-        const hasProfile = participant?.profile_id && participant?.profiles;
-        if (!hasProfile) {
-          const displayName = participant?.profiles?.display_name || 'Partecipante senza nome';
-          unauthenticated.push(displayName);
-        }
+    // Verify all participants are authenticated
+    const unauthenticated: string[] = [];
+    for (const m of members as any[]) {
+      const participant = (m as any).participants;
+      const hasProfile = participant?.profile_id && participant?.profiles;
+      if (!hasProfile) {
+        const displayName = participant?.profiles?.display_name || 'Partecipante senza nome';
+        unauthenticated.push(displayName);
       }
-      if (unauthenticated.length > 0) {
-        return new Response(
-          JSON.stringify({ error: `Impossibile eseguire il sorteggio. I seguenti partecipanti non hanno un account autenticato: ${unauthenticated.join(', ')}. Invitali a registrarsi prima di procedere con il sorteggio.` }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+    }
+    if (unauthenticated.length > 0) {
+      return new Response(
+        JSON.stringify({ error: `Impossibile eseguire il sorteggio. I seguenti partecipanti non hanno un account autenticato: ${unauthenticated.join(', ')}. Invitali a registrarsi prima di procedere con il sorteggio.` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const giverArr: Member[] = members.map((m: any) => ({ id: m.id, participantId: m.participant_id }));
