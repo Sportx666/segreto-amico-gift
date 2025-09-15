@@ -143,12 +143,17 @@ serve(async (req: Request) => {
     }
 
     const provider = Deno.env.get("CATALOG_PROVIDER");
-
+    console.log("CATALOG_PROVIDER:", provider);
+    console.log("Available env vars:", Object.keys(Deno.env.toObject()).filter(key => key.includes('CATALOG') || key.includes('RAINFOREST')));
+    
     if (provider === "rainforest") {
       const apiKey = Deno.env.get("RAINFOREST_API_KEY");
       const domain = Deno.env.get("RAINFOREST_DOMAIN") || "amazon.it";
+      console.log("RAINFOREST_API_KEY present:", !!apiKey);
+      console.log("RAINFOREST_DOMAIN:", domain);
 
       if (!apiKey) {
+        console.warn("RAINFOREST_API_KEY not found in environment");
         return new Response(
           JSON.stringify({ error: "Servizio di ricerca temporaneamente non disponibile. Riprova più tardi." }),
           { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
