@@ -18,14 +18,7 @@ import { useI18n } from "@/i18n";
 import { useAddProductForUser, useUserWishlists } from "@/features/wishlist/hooks/useWishlist";
 import { type Product } from "@/services/wishlist";
 import { ApiService } from "@/services/api";
-
-interface SearchResult {
-  items: Product[];
-  page: number;
-  pageSize: number;
-  total: number;
-  mock: boolean;
-}
+import { CatalogService, type CatalogSearchResult } from "@/services/catalog";
 
 interface IdeasPageProps {
   showMobileFeed?: boolean;
@@ -42,22 +35,14 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
   const { data: wishlists = [] } = useUserWishlists();
   const addProductForUser = useAddProductForUser();
 
-  const searchProducts = async (query: string): Promise<SearchResult> => {
+  const searchProducts = async (query: string): Promise<CatalogSearchResult> => {
     if (!query) return { items: [], page: 1, pageSize: 10, total: 0, mock: true };
     
-    return ApiService.fetchRequest<SearchResult>(
-      'amazon_search',
-      '/api/amazon/search',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ q: query }),
-      }
-    );
+    return CatalogService.searchProducts(query);
   };
 
   const { data: searchResults, isLoading } = useQuery({
-    queryKey: ['amazon-search', searchQuery],
+    queryKey: ['catalog-search', searchQuery],
     queryFn: () => searchProducts(searchQuery),
     enabled: !!searchQuery,
   });
@@ -142,7 +127,7 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
           <div className="space-y-6">
             <SectionHeader
               title={`Risultati per "${searchQuery}"`}
-              description={searchResults ? `${searchResults.total} prodotti${searchResults.mock ? ' - dati di esempio' : ''}` : undefined}
+              description={searchResults ? `${searchResults.total} prodotti${searchResults.mock ? ' - dati di esempio' : ''}${searchResults.fallback ? ' - servizio temporaneamente non disponibile' : ''}` : undefined}
             />
             
             {/* Mobile In-Feed Ad */}
@@ -157,7 +142,7 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
             )}
             
             <ProductsGrid
-              products={searchResults?.items || []}
+              products={searchResults?.items.map(item => CatalogService.catalogItemToProduct(item)) || []}
               loading={isLoading}
               onAddToWishlist={handleAddToWishlist}
             />
@@ -167,7 +152,10 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
         {/* Disclosure Footer */}
         <div className="mt-16 pt-8 border-t border-border/50 text-center">
           <p className="text-xs text-muted-foreground">
-            Come affiliato Amazon, guadagniamo da acquisti idonei.
+          {searchResults?.provider === 'rainforest' ? 
+            'Risultati forniti da Rainforest API. I prezzi potrebbero non essere aggiornati.' :
+            'Come affiliato Amazon, guadagniamo da acquisti idonei.'
+          }
           </p>
         </div>
       </div>

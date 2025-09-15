@@ -1,8 +1,151 @@
-# Segreto Amico Gift Exchange
+# Amici Segreto - Secret Santa Gift Exchange App
 
-A modern web application for organizing Secret Santa gift exchanges among friends and family.
+A modern web application for organizing Secret Santa gift exchanges with integrated product search and wishlist management.
 
-## Development & Testing
+## Features
+
+- **Event Management**: Create and manage gift exchange events
+- **Smart Draw System**: Automated assignment with exclusion rules and anti-recurrence  
+- **Product Search**: Integrated Amazon product search via multiple providers (Rainforest API, PA-API)
+- **Wishlist Management**: Create and manage gift wishlists
+- **Chat System**: In-app messaging between participants
+- **Anonymous Participation**: Support for both authenticated and anonymous users
+
+## Tech Stack
+
+- **Frontend**: React, TypeScript, Tailwind CSS, Vite
+- **Backend**: Vercel Functions, Supabase
+- **Database**: PostgreSQL (via Supabase)
+- **Authentication**: Supabase Auth
+- **Product Search**: Pluggable provider system (Rainforest API, Amazon PA-API)
+
+## Quick Setup
+
+### 1. Environment Configuration
+
+Copy `.env.example` to `.env` and configure:
+
+```bash
+# Supabase Configuration
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-anon-key
+SUPABASE_URL=your-supabase-url
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Catalog Provider (choose one)
+CATALOG_PROVIDER=rainforest  # or 'amazon' or 'none'
+
+# Rainforest API (for Amazon product search)
+RAINFOREST_API_KEY=your-rainforest-api-key
+RAINFOREST_DOMAIN=amazon.it
+
+# Amazon PA-API (alternative to Rainforest)
+AMAZON_API_ENABLED=false
+AMZ_ACCESS_KEY=your-access-key-id
+AMZ_SECRET_KEY=your-secret-access-key
+AMZ_ASSOC_TAG=your-associate-tag
+```
+
+### 2. Catalog Provider Setup
+
+#### Option A: Rainforest API (Recommended for development)
+1. Sign up at [Rainforest API](https://www.rainforestapi.com/)
+2. Get your API key from the dashboard
+3. Set `CATALOG_PROVIDER=rainforest` and `RAINFOREST_API_KEY`
+
+#### Option B: Amazon PA-API (Production)
+1. Join Amazon Associates program
+2. Apply for PA-API access
+3. Set `CATALOG_PROVIDER=amazon` and configure PA-API credentials
+
+#### Option C: Mock Data Only
+1. Set `CATALOG_PROVIDER=none`
+2. The app will use mock product data for testing
+
+### 3. Installation & Development
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+```
+
+## Catalog System
+
+### API Endpoints
+
+#### Search Products
+```bash
+curl -X POST /api/catalog/search \
+  -H "Content-Type: application/json" \
+  -d '{"q": "lego", "page": 1}'
+```
+
+Response:
+```json
+{
+  "items": [
+    {
+      "title": "LEGO Creator Set",
+      "imageUrl": "https://...",
+      "asin": "B07ABC123", 
+      "url": "https://www.amazon.it/dp/B07ABC123",
+      "price": "49.99",
+      "currency": "EUR"
+    }
+  ],
+  "total": 150,
+  "page": 1,
+  "pageSize": 10,
+  "provider": "rainforest"
+}
+```
+
+#### Get Product Details
+```bash
+curl -X POST /api/catalog/item \
+  -H "Content-Type: application/json" \
+  -d '{"asin": "B07ABC123"}'
+```
+
+### Provider Architecture
+
+The catalog system uses a pluggable provider architecture:
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend UI   │───▶│  Catalog API    │───▶│   Providers     │
+│                 │    │                 │    │                 │
+│ - Search        │    │ - /search       │    │ - Rainforest    │
+│ - Product Cards │    │ - /item         │    │ - Amazon PA-API │
+│ - Wishlist      │    │ - Normalization │    │ - Mock Data     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### Switching Between Providers
+
+To switch from Rainforest API to Amazon PA-API later:
+
+1. **Update Environment Variables**:
+   ```bash
+   # Change provider
+   CATALOG_PROVIDER=amazon
+   
+   # Configure PA-API
+   AMAZON_API_ENABLED=true
+   AMZ_ACCESS_KEY=your-access-key
+   AMZ_SECRET_KEY=your-secret-key
+   AMZ_ASSOC_TAG=your-associate-tag
+   ```
+
+2. **No Code Changes Required**: The normalized API ensures compatibility
+
+3. **Gradual Migration**: Run both providers and switch via environment variable
 
 ### Test Data Seeding
 
@@ -106,15 +249,47 @@ npm run dev
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
-## What technologies are used for this project?
+## Project Structure
 
-This project is built with:
+```
+├── api/                    # Vercel Functions
+│   ├── catalog/           # Product catalog endpoints
+│   ├── amazon/            # Legacy Amazon API
+│   └── ...                # Other API endpoints
+├── src/
+│   ├── components/        # Reusable UI components
+│   ├── features/          # Feature-specific components
+│   ├── services/          # API services and business logic
+│   ├── hooks/             # Custom React hooks
+│   └── ...
+├── supabase/
+│   ├── functions/         # Edge functions
+│   ├── migrations/        # Database migrations
+│   └── schema.sql         # Database schema
+└── ...
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Key Services
+
+- `CatalogService` - Product search and details
+- `WishlistService` - Wishlist management  
+- `EventService` - Event operations
+- `ApiService` - Base API client with error handling
+
+## Deployment
+
+### Vercel (Recommended)
+
+1. Connect your GitHub repository to Vercel
+2. Set environment variables in Vercel dashboard
+3. Deploy automatically on push to main
+
+### Other Platforms
+
+The app can be deployed to any platform supporting:
+- Node.js runtime for API functions
+- Static hosting for frontend assets
+- Environment variable configuration
 
 ## How can I deploy this project?
 
@@ -147,23 +322,35 @@ Where to find these in Supabase:
   - anon public key → use for `VITE_SUPABASE_PUBLISHABLE_KEY`
   - service_role secret → use for `SUPABASE_SERVICE_ROLE_KEY` (do not expose client-side)
 
-### Amazon Affiliate Configuration
+### Catalog Provider Configuration
 
-To enable Amazon affiliate links and product search:
+To enable product search with different providers:
 
-1. **Create Amazon Associate Account**: Visit [Amazon Associates](https://affiliate-program.amazon.com/) and sign up
-2. **Get Associate Tag**: Your unique tracking ID (e.g., `yourtag-21`)
-3. **Apply for Product Advertising API**: Visit [Amazon Developer Services](https://webservices.amazon.com/paapi5/documentation/)
-4. **Create PA-API credentials**: Get Access Key ID and Secret Access Key
+#### Rainforest API (Recommended for Development)
+1. **Sign up**: Visit [Rainforest API](https://www.rainforestapi.com/)
+2. **Get API Key**: From your dashboard after registration
+3. **Configure Environment**:
+   ```bash
+   CATALOG_PROVIDER=rainforest
+   RAINFOREST_API_KEY=your-api-key
+   RAINFOREST_DOMAIN=amazon.it  # or amazon.com, amazon.co.uk, etc.
+   ```
 
-Required environment variables:
-- `AMZ_ACCESS_KEY`: Your PA-API Access Key ID
-- `AMZ_SECRET_KEY`: Your PA-API Secret Access Key  
-- `AMZ_ASSOC_TAG`: Your Amazon Associate tracking ID
-- `AMZ_REGION`: AWS region (e.g., `eu-west-1` for Europe, `us-east-1` for US)
-- `AMAZON_API_ENABLED`: Set to `true` to use real API (default: `false` for mock data)
+#### Amazon PA-API (Production)
+1. **Create Amazon Associate Account**: Visit [Amazon Associates](https://affiliate-program.amazon.com/)
+2. **Apply for PA-API Access**: Visit [Amazon Developer Services](https://webservices.amazon.com/paapi5/documentation/)
+3. **Get Credentials**: Access Key ID and Secret Access Key
+4. **Configure Environment**:
+   ```bash
+   CATALOG_PROVIDER=amazon
+   AMAZON_API_ENABLED=true
+   AMZ_ACCESS_KEY=your-access-key-id
+   AMZ_SECRET_KEY=your-secret-access-key
+   AMZ_ASSOC_TAG=your-associate-tag
+   AMZ_REGION=eu-west-1  # or us-east-1, etc.
+   ```
 
-**Important**: PA-API v5 requires approval from Amazon. During development, the system uses mock data by default.
+**Important**: PA-API requires approval from Amazon and has strict rate limits. Use Rainforest API for development and testing.
 
 In deployment (e.g., Vercel), add the server-side variables in your Project → Settings → Environment Variables and redeploy.
 
@@ -315,11 +502,18 @@ The app includes proper disclosure in the UI. Do not modify affiliate URLs to hi
 - **Third-party Services**: Ensure all integrated services (Amazon, Google, Facebook) comply with privacy laws
 - **User Rights**: Provide mechanisms for data export/deletion
 
-### Rate Limiting
+### Rate Limiting & Compliance
 
-Amazon PA-API has strict rate limits:
+#### Rainforest API
+- Check your plan's request limits
+- Implements automatic caching (15 minutes)
+- Graceful fallback to mock data on rate limits
+
+#### Amazon PA-API
 - Max 1 request per second per Associate Tag
-- Max 8,640 requests per day for approved applications
+- Max 8,640 requests per day for approved applications  
 - Cache responses appropriately (15-30 minutes recommended)
 
-The server-side proxy implements caching to respect these limits.
+Both providers include proper error handling and user-friendly fallback messages.
+
+**Note**: When using real product data, ensure compliance with affiliate disclosure requirements and local advertising laws.

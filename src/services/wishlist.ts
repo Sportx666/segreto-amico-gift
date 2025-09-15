@@ -119,8 +119,10 @@ export class WishlistService {
             title: product.title,
             image_url: product.image,
             price_snapshot: `${product.price} ${product.currency}`,
-            affiliate_url: product.url,
-            raw_url: product.url,
+    raw_url: product.url,
+    // Note: For catalog items, we store the direct Amazon URL without affiliate tags
+    // affiliate_url will be set separately if needed
+    affiliate_url: product.url.includes('/dp/') ? product.url : null,
           });
         return result;
       }
