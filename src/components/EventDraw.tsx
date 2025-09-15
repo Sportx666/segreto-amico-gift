@@ -148,21 +148,12 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
 
   const resetDraw = async () => {
     try {
-      // Clear assignments
-      const { error: deleteError } = await supabase
-        .from('assignments')
-        .delete()
-        .eq('event_id', eventId);
+      // Call secure RPC function to reset draw
+      const { error } = await supabase.rpc('reset_event_draw', {
+        _event_id: eventId
+      });
 
-      if (deleteError) throw deleteError;
-
-      // Update event status
-      const { error: updateError } = await supabase
-        .from('events')
-        .update({ draw_status: 'pending' })
-        .eq('id', eventId);
-
-      if (updateError) throw updateError;
+      if (error) throw error;
 
       toast.success("Sorteggio ripristinato");
       await fetchData();

@@ -33,32 +33,48 @@ export interface ChatManagerHandle {
 
 export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ eventId, eventStatus, openChat, onOpenChatConsumed }, ref) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Make URL params the source of truth - derive state from URL
   const dmParam = searchParams.get('dm');
-  const initialActiveChannel = dmParam && dmParam !== 'event' ? `pair-${dmParam}` : 'event';
-  const [activeChannel, setActiveChannel] = useState<string>(initialActiveChannel);
+  const activeChannel = dmParam ? 'pair' : 'event';
   const [activeChats, setActiveChats] = useState<ActiveChat[]>(() => (
-    dmParam && dmParam !== 'event'
-      ? [{ recipientId: dmParam, recipientName: 'Utente Anonimo' }]
-      : []
+    dmParam ? [{ recipientId: dmParam, recipientName: 'Utente Anonimo' }] : []
   ));
+  
   const [messageText, setMessageText] = useState('');
   const [showRecipientSelector, setShowRecipientSelector] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { nickname: nickData } = useNickname(eventId);
-  const [promptedNickname, setPromptedNickname] = useState(false);
   
   // Determine which chat to use based on active channel
   const isEventChannel = activeChannel === 'event';
-  const activeChat = activeChats.find(chat => `pair-${chat.recipientId}` === activeChannel);
+  const recipientId = isEventChannel ? undefined : dmParam;
   
-  // Handle openChat prop from YourAssignment
+  // Handle direct chat opening from external components (YourAssignment)
   useEffect(() => {
     if (openChat?.recipientId) {
-      handleChatStart(openChat.recipientId, openChat.recipientName);
+      setSearchParams({ dm: openChat.recipientId });
+      const existingChat = activeChats.find(chat => chat.recipientId === openChat.recipientId);
+      if (!existingChat) {
+        setActiveChats(prev => [...prev, {
+          recipientId: openChat.recipientId,
+          recipientName: openChat.recipientName || 'Utente Anonimo'
+        }]);
+      }
       onOpenChatConsumed?.();
     }
-  }, [openChat]);
+  }, [openChat, setSearchParams, onOpenChatConsumed]);
+  
+  // Sync activeChats when URL changes (for refresh/deep-link support)
+  useEffect(() => {
+    if (dmParam && !activeChats.find(chat => chat.recipientId === dmParam)) {
+      setActiveChats(prev => [...prev, {
+        recipientId: dmParam,
+        recipientName: 'Utente Anonimo'
+      }]);
+    }
+  }, [dmParam]);
   
   
   const {
@@ -71,15 +87,12 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
     refetch
   } = useChat(
     eventId, 
-    isEventChannel ? 'event' : 'pair',
-    activeChat?.recipientId
+    activeChannel,
+    recipientId
   );
 
   const handleChatStart = (recipientId: string, recipientName?: string) => {
-    // Get recipient name from event members
-    const chatId = `pair-${recipientId}`;
-    
-    // Check if chat already exists
+    setSearchParams({ dm: recipientId });
     const existingChat = activeChats.find(chat => chat.recipientId === recipientId);
     if (!existingChat) {
       const newChat: ActiveChat = {
@@ -88,34 +101,24 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
       };
       setActiveChats(prev => [...prev, newChat]);
     }
-    
-    setActiveChannel(chatId);
   };
 
   const handleCloseChat = (recipientId: string) => {
     setActiveChats(prev => prev.filter(chat => chat.recipientId !== recipientId));
     // Switch to event channel if closing active chat
-    if (activeChannel === `pair-${recipientId}`) {
-      setActiveChannel('event');
+    if (dmParam === recipientId) {
+      setSearchParams({});
     }
   };
 
-  // Sync URL and refetch when channel changes
-  useEffect(() => {
-    if (activeChannel === 'event') {
-      refetch();
-      const params = new URLSearchParams(searchParams);
-      params.delete('dm');
-      setSearchParams(params);
+  const handleTabChange = (value: string) => {
+    if (value === 'event') {
+      setSearchParams({});
     } else {
-      const id = activeChat?.recipientId;
-      if (id) {
-        const params = new URLSearchParams(searchParams);
-        params.set('dm', id);
-        setSearchParams(params);
-      }
+      const recipientId = value.replace('pair-', '');
+      setSearchParams({ dm: recipientId });
     }
-  }, [activeChannel, activeChat?.recipientId]);
+  };
 
   useImperativeHandle(ref, () => ({
     handleChatStart
@@ -196,7 +199,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <Tabs value={activeChannel} onValueChange={setActiveChannel}>
+          <Tabs value={activeChannel === 'event' ? 'event' : `pair-${dmParam}`} onValueChange={handleTabChange}>
             <div className="px-6 pb-4">
               <TabsList className={`grid ${activeChats.length === 0 ? 'grid-cols-1' : `grid-cols-${Math.min(activeChats.length + 1, 4)}`}`}>
                 <TabsTrigger value="event" className="flex items-center gap-2">

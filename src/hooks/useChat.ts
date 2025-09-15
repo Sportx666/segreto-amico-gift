@@ -50,8 +50,28 @@ const [offset, setOffset] = useState(0);
       if (!response.ok) throw new Error('Failed to fetch messages');
       const data = await response.json();
 
-      // Ignore stale responses
-      if (fetchId !== fetchIdRef.current) return;
+      // Critical: Ignore stale responses to prevent race conditions
+      if (fetchId !== fetchIdRef.current) {
+        console.log('Ignoring stale response for fetch ID', fetchId, 'current:', fetchIdRef.current);
+        return;
+      }
+
+      // Additional validation: ensure response matches current request parameters
+      const currentRecipient = channel === 'pair' ? recipientId : null;
+      const responseForCorrectChannel = data.messages.every((msg: ChatMessage) => {
+        if (channel === 'event') return msg.channel === 'event';
+        if (channel === 'pair') {
+          return msg.channel === 'pair' && 
+            currentRecipient && 
+            (msg.recipient_participant_id === currentRecipient || msg.author_participant_id === currentRecipient);
+        }
+        return true;
+      });
+
+      if (!responseForCorrectChannel) {
+        console.log('Ignoring response with mismatched channel data');
+        return;
+      }
 
       if (isLoadMore) {
         setMessages(prev => [...prev, ...data.messages]);

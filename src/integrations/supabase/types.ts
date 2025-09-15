@@ -62,7 +62,7 @@ export type Database = {
       assignments: {
         Row: {
           event_id: string | null
-          first_reveal_pending: boolean | null
+          first_reveal_pending: boolean
           generated_on: string | null
           giver_id: string | null
           id: string
@@ -70,7 +70,7 @@ export type Database = {
         }
         Insert: {
           event_id?: string | null
-          first_reveal_pending?: boolean | null
+          first_reveal_pending?: boolean
           generated_on?: string | null
           giver_id?: string | null
           id?: string
@@ -78,7 +78,7 @@ export type Database = {
         }
         Update: {
           event_id?: string | null
-          first_reveal_pending?: boolean | null
+          first_reveal_pending?: boolean
           generated_on?: string | null
           giver_id?: string | null
           id?: string
@@ -777,6 +777,10 @@ export type Database = {
       remove_unjoined_participant: {
         Args: { _event_id: string; _participant_id: string }
         Returns: Json
+      }
+      reset_event_draw: {
+        Args: { _event_id: string }
+        Returns: undefined
       }
       update_profile_display_name: {
         Args: { _name: string; _profile_id: string }
