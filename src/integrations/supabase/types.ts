@@ -154,13 +154,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "chat_messages_assignment_id_fkey"
-            columns: ["assignment_id"]
-            isOneToOne: false
-            referencedRelation: "v_assignment_members"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "chat_messages_author_participant_id_fkey"
             columns: ["author_participant_id"]
             isOneToOne: false
@@ -286,13 +279,6 @@ export type Database = {
             columns: ["admin_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "events_admin_profile_id_fkey"
-            columns: ["admin_profile_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -482,13 +468,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "participants_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       profiles: {
@@ -663,67 +642,7 @@ export type Database = {
       }
     }
     Views: {
-      public_profiles: {
-        Row: {
-          avatar_url: string | null
-          created_at: string | null
-          display_name: string | null
-          family_group: string | null
-          id: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string | null
-          display_name?: string | null
-          family_group?: string | null
-          id?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string | null
-          display_name?: string | null
-          family_group?: string | null
-          id?: string | null
-        }
-        Relationships: []
-      }
-      v_assignment_members: {
-        Row: {
-          event_id: string | null
-          generated_on: string | null
-          giver_member_id: string | null
-          id: string | null
-          receiver_member_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "assignments_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      v_exclusion_members: {
-        Row: {
-          blocked_member_id: string | null
-          created_at: string | null
-          event_id: string | null
-          giver_member_id: string | null
-          id: string | null
-          reason: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "exclusions_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       create_or_get_join_token: {
