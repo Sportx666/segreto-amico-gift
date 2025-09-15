@@ -39,7 +39,7 @@ export const SearchBar = ({
   const handleClear = () => setQuery("");
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 mb-6">
+    <form onSubmit={handleSubmit} className="flex gap-2">
       <div className="relative flex-1">
         <Input
           type="text"

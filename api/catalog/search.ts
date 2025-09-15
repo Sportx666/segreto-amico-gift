@@ -29,7 +29,7 @@ class RainforestClient {
     this.domain = domain;
   }
 
-  async search(query: string, page: number = 1): Promise<{ items: CatalogItem[]; total: number }> {
+  async search(query: string, page: number = 1, minPrice?: number, maxPrice?: number): Promise<{ items: CatalogItem[]; total: number }> {
     const url = 'https://api.rainforestapi.com/request';
     const params = new URLSearchParams({
       api_key: this.apiKey,
@@ -38,6 +38,14 @@ class RainforestClient {
       search_term: query,
       page: page.toString()
     });
+
+    // Add price filtering if provided
+    if (minPrice !== undefined && minPrice > 0) {
+      params.append('min_price', minPrice.toString());
+    }
+    if (maxPrice !== undefined && maxPrice > 0) {
+      params.append('max_price', maxPrice.toString());
+    }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
@@ -145,7 +153,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { q = '', page = 1 } = (req.body || {}) as { q?: string; page?: number };
+    const { q = '', page = 1, minPrice, maxPrice } = (req.body || {}) as { 
+      q?: string; 
+      page?: number; 
+      minPrice?: number; 
+      maxPrice?: number; 
+    };
     const query = (q || '').trim();
     
     if (!query) {
@@ -153,7 +166,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Check cache first
-    const cacheKey = `search:${query}:${page}`;
+    const cacheKey = `search:${query}:${page}:${minPrice || ''}:${maxPrice || ''}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       return res.status(200).json({ 
@@ -185,7 +198,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       try {
         const client = new RainforestClient(apiKey, domain);
-        const result = await client.search(query, Number(page));
+        const result = await client.search(query, Number(page), minPrice, maxPrice);
         
         // Cache the results
         cache.set(cacheKey, { ...result, timestamp: Date.now() });

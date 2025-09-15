@@ -8,6 +8,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { IdeasHeader } from "@/components/IdeasHeader";
 import { SearchBar } from "@/components/SearchBar";
 import { ProductsGrid } from "@/components/ProductsGrid";
+import { PriceFilter } from "@/components/PriceFilter";
 import { AdSlot } from "@/components/AdSlot";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -25,11 +26,11 @@ interface IdeasPageProps {
 }
 
 export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
-  // Authentication guard - will redirect if not authenticated
   const { user, loading: authLoading, isAuthenticated } = useAuthGuard();
   const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [priceFilter, setPriceFilter] = useState<{min?: number, max?: number}>({});
   
   // Hooks for wishlist operations
   const { data: wishlists = [] } = useUserWishlists();
@@ -38,15 +39,16 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
   const searchProducts = async (query: string): Promise<CatalogSearchResult> => {
     if (!query) return { items: [], page: 1, pageSize: 10, total: 0, mock: true };
     
-    return CatalogService.searchProducts(query);
+    return CatalogService.searchProducts(query, 1, priceFilter.min, priceFilter.max);
   };
 
-  const { data: searchResults, isLoading } = useQuery({
-    queryKey: ['catalog-search', searchQuery],
+  const { data: searchResults, isLoading, isFetching } = useQuery({
+    queryKey: ['catalog-search', searchQuery, priceFilter.min, priceFilter.max],
     queryFn: () => searchProducts(searchQuery),
     enabled: !!searchQuery,
     staleTime: 0, // Don't serve stale data
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 
   const handleSearch = (query: string) => {
@@ -72,6 +74,10 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
     
     const query = `idee regalo ${categoryNames[category] || category}`;
     handleSearch(query);
+  };
+
+  const handlePriceFilter = (minPrice?: number, maxPrice?: number) => {
+    setPriceFilter({ min: minPrice, max: maxPrice });
   };
 
   const handleAddToWishlist = (product: Product) => {
@@ -112,10 +118,16 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
           onCategoryClick={handleCategoryClick}
         />
 
-        <div className="mb-8">
-          <SearchBar 
-            onSearch={handleSearch}
-            disabled={isLoading}
+        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+          <div className="flex-1">
+            <SearchBar 
+              onSearch={handleSearch}
+              disabled={isLoading || isFetching}
+            />
+          </div>
+          <PriceFilter 
+            onFilter={handlePriceFilter}
+            disabled={isLoading || isFetching}
           />
         </div>
 
@@ -145,7 +157,7 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
             
             <ProductsGrid
               products={searchResults?.items.map(item => CatalogService.catalogItemToProduct(item)) || []}
-              loading={isLoading}
+              loading={isLoading || isFetching}
               onAddToWishlist={handleAddToWishlist}
             />
           </div>

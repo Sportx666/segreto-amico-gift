@@ -33,7 +33,12 @@ export class CatalogService {
   /**
    * Search for products using the configured catalog provider
    */
-  static async searchProducts(query: string, page: number = 1): Promise<CatalogSearchResult> {
+  static async searchProducts(
+    query: string, 
+    page: number = 1, 
+    minPrice?: number, 
+    maxPrice?: number
+  ): Promise<CatalogSearchResult> {
     if (!query.trim()) {
       return { items: [], total: 0, page: 1, pageSize: 10 };
     }
@@ -45,7 +50,7 @@ export class CatalogService {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ q: query, page }),
+          body: JSON.stringify({ q: query, page, minPrice, maxPrice }),
         }
       );
     } catch (error: any) {
