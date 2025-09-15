@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { CatalogItem } from './search';
-import { config } from '../src/config/env';
+import { config } from '../../src/config/env';
 
 interface CacheEntry {
   item: CatalogItem;

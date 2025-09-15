@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { config } from '../src/config/env';
+import { config } from '../../src/config/env';
 
 export interface CatalogItem {
   title: string;
