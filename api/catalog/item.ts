@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { CatalogItem } from './search';
+import { config } from '../src/config/env';
 
 interface CacheEntry {
   item: CatalogItem;
@@ -121,9 +122,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         cached: true 
       });
     }
-
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { config } from '@/config/env';
 
     const provider = config.catalog.provider;
     
