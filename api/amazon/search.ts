@@ -1,7 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import crypto from 'crypto';
 import type { Item } from './types';
-import { config } from '@/config/env';
 
 interface CacheEntry {
   items: Item[];
@@ -14,9 +13,9 @@ const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
 
 // PA-API v5 signing utilities
 function createSignedRequest(params: any, method: string = 'POST') {
-  const accessKey = config.catalog.amzAccessKey;
-  const secretKey = config.catalog.amzSecretKey;
-  const region = config.catalog.amzRegion;
+  const accessKey = process.env.AMZ_ACCESS_KEY;
+  const secretKey = process.env.AMZ_SECRET_KEY;
+  const region = process.env.AMZ_REGION || 'eu-west-1';
   
   if (!accessKey || !secretKey) {
     throw new Error('Amazon API credentials not configured');
@@ -65,7 +64,7 @@ function getSignatureKey(key: string, dateStamp: string, regionName: string, ser
 }
 
 function addAffiliateTag(url: string): string {
-  const associateTag = config.catalog.amzAssocTag;
+  const associateTag = process.env.AMZ_ASSOC_TAG;
   if (!associateTag) return url;
   
   try {
@@ -83,7 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const enabled = config.catalog.amazonApiEnabled;
+  const enabled = String(process.env.AMAZON_API_ENABLED || 'false').toLowerCase() === 'true';
   const { q = '', page = 1 } = (req.body || {}) as { q?: string; page?: number };
   const query = (q || '').trim();
   if (!query) return res.status(400).json({ error: 'Missing q' });
@@ -109,7 +108,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const associateTag = config.catalog.amzAssocTag;
+    const associateTag = process.env.AMZ_ASSOC_TAG;
     if (!associateTag) {
       throw new Error('AMZ_ASSOC_TAG not configured');
     }

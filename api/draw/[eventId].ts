@@ -19,9 +19,7 @@ export default async function handler(req: any, res: any) {
 
   try {
     // Check DEV bypass flag (server-side only)
-import { config } from '@/config/env';
-
-    const devBypass = config.devFlags.allowUnauthDraw;
+    const devBypass = process.env.DEV_ALLOW_UNAUTH_DRAW === '1';
     
     // Load members with their profile information for validation
     const { data: members, error: membersError } = await supabase

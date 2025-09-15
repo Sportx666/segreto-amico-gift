@@ -21,9 +21,7 @@ export interface I18nContextType {
 
 export const I18nContext = createContext<I18nContextType | null>(null);
 
-import { config } from '@/config/env';
-
-const isI18nEnabled = config.i18n.enabled;
+const isI18nEnabled = import.meta.env.VITE_I18N_ENABLED !== 'false';
 
 export const useI18n = () => {
   if (!isI18nEnabled) {

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { config } from "@/config/env";
 
 interface AdSlotProps {
   id: string;
@@ -15,7 +14,7 @@ export const AdSlot = ({ id, className = "", placeholder = "Pubblicità" }: AdSl
 
   useEffect(() => {
     // Check env flag
-    const adsEnabled = config.ads.enabled;
+    const adsEnabled = import.meta.env.VITE_ADS_ENABLED === 'true';
     setIsAdsEnabled(adsEnabled);
 
     // Check consent
@@ -28,24 +27,15 @@ export const AdSlot = ({ id, className = "", placeholder = "Pubblicità" }: AdSl
 
     // Load ads script and render ad
     const loadAds = async () => {
+      // Simulate ad loading - in production, replace with actual ad network code
       const adElement = adRef.current;
-      if (!adElement) return;
-
-      // Load AdSense script if not already loaded
-      if (!(window as any).adsbygoogle) {
-        const script = document.createElement('script');
-        script.async = true;
-        script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${config.ads.adsenseClientId}`;
-        script.crossOrigin = 'anonymous';
-        document.head.appendChild(script);
+      if (adElement) {
+        adElement.innerHTML = `
+          <div class="w-full h-full bg-muted border border-border rounded-md flex items-center justify-center text-muted-foreground text-sm">
+            ${placeholder}
+          </div>
+        `;
       }
-
-      // For now, show placeholder until ads are fully configured
-      adElement.innerHTML = `
-        <div class="w-full h-full bg-muted border border-border rounded-md flex items-center justify-center text-muted-foreground text-sm">
-          ${placeholder}
-        </div>
-      `;
     };
 
     const timer = setTimeout(loadAds, 100);

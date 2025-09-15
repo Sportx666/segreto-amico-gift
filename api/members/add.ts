@@ -22,10 +22,8 @@ export default async function handler(req: any, res: any) {
     supabase = createServiceClient();
   } catch (e: any) {
     console.error('members/add config error', {
-import { config } from '@/config/env';
-
-      hasUrl: !!(config.supabase.serverUrl || config.supabase.url),
-      hasServiceKey: !!config.supabase.serviceRoleKey,
+      hasUrl: !!(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL),
+      hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
       message: e?.message,
     });
     return res.status(500).json({ error: e.message || 'Server configuration error', step });
@@ -162,7 +160,7 @@ import { config } from '@/config/env';
       throw tokenErr;
     }
 
-    const origin = (config.auth.baseUrl || req.headers.origin || `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`).replace(/\/$/, "");
+    const origin = (process.env.PUBLIC_BASE_URL || req.headers.origin || `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`).replace(/\/$/, "");
     const url = `${origin}/join/${token}`;
 
     return res.status(200).json({

@@ -36,10 +36,8 @@ export const adsConfig = {
   }
 };
 
-import { config } from '@/config/env';
-
 export const isAdsEnabledForRoute = (path: string): boolean => {
-  const adsEnabled = config.ads.enabled;
+  const adsEnabled = import.meta.env.VITE_ADS_ENABLED === 'true';
   if (!adsEnabled) return false;
 
   // Direct match first

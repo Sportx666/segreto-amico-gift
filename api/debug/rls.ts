@@ -8,15 +8,8 @@ export default async function handler(req: any, res: any) {
 
   const eventId = req.body?.eventId || req.query?.eventId;
 
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { config } from '@/config/env';
-
-import { createClient } from '@supabase/supabase-js';
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  try {
-    const url = config.supabase.serverUrl || config.supabase.url;
-    const anon = config.supabase.anonKey;
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const anon = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !anon) {
     return res.status(500).json({ error: 'Missing SUPABASE_URL or SUPABASE_ANON_KEY' });
   }

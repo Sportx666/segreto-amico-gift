@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { CatalogItem } from './search';
-import { config } from '../../src/config/env';
 
 interface CacheEntry {
   item: CatalogItem;
@@ -123,11 +122,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    const provider = config.catalog.provider;
+    const provider = process.env.CATALOG_PROVIDER;
     
     if (provider === 'rainforest') {
-      const apiKey = config.catalog.rainforestApiKey;
-      const domain = config.catalog.rainforestDomain;
+      const apiKey = process.env.RAINFOREST_API_KEY;
+      const domain = process.env.RAINFOREST_DOMAIN || 'amazon.it';
       
       if (!apiKey) {
         console.warn('RAINFOREST_API_KEY not configured, falling back to mock data');

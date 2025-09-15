@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { config } from '@/config/env';
 
 interface CacheEntry {
   url: string;
@@ -10,7 +9,7 @@ const cache = new Map<string, CacheEntry>();
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
 function addAffiliateTag(url: string): string {
-  const associateTag = config.catalog.amzAssocTag;
+  const associateTag = process.env.AMZ_ASSOC_TAG;
   if (!associateTag) return url;
   
   try {

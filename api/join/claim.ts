@@ -131,9 +131,7 @@ export default async function handler(req: any, res: any) {
         
         if (adminProfile?.email) {
           // Send merge notification
-import { config } from '@/config/env';
-
-          await fetch(`${config.supabase.serverUrl || config.supabase.url}/functions/v1/mail-merge-notice`, {
+          await fetch(`${process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL}/functions/v1/mail-merge-notice`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
