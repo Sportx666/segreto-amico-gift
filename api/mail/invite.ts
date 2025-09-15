@@ -54,8 +54,10 @@ export default async function handler(req: any, res: any) {
   }
 
   // Check if email service is configured
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const sendgridApiKey = process.env.SENDGRID_API_KEY;
+import { config } from '@/config/env';
+
+  const resendApiKey = config.email.provider === 'resend' ? config.email.apiKey : undefined;
+  const sendgridApiKey = config.email.provider === 'sendgrid' ? config.email.apiKey : undefined;
 
   if (!resendApiKey && !sendgridApiKey) {
     console.log('No email service configured - email would be sent to:', email);

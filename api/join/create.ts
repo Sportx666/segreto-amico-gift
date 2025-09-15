@@ -62,7 +62,9 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: insertError.message });
   }
 
-  const origin = (process.env.PUBLIC_BASE_URL || req.headers.origin || `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`).replace(/\/$/, "");
+import { config } from '@/config/env';
+
+  const origin = (config.auth.baseUrl || req.headers.origin || `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`).replace(/\/$/, "");
   const url = `${origin}/join/${token}`;
 
   return res.status(200).json({ token, url, expiresAt });

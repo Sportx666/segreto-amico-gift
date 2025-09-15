@@ -2,6 +2,7 @@
  * Centralized authentication URL management
  * Handles redirect URLs for all authentication flows with environment-based overrides
  */
+import { config } from '@/config/env';
 
 /**
  * Gets the base URL for authentication redirects
@@ -9,14 +10,14 @@
  */
 export function getAuthBaseUrl(): string {
   // 1. Check for explicit override (highest priority)
-  const override = import.meta.env.VITE_AUTH_REDIRECT_OVERRIDE;
+  const override = config.auth.redirectOverride;
   if (override) {
     return override.replace(/\/$/, ''); // Remove trailing slash
   }
 
   // 2. Check for public base URL (development/staging)
-  const baseUrl = import.meta.env.VITE_PUBLIC_BASE_URL;
-  if (baseUrl) {
+  const baseUrl = config.app.baseUrl;
+  if (baseUrl && baseUrl !== window.location.origin) {
     return baseUrl.replace(/\/$/, ''); // Remove trailing slash
   }
 

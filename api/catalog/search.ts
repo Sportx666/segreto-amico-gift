@@ -159,11 +159,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    const provider = process.env.CATALOG_PROVIDER;
+    const provider = config.catalog.provider;
     
     if (provider === 'rainforest') {
-      const apiKey = process.env.RAINFOREST_API_KEY;
-      const domain = process.env.RAINFOREST_DOMAIN || 'amazon.it';
+      const apiKey = config.catalog.rainforestApiKey;
+      const domain = config.catalog.rainforestDomain;
       
       if (!apiKey) {
         return res.status(503).json({ 

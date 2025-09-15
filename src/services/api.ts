@@ -3,6 +3,7 @@
  */
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { config } from '@/config/env';
 
 type ApiError = {
   code: string;
@@ -13,7 +14,7 @@ type ApiError = {
 type TraceCategory = 'rls_error' | 'network_error' | 'parse_error' | 'validation_error' | 'unique_violation';
 
 const isTraceEnabled = () => {
-  return import.meta.env.VITE_DB_TRACE === '1' || import.meta.env.VITE_DB_TRACE === 'true';
+  return config.debug.dbTrace;
 };
 
 function traceLog(category: TraceCategory, operation: string, data?: any) {

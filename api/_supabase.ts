@@ -1,9 +1,9 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { config } from '@/config/env';
 
 export function createServiceClient(): SupabaseClient {
-  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  // Note: In production, SUPABASE_SERVICE_ROLE_KEY should be moved to Supabase secrets
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const url = config.supabase.serverUrl || config.supabase.url;
+  const key = config.supabase.serviceRoleKey;
 
   if (!url) {
     throw new Error('SUPABASE_URL not defined');
@@ -14,4 +14,3 @@ export function createServiceClient(): SupabaseClient {
 
   return createClient(url, key);
 }
-
