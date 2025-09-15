@@ -59,26 +59,31 @@ export function UserAssignment({ eventId, eventStatus, onRevealAnimation }: User
       if (assignmentError) throw assignmentError;
 
       if (assignmentData) {
-        // Get receiver details
-        const { data: receiverData, error: receiverError } = await supabase
+        // Get receiver details using secure function
+        const { data: participantData, error: participantError } = await supabase
           .from('participants')
-          .select(`
-            id,
-            profiles!inner(
-              display_name,
-              avatar_url
-            )
-          `)
+          .select('profile_id')
           .eq('id', assignmentData.receiver_id)
           .single();
 
+        if (participantError) throw participantError;
+
+        // Use secure function to get only safe profile fields
+        const { data: receiverData, error: receiverError } = await supabase
+          .rpc('get_event_member_profile', { 
+            member_profile_id: participantData.profile_id 
+          });
+
         if (receiverError) throw receiverError;
+
+        // Handle both single object and array responses
+        const profileData = Array.isArray(receiverData) ? receiverData[0] : receiverData;
 
         setAssignment({
           id: assignmentData.id,
           receiver_id: assignmentData.receiver_id,
-          receiver_name: receiverData.profiles.display_name || 'Utente Anonimo',
-          receiver_avatar: receiverData.profiles.avatar_url,
+          receiver_name: profileData?.display_name || 'Utente Anonimo',
+          receiver_avatar: profileData?.avatar_url,
           event_id: assignmentData.event_id,
         });
 

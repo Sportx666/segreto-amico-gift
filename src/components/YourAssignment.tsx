@@ -71,17 +71,18 @@ export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssign
         return;
       }
 
-      // Get receiver's display info
+      // Get receiver's display info using secure function
       let receiverName = 'Il tuo destinatario';
       if (assignmentData.participants?.profile_id) {
         const { data: profileData } = await supabase
-          .from('profiles')
-          .select('display_name')
-          .eq('id', assignmentData.participants.profile_id)
-          .single();
+          .rpc('get_event_member_profile', { 
+            member_profile_id: assignmentData.participants.profile_id 
+          });
         
-        if (profileData?.display_name) {
-          receiverName = profileData.display_name;
+        // Handle both single object and array responses
+        const profile = Array.isArray(profileData) ? profileData[0] : profileData;
+        if (profile?.display_name) {
+          receiverName = profile.display_name;
         }
       }
 
