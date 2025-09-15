@@ -141,7 +141,7 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
         ) : (
           <div className="space-y-6">
             <SectionHeader
-              title={`Risultati per "${searchQuery}"`}
+              title={`Risultati per "${searchQuery}"${!priceFilter.max ? '' : ` - fino a €${priceFilter.max}`}`}
               description={searchResults ? `${searchResults.total} prodotti${searchResults.mock ? ' - dati di esempio' : ''}${searchResults.fallback ? ' - servizio temporaneamente non disponibile' : ''}` : undefined}
             />
             
