@@ -46,7 +46,7 @@ export class CatalogService {
     try {
       return await ApiService.fetchRequest<CatalogSearchResult>(
         'catalog_search',
-        '/api/catalog/search',
+        'https://eociecgrdwllggcohmko.supabase.co/functions/v1/catalog-search',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -76,7 +76,7 @@ export class CatalogService {
     try {
       return await ApiService.fetchRequest<CatalogItemResult>(
         'catalog_item',
-        '/api/catalog/item',
+        'https://eociecgrdwllggcohmko.supabase.co/functions/v1/catalog-item',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
