@@ -2,20 +2,17 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { WelcomeScreen } from "./WelcomeScreen";
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  showWelcome: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   loading: true,
-  showWelcome: false,
 });
 
 export const useAuth = () => {
@@ -80,22 +77,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      const prevUser = user;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-
-      // Show welcome screen for new logins (but not on initial page load)
-      if (event === 'SIGNED_IN' && session?.user && !prevUser) {
-        const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
-        if (!hasSeenWelcome) {
-          setShowWelcome(true);
-        }
-      }
 
       // Ensure profile exists for authenticated user
       if (session?.user) {
@@ -120,27 +107,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return () => subscription.unsubscribe();
-  }, [user]);
-
-  const handleWelcomeComplete = () => {
-    setShowWelcome(false);
-    localStorage.setItem('hasSeenWelcome', 'true');
-  };
-
-  // Show welcome screen if needed
-  if (showWelcome && user) {
-    return (
-      <AuthContext.Provider value={{ user, session, loading, showWelcome }}>
-        <WelcomeScreen 
-          onComplete={handleWelcomeComplete}
-          userEmail={user.email}
-        />
-      </AuthContext.Provider>
-    );
-  }
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, showWelcome }}>
+    <AuthContext.Provider value={{ user, session, loading }}>
       {children}
     </AuthContext.Provider>
   );
