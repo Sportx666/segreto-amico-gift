@@ -463,18 +463,19 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
         {members.map((member) => (
           <Card key={member.id}>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3 min-w-0 flex-1">
+                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
                     {member.role === 'admin' ? (
                       <Crown className="w-5 h-5 text-primary" />
                     ) : (
                       <User className="w-5 h-5 text-muted-foreground" />
                     )}
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">{getMemberName(member)}</p>
+                  <div className="min-w-0 flex-1">
+                    {/* Name and editor row */}
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-medium truncate">{getMemberName(member)}</p>
                       {/* Allow users to edit their own name */}
                       {currentUserParticipantId === member.participant_id && (
                         <EventMemberNameEditor
@@ -486,19 +487,33 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                         />
                       )}
                     </div>
+                    
+                    {/* Email row */}
                     {member.anonymous_email && (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-muted-foreground mb-2 truncate">
                         {member.anonymous_email}
                       </p>
                     )}
+                    
+                    {/* Badges row - responsive layout */}
+                    <div className="flex items-center gap-2 sm:hidden">
+                      <StatusChip status={member.status} />
+                      {member.role === 'admin' && (
+                        <Badge variant="secondary" aria-label="Amministratore">Admin</Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  <StatusChip status={member.status} />
-                  {member.role === 'admin' && (
-                    <Badge variant="secondary">Admin</Badge>
-                  )}
+                {/* Right side: badges (hidden on mobile) and action buttons */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Badges - visible on desktop only */}
+                  <div className="hidden sm:flex items-center gap-2">
+                    <StatusChip status={member.status} />
+                    {member.role === 'admin' && (
+                      <Badge variant="secondary" aria-label="Amministratore">Admin</Badge>
+                    )}
+                  </div>
 
                   {userRole === 'admin' && eventStatus === 'pending' && member.role !== 'admin' && (
                     <>
