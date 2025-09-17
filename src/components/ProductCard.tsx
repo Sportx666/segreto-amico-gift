@@ -78,15 +78,15 @@ export const ProductCard = ({
           />
         </div>
 
-        <div className="p-4 space-y-3">
+        <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
           {/* Product Title */}
-          <h3 className="font-medium text-sm leading-tight line-clamp-2 min-h-[2.5rem]">
+          <h3 className="font-medium text-sm leading-tight line-clamp-3 sm:line-clamp-2 min-h-[3rem] sm:min-h-[2.5rem]">
             {title}
           </h3>
 
           {/* Price */}
           <div className="flex items-center justify-between">
-            <Badge variant="secondary" className="text-lg font-bold">
+            <Badge variant="secondary" className="text-sm sm:text-lg font-bold px-2 py-1">
               {price.toFixed(2)} {currency}
             </Badge>
           </div>
@@ -100,24 +100,24 @@ export const ProductCard = ({
           )}
 
           {/* Action Buttons */}
-          <div className="space-y-2">
+          <div className="space-y-1.5 sm:space-y-2">
             <Button
               onClick={handleAddToWishlist}
-              className="w-full"
+              className="w-full min-h-[40px] text-xs sm:text-sm px-2 sm:px-4"
               size="sm"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Aggiungi alla lista
+              <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="truncate">Aggiungi alla lista</span>
             </Button>
             
             <Button
               onClick={handleViewOnAmazon}
               variant="outline"
               size="sm"
-              className="w-full text-xs"
+              className="w-full min-h-[40px] text-xs px-2 sm:px-4"
             >
-              <ExternalLink className="w-3 h-3 mr-2" />
-              Vedi su Amazon
+              <ExternalLink className="w-3 h-3 mr-1 sm:mr-2" />
+              <span className="truncate">Vedi su Amazon</span>
             </Button>
           </div>
         </div>
