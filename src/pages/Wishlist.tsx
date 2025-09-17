@@ -412,7 +412,7 @@ export default function Wishlist() {
           </Button>
         </PageHeader>
 
-        {/* List selector */}
+        {/* List selector with rename/delete actions */}
         {hasWishlists && (
           <div className="mb-6">
             <Label htmlFor="wishlist-select" className="text-sm font-medium mb-2 block">
@@ -455,21 +455,79 @@ export default function Wishlist() {
                     size="sm"
                     variant="ghost"
                     className="shrink-0"
-                    onClick={() => setIsSearchDialogOpen(true)}
+                    onClick={() => {
+                      const selectedWishlist = wishlists?.find(w => w.id === selectedWishlistId);
+                      if (selectedWishlist) {
+                        setEditTitle(selectedWishlist.title || "");
+                        setEditEventId(selectedWishlist.event_id || null);
+                        setIsEditDialogOpen(true);
+                      }
+                    }}
                   >
-                    <Search className="w-4 h-4 mr-1" />
-                    <span className="hidden sm:inline">Cerca su Amazon</span>
+                    <SquarePen className="w-4 h-4 mr-1" />
+                    <span className="hidden sm:inline">Cambia</span>
                   </Button>
 
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="shrink-0"
-                  // onClick={() => setIsManualAddOpen(true)}
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    <span className="hidden sm:inline">Aggiungi manualmente</span>
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="shrink-0 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        <span className="hidden sm:inline">Rimuovi</span>
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Sei sicuro di voler eliminare "{selectedWishlistTitle}" e tutti i suoi articoli? 
+                          Questa azione non può essere annullata.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Annulla</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          onClick={async () => {
+                            if (!selectedWishlistId) return;
+                            try {
+                              // Delete all wishlist items first
+                              const { error: itemsError } = await supabase
+                                .from("wishlist_items")
+                                .delete()
+                                .eq("wishlist_id", selectedWishlistId);
+
+                              if (itemsError) throw itemsError;
+
+                              // Delete the wishlist
+                              const { error: wishlistError } = await supabase
+                                .from("wishlists")
+                                .delete()
+                                .eq("id", selectedWishlistId);
+
+                              if (wishlistError) throw wishlistError;
+
+                              // Reset selection
+                              setSelectedWishlistId(null);
+                              setSelectedWishlistTitle(null);
+
+                              toast.success("Lista eliminata con successo");
+                              queryClient.invalidateQueries({ queryKey: ["wishlists"] });
+                              queryClient.invalidateQueries({ queryKey: ["wishlist-items"] });
+                            } catch (error) {
+                              console.error("Error deleting wishlist:", error);
+                              toast.error("Errore nell'eliminare la lista");
+                            }
+                          }}
+                        >
+                          Elimina
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </>
               )}
             </div>
@@ -694,6 +752,32 @@ export default function Wishlist() {
                 </CardContent>
               </Card>
             ))}
+
+            {/* Add Products Actions - moved here from list selector */}
+            {selectedWishlistId && (
+              <div className="mt-6 pt-4 border-t border-border/20">
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Button
+                    onClick={() => {
+                      setTargetWishlistIdForSearch(selectedWishlistId);
+                      setIsSearchDialogOpen(true);
+                    }}
+                  >
+                    <Search className="w-4 h-4 mr-2" />
+                    Cerca su Amazon
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setActiveItemId("manual-add");
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Aggiungi manualmente
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
