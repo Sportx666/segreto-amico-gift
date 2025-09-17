@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface AuthContextType {
   user: User | null;
@@ -22,22 +23,87 @@ export const useAuth = () => {
   return context;
 };
 
+/**
+ * Ensures a profile record exists for the authenticated user.
+ * Creates a new profile with defaults if one doesn't exist.
+ * @param user - The authenticated user
+ */
+const ensureProfile = async (user: User) => {
+  try {
+    // Check if profile already exists
+    const { data: existingProfile, error: selectError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (selectError) {
+      console.error('Error checking existing profile:', selectError);
+      return;
+    }
+
+    // If profile already exists, do nothing
+    if (existingProfile) {
+      return;
+    }
+
+    // Extract display name from email (local part before @)
+    const displayName = user.email?.split('@')[0] || 'User';
+
+    // Create new profile with defaults
+    const { error: insertError } = await supabase
+      .from('profiles')
+      .insert({
+        id: user.id,
+        email: user.email,
+        display_name: displayName,
+        avatar_url: null
+      });
+
+    if (insertError) {
+      console.error('Error creating profile:', insertError);
+      return;
+    }
+
+    console.log('✅ Profile created for new user:', { userId: user.id, displayName });
+    toast.success(`Welcome ${displayName}! Your profile has been created.`);
+
+  } catch (error) {
+    console.error('Error in ensureProfile:', error);
+  }
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Ensure profile exists for authenticated user
+      if (session?.user) {
+        // Use setTimeout to avoid blocking the auth state change
+        setTimeout(() => {
+          ensureProfile(session.user);
+        }, 0);
+      }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Ensure profile exists for existing session
+      if (session?.user) {
+        setTimeout(() => {
+          ensureProfile(session.user);
+        }, 0);
+      }
     });
 
     return () => subscription.unsubscribe();
