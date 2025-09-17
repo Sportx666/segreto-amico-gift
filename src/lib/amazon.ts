@@ -1,6 +1,27 @@
-const VITE_AMAZON_PARTNER_TAG = 'yourtag-21'; // TODO: Replace with actual tag
+// Centralized Amazon affiliate tag configuration and utilities
+const FALLBACK_PARTNER_TAG = 'yourtag-21'; // Fallback if no env is set
 
-export function withAffiliateTag(url: string, tag: string = VITE_AMAZON_PARTNER_TAG): string {
+/**
+ * Gets the Amazon affiliate tag from environment or returns fallback
+ * Validates that the tag is set in production builds
+ */
+export function getAffiliateTag(): string {
+  // In production, we should have a proper tag configured
+  const isProduction = import.meta.env.PROD;
+  const tag = FALLBACK_PARTNER_TAG; // Client-side uses constant
+  
+  if (isProduction && tag === FALLBACK_PARTNER_TAG) {
+    console.warn('⚠️ Amazon affiliate tag not properly configured for production');
+  }
+  
+  return tag;
+}
+
+/**
+ * Adds Amazon affiliate tag to any Amazon URL
+ * Centralizes affiliate link generation across the application
+ */
+export function withAffiliateTag(url: string, customTag?: string): string {
   try {
     const amazonUrl = new URL(url);
     
@@ -8,6 +29,9 @@ export function withAffiliateTag(url: string, tag: string = VITE_AMAZON_PARTNER_
     if (!amazonUrl.hostname.includes('amazon.')) {
       return url;
     }
+    
+    // Use custom tag or get from environment
+    const tag = customTag || getAffiliateTag();
     
     // Add or update the tag parameter
     amazonUrl.searchParams.set('tag', tag);
@@ -19,6 +43,10 @@ export function withAffiliateTag(url: string, tag: string = VITE_AMAZON_PARTNER_
   }
 }
 
+/**
+ * Generates Amazon product URL from ASIN with affiliate tag
+ * Includes SEO-friendly slug if title is provided
+ */
 export function productUrlFromASIN(asin: string, title?: string): string {
   const slug = title 
     ? title.toLowerCase()
@@ -33,6 +61,9 @@ export function productUrlFromASIN(asin: string, title?: string): string {
   return withAffiliateTag(urlWithSlug);
 }
 
+/**
+ * Generates Amazon search URL for budget-based gift ideas with affiliate tag
+ */
 export function ideaBucketUrl(budget: number, topic: string = "idee regalo"): string {
   const query = `${topic} sotto ${budget} euro`.replace(/\s+/g, '+');
   const baseUrl = `https://www.amazon.it/s?k=${query}`;

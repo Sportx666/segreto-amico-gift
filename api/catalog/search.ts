@@ -1,5 +1,45 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+/**
+ * Server-side Amazon affiliate tag utilities for API routes
+ */
+function getAffiliateTag(): string {
+  // Check for Rainforest-specific tag first, then fallback to main Amazon tag
+  const rainforestTag = process.env.RAINFOREST_ASSOC_TAG;
+  const mainTag = process.env.AMZ_ASSOC_TAG;
+  const fallbackTag = "yourtag-21";
+  
+  const tag = rainforestTag || mainTag || fallbackTag;
+  
+  // Warn in production if using fallback
+  if (tag === fallbackTag && process.env.NODE_ENV === 'production') {
+    console.warn("⚠️ Amazon affiliate tag not configured for production");
+  }
+  
+  return tag;
+}
+
+/**
+ * Adds Amazon affiliate tag to URLs
+ */
+function withAffiliateTag(url: string): string {
+  try {
+    const amazonUrl = new URL(url);
+    
+    // Only process Amazon URLs
+    if (!amazonUrl.hostname.includes('amazon.')) {
+      return url;
+    }
+    
+    // Add affiliate tag
+    amazonUrl.searchParams.set('tag', getAffiliateTag());
+    return amazonUrl.toString();
+  } catch (error) {
+    console.warn('Invalid URL provided to withAffiliateTag:', url);
+    return url;
+  }
+}
+
 export interface CatalogItem {
   title: string;
   imageUrl?: string;
@@ -75,11 +115,12 @@ class RainforestClient {
 
       let items: CatalogItem[] = (data.search_results || []).map((item: any) => {
         const asin = item.asin || extractAsinFromUrl(item.link);
+        const baseUrl = asin ? `https://www.${this.domain}/dp/${asin}` : item.link;
         return {
           title: item.title || 'Unknown Title',
           imageUrl: item.image,
           asin,
-          url: asin ? `https://www.${this.domain}/dp/${asin}` : item.link,
+          url: withAffiliateTag(baseUrl),
           price: item.price?.value ? item.price.value.toString() : undefined,
           currency: item.price?.currency || 'EUR'
         };

@@ -6,6 +6,47 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+/**
+ * Server-side Amazon affiliate tag utilities
+ * Gets tags from Supabase secrets (AMZ_ASSOC_TAG or RAINFOREST_ASSOC_TAG)
+ */
+function getAffiliateTag(): string {
+  // Check for Rainforest-specific tag first, then fallback to main Amazon tag
+  const rainforestTag = Deno.env.get("RAINFOREST_ASSOC_TAG");
+  const mainTag = Deno.env.get("AMZ_ASSOC_TAG");
+  const fallbackTag = "yourtag-21";
+  
+  const tag = rainforestTag || mainTag || fallbackTag;
+  
+  // Warn in production if using fallback
+  if (tag === fallbackTag) {
+    console.warn("⚠️ Amazon affiliate tag not configured, using fallback");
+  }
+  
+  return tag;
+}
+
+/**
+ * Adds Amazon affiliate tag to URLs
+ */
+function withAffiliateTag(url: string): string {
+  try {
+    const amazonUrl = new URL(url);
+    
+    // Only process Amazon URLs
+    if (!amazonUrl.hostname.includes('amazon.')) {
+      return url;
+    }
+    
+    // Add affiliate tag
+    amazonUrl.searchParams.set('tag', getAffiliateTag());
+    return amazonUrl.toString();
+  } catch (error) {
+    console.warn('Invalid URL provided to withAffiliateTag:', url);
+    return url;
+  }
+}
+
 interface CatalogItem {
   title: string;
   imageUrl?: string;
@@ -102,11 +143,12 @@ class RainforestClient {
 
         let items: CatalogItem[] = ((data as any).search_results || []).map((item: any) => {
           const asin = item.asin || extractAsinFromUrl(item.link);
+          const baseUrl = asin ? `https://www.${this.domain}/dp/${asin}` : item.link;
           return {
             title: item.title || "Unknown Title",
             imageUrl: item.image,
             asin,
-            url: asin ? `https://www.${this.domain}/dp/${asin}` : item.link,
+            url: withAffiliateTag(baseUrl),
             price: item.price?.value ? String(item.price.value) : undefined,
             currency: item.price?.currency || "EUR",
           } as CatalogItem;

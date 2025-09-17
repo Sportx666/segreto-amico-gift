@@ -1,6 +1,46 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { CatalogItem } from './search';
 
+/**
+ * Server-side Amazon affiliate tag utilities for API routes
+ */
+function getAffiliateTag(): string {
+  // Check for Rainforest-specific tag first, then fallback to main Amazon tag
+  const rainforestTag = process.env.RAINFOREST_ASSOC_TAG;
+  const mainTag = process.env.AMZ_ASSOC_TAG;
+  const fallbackTag = "yourtag-21";
+  
+  const tag = rainforestTag || mainTag || fallbackTag;
+  
+  // Warn in production if using fallback
+  if (tag === fallbackTag && process.env.NODE_ENV === 'production') {
+    console.warn("⚠️ Amazon affiliate tag not configured for production");
+  }
+  
+  return tag;
+}
+
+/**
+ * Adds Amazon affiliate tag to URLs
+ */
+function withAffiliateTag(url: string): string {
+  try {
+    const amazonUrl = new URL(url);
+    
+    // Only process Amazon URLs
+    if (!amazonUrl.hostname.includes('amazon.')) {
+      return url;
+    }
+    
+    // Add affiliate tag
+    amazonUrl.searchParams.set('tag', getAffiliateTag());
+    return amazonUrl.toString();
+  } catch (error) {
+    console.warn('Invalid URL provided to withAffiliateTag:', url);
+    return url;
+  }
+}
+
 interface CacheEntry {
   item: CatalogItem;
   timestamp: number;
@@ -64,7 +104,7 @@ class RainforestClient {
         title: product.title || 'Unknown Title',
         imageUrl: product.main_image?.link,
         asin: product.asin,
-        url: `https://www.${this.domain}/dp/${product.asin}`,
+        url: withAffiliateTag(`https://www.${this.domain}/dp/${product.asin}`),
         price: product.buybox_winner?.price?.value ? product.buybox_winner.price.value.toString() : undefined,
         currency: product.buybox_winner?.price?.currency || 'EUR'
       };
@@ -84,7 +124,7 @@ function getMockProduct(asin: string): CatalogItem {
     title: `Prodotto ${asin}`,
     imageUrl: `https://via.placeholder.com/400?text=${asin}`,
     asin: asin,
-    url: `https://www.amazon.it/dp/${asin}`,
+    url: withAffiliateTag(`https://www.amazon.it/dp/${asin}`),
     price: '29.99',
     currency: 'EUR'
   };
