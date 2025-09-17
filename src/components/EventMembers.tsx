@@ -151,21 +151,14 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
 
       if (memberError) throw memberError;
 
-      const inviteResp = await fetch('/api/join/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({ eventId, participantId: memberRow.participant_id }),
+      const { data: inviteData, error: inviteError } = await supabase.functions.invoke('join-create', {
+        body: { eventId, participantId: memberRow.participant_id }
       });
-      if (!inviteResp.ok) {
-        const body = await inviteResp.text();
-        console.error('join/create failed', body);
+      if (inviteError) {
+        console.error('join/create failed', inviteError);
         toast.error('Errore nel generare il link');
-      } else {
-        const invite = await inviteResp.json();
-        setInviteLinks((prev) => ({ ...prev, [memberRow.id]: { ...invite, url: absUrl(`/join/${invite.token}`) } }));
+      } else if (inviteData) {
+        setInviteLinks((prev) => ({ ...prev, [memberRow.id]: { ...inviteData, url: absUrl(`/join/${inviteData.token}`) } }));
       }
 
       setNewMemberName('');
@@ -231,24 +224,17 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
         // Send invite email if requested
         if (sendInviteEmail && email) {
           try {
-            const emailResp = await fetch('/api/mail/invite', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${session?.access_token}`,
-              },
-              body: JSON.stringify({
+            const { data: emailData, error: emailError } = await supabase.functions.invoke('mail-invite', {
+              body: {
                 email,
                 eventId,
                 participantId: body.participantId,
                 joinUrl: invite.url
-              }),
+              }
             });
 
-            if (emailResp.ok) {
+            if (!emailError) {
               toast.success('Partecipante aggiunto e email inviata!');
-            } else if (emailResp.status === 204) {
-              toast.success('Partecipante aggiunto! (Email service non configurato)');
             } else {
               toast.success('Partecipante aggiunto! (Errore nell\'invio email)');
             }
@@ -275,18 +261,17 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
 
   const debugCheckPermissions = async () => {
     try {
-      const resp = await fetch('/api/debug/rls', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({ eventId }),
+      const { data: debugData, error: debugError } = await supabase.functions.invoke('debug-rls', {
+        body: { eventId }
       });
-      const json = await resp.json();
-      setDiag((d: any) => ({ ...d, debugRls: json }));
-      if (!resp.ok) toast.error('Debug RLS fallito');
-      else toast.success('Debug RLS completato');
+      
+      if (debugError) {
+        setDiag((d: any) => ({ ...d, debugRls: { error: debugError.message } }));
+        toast.error('Debug RLS errore');
+      } else {
+        setDiag((d: any) => ({ ...d, debugRls: debugData }));
+        toast.success('Debug RLS completato');
+      }
     } catch (e) {
       console.error('RLS debug failed', e);
       toast.error('Debug RLS errore');
@@ -297,17 +282,12 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
     try {
       const name = newMemberName.trim() || 'Test User';
       const email = newMemberEmail.trim() || '';
-      const resp = await fetch('/api/members/add', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({ eventId, anonymousName: name, anonymousEmail: email || null, ttlDays: 1 }),
+      const { data: addData, error: addError } = await supabase.functions.invoke('members-add', {
+        body: { eventId, anonymousName: name, anonymousEmail: email || null, ttlDays: 1 }
       });
-      const text = await resp.text();
-      setDiag((d: any) => ({ ...d, debugAddResp: { status: resp.status, body: safeJson(text) } }));
-      if (!resp.ok) toast.error('members/add 500');
+      
+      setDiag((d: any) => ({ ...d, debugAddResp: addError ? { error: addError.message } : addData }));
+      if (addError) toast.error('members/add error');
       else toast.success('members/add OK');
     } catch (e) {
       console.error('debug add failed', e);
@@ -583,23 +563,18 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                       size="sm"
                       onClick={async () => {
                         try {
-                          const resp = await fetch('/api/join/create', {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              Authorization: `Bearer ${session?.access_token}`,
-                            },
-                            body: JSON.stringify({ eventId, participantId: member.participant_id }),
+                          const { data: inviteData, error: inviteError } = await supabase.functions.invoke('join-create', {
+                            body: { eventId, participantId: member.participant_id }
                           });
-                          if (!resp.ok) {
-                            const body = await resp.text();
-                            console.error('join/create failed', body);
+                          if (inviteError) {
+                            console.error('join/create failed', inviteError);
                             toast.error('Errore nel rigenerare il link');
                             return;
                           }
-                          const invite = await resp.json();
-                          setInviteLinks((prev) => ({ ...prev, [member.id]: { ...invite, url: absUrl(`/join/${invite.token}`) } }));
-                          toast.success('Link rigenerato');
+                          if (inviteData) {
+                            setInviteLinks((prev) => ({ ...prev, [member.id]: { ...inviteData, url: absUrl(`/join/${inviteData.token}`) } }));
+                            toast.success('Link rigenerato');
+                          }
                         } catch {
                           toast.error('Errore nel rigenerare il link');
                         }

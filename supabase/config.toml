@@ -14,3 +14,18 @@ verify_jwt = false
 
 [functions.members-add]
 verify_jwt = true
+
+[functions.join-create]
+verify_jwt = true
+
+[functions.join-claim]
+verify_jwt = true
+
+[functions.mail-invite]
+verify_jwt = true
+
+[functions.amazon-search]
+verify_jwt = false
+
+[functions.debug-rls]
+verify_jwt = true

@@ -140,19 +140,15 @@ export default function Wishlist() {
       if (!triggerSearch)
         return { items: [], page: 1, pageSize: 10, total: 0, mock: true };
 
-      const response = await fetch("/api/amazon/search", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ q: triggerSearch }),
+      const { data, error } = await supabase.functions.invoke('amazon-search', {
+        body: { q: triggerSearch }
       });
 
-      if (!response.ok) {
+      if (error) {
         throw new Error("Errore nella ricerca prodotti");
       }
 
-      return response.json();
+      return data;
     },
     enabled: !!triggerSearch && isSearchDialogOpen,
   });

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -19,22 +20,15 @@ const EventJoin = () => {
     }
 
     const run = async () => {
-      const resp = await fetch('/api/join/claim', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ token }),
+      const { data, error } = await supabase.functions.invoke('join-claim', {
+        body: { token }
       });
 
-      const data = await resp.json().catch(() => ({}));
-
-      if (!resp.ok) {
-        if (data?.error === 'invalid') setStatus('invalid');
-        else if (data?.error === 'used') setStatus('used');
-        else if (data?.error === 'expired') setStatus('expired');
-        else if (resp.status === 403) setStatus('invalid');
+      if (error) {
+        if (error.message === 'invalid') setStatus('invalid');
+        else if (error.message === 'used') setStatus('used');
+        else if (error.message === 'expired') setStatus('expired');
+        else if (error.message === 'forbidden') setStatus('invalid');
         else setStatus('invalid');
         return;
       }
