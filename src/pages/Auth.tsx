@@ -7,11 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Mail, Gift, Chrome } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { getOAuthRedirectUrl, getMagicLinkRedirectUrl } from "@/lib/auth-urls";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const navigate = useNavigate();
   const params = new URLSearchParams(window.location.search);
   const nextParam = params.get("next");
@@ -56,6 +58,13 @@ const Auth = () => {
     setLoading(true);
     
     try {
+      // Store remember preference for later use
+      if (rememberMe) {
+        localStorage.setItem('rememberMe', 'true');
+      } else {
+        localStorage.removeItem('rememberMe');
+      }
+
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
@@ -65,8 +74,9 @@ const Auth = () => {
 
       if (error) throw error;
 
+      const rememberText = rememberMe ? " Sarai ricordato per accessi più veloci!" : "";
       toast.success("Link magico inviato! 📧", {
-        description: "Controlla la tua email e clicca il link per accedere."
+        description: `Controlla la tua email e clicca il link per accedere.${rememberText}`
       });
     } catch (error: unknown) {
       const description = error instanceof Error ? error.message : undefined;
@@ -115,6 +125,20 @@ const Auth = () => {
                     aria-describedby="email-help"
                   />
                 </div>
+              </div>
+              
+              <div className="flex items-center space-x-2 py-2">
+                <Checkbox 
+                  id="remember-me" 
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked === true)}
+                />
+                <Label 
+                  htmlFor="remember-me" 
+                  className="text-sm font-medium cursor-pointer"
+                >
+                  Ricordami per accessi più veloci
+                </Label>
               </div>
               
               <Button 
