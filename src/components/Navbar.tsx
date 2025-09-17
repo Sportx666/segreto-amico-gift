@@ -7,7 +7,7 @@ import { useI18n } from "@/i18n";
 import { NotificationBell } from "./NotificationBell";
 import { LanguageMenu } from "./LanguageMenu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Gift, Calendar, Lightbulb, User, LogOut, Heart, Menu } from "lucide-react";
+import { Gift, Calendar, Lightbulb, User, LogOut, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -159,15 +159,6 @@ export const Navbar = () => {
             </Button>
           </div>
 
-          {/* Mobile menu button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="md:hidden"
-            aria-label="Menu principale"
-          >
-            <Menu className="w-4 h-4" />
-          </Button>
         </div>
       </nav>
       
