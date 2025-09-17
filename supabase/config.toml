@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.catalog-item]
 verify_jwt = false
+
+[functions.members-add]
+verify_jwt = true

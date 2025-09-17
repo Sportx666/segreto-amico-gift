@@ -203,40 +203,27 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
     console.log('Adding member:', { eventId, name, email, hasAuth: !!session.access_token });
     setIsAddingMember(true);
     try {
-      const resp = await fetch('/api/members/add', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ eventId, anonymousName: name, anonymousEmail: email || null }),
+      const { data: body, error } = await supabase.functions.invoke('members-add', {
+        body: { eventId, anonymousName: name, anonymousEmail: email || null },
       });
-      const bodyText = await resp.text();
-      console.log('API Response:', { status: resp.status, statusText: resp.statusText, body: bodyText });
       
-      if (!resp.ok) {
+      if (error) {
         let msg = 'Errore nell\'aggiungere il partecipante';
-        let errorDetails = '';
-        try {
-          const err = JSON.parse(bodyText);
-          errorDetails = err.error || '';
-          if (resp.status === 409 && err?.error === 'duplicate_email') {
-            msg = 'Questa email è già stata invitata';
-          } else if (resp.status === 403) {
-            msg = 'Non hai i permessi per aggiungere partecipanti';
-          } else if (resp.status === 401) {
-            msg = 'Sessione scaduta - ricarica la pagina';
-          } else if (err?.error) {
-            msg = `Errore: ${err.error}`;
-          }
-        } catch (parseError) {
-          errorDetails = bodyText;
+        console.error('members-add function error:', error);
+        
+        if (error.message?.includes('duplicate_email')) {
+          msg = 'Questa email è già stata invitata';
+        } else if (error.message?.includes('Forbidden')) {
+          msg = 'Non hai i permessi per aggiungere partecipanti';
+        } else if (error.message?.includes('Unauthorized')) {
+          msg = 'Sessione scaduta - ricarica la pagina';
+        } else if (error.message) {
+          msg = `Errore: ${error.message}`;
         }
-        console.error('members/add failed:', { status: resp.status, error: errorDetails });
+        
         toast.error(msg);
         return;
       }
-      const body = JSON.parse(bodyText);
       if (body?.invite && body?.memberId) {
         const invite = { ...body.invite, url: absUrl(`/join/${body.invite.token}`) };
         setInviteLinks((prev) => ({ ...prev, [body.memberId]: invite }));

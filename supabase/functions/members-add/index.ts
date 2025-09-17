@@ -1,9 +1,14 @@
-import { createServiceClient } from '../_supabase.ts';
-import crypto from 'crypto';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 function generateToken(length = 22) {
   const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const bytes = crypto.randomBytes(length);
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
   let token = '';
   for (let i = 0; i < length; i++) {
     token += chars[bytes[i] % chars.length];
@@ -11,61 +16,78 @@ function generateToken(length = 22) {
   return token;
 }
 
-export default async function handler(req: any, res: any) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
   }
 
-  let supabase;
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  
   let step = 'init';
   try {
-    supabase = createServiceClient();
-  } catch (e: any) {
-    console.error('members/add config error', {
-      hasUrl: !!(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL),
-      hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-      message: e?.message,
-    });
-    return res.status(500).json({ error: e.message || 'Server configuration error', step });
-  }
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  const authHeader = req.headers['authorization'];
-  if (!authHeader) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  const accessToken = authHeader.replace('Bearer ', '');
-  step = 'auth_get_user';
-  const { data: userRes, error: userErr } = await supabase.auth.getUser(accessToken);
-  if (userErr || !userRes?.user) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  const user = userRes.user;
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const accessToken = authHeader.replace('Bearer ', '');
+    
+    step = 'auth_get_user';
+    const { data: userRes, error: userErr } = await supabase.auth.getUser(accessToken);
+    if (userErr || !userRes?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const user = userRes.user;
 
-  const { eventId, anonymousName, anonymousEmail, ttlDays = 30 } = req.body || {};
-  if (!eventId || !anonymousName || typeof anonymousName !== 'string' || !anonymousName.trim()) {
-    return res.status(400).json({ error: 'eventId and anonymousName required' });
-  }
+    const { eventId, anonymousName, anonymousEmail, ttlDays = 30 } = await req.json();
+    if (!eventId || !anonymousName || typeof anonymousName !== 'string' || !anonymousName.trim()) {
+      return new Response(JSON.stringify({ error: 'eventId and anonymousName required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-  // Normalize email if provided
-  const normalizedEmail: string | null = (typeof anonymousEmail === 'string' && anonymousEmail.trim())
-    ? String(anonymousEmail).trim().toLowerCase()
-    : null;
+    // Normalize email if provided
+    const normalizedEmail: string | null = (typeof anonymousEmail === 'string' && anonymousEmail.trim())
+      ? String(anonymousEmail).trim().toLowerCase()
+      : null;
 
-  // Verify admin
-  step = 'load_event_admin';
-  const { data: event, error: eventError } = await supabase
-    .from('events')
-    .select('id, admin_profile_id')
-    .eq('id', eventId)
-    .single();
-  if (eventError || !event) {
-    return res.status(404).json({ error: 'Event not found' });
-  }
-  if (event.admin_profile_id !== user.id) {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
+    // Verify admin
+    step = 'load_event_admin';
+    const { data: event, error: eventError } = await supabase
+      .from('events')
+      .select('id, admin_profile_id')
+      .eq('id', eventId)
+      .single();
+    if (eventError || !event) {
+      return new Response(JSON.stringify({ error: 'Event not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (event.admin_profile_id !== user.id) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-  try {
     // 0) If email provided, guard against duplicates within the same event
     if (normalizedEmail) {
       step = 'check_duplicate_email';
@@ -81,7 +103,10 @@ export default async function handler(req: any, res: any) {
       }
       if (existingMemberByEmail) {
         console.log('Duplicate email found:', { eventId, email: normalizedEmail, memberId: existingMemberByEmail.id });
-        return res.status(409).json({ error: 'duplicate_email', memberId: existingMemberByEmail.id });
+        return new Response(JSON.stringify({ error: 'duplicate_email', memberId: existingMemberByEmail.id }), {
+          status: 409,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
     }
 
@@ -172,7 +197,7 @@ export default async function handler(req: any, res: any) {
     }
     console.log('Created join token:', { token, expiresAt });
 
-    const origin = (process.env.PUBLIC_BASE_URL || req.headers.origin || `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`).replace(/\/$/, "");
+    const origin = 'https://amico-segreto.lovable.app';
     const url = `${origin}/join/${token}`;
 
     console.log('Member added successfully:', { 
@@ -183,20 +208,24 @@ export default async function handler(req: any, res: any) {
       hasEmail: !!normalizedEmail
     });
 
-    return res.status(200).json({
+    return new Response(JSON.stringify({
       memberId: memberRow.id,
       participantId: memberRow.participant_id,
       invite: { token, url, expiresAt },
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e: any) {
-    console.error('members/add step error', { 
+    console.error('members-add step error', { 
       step, 
-      eventId,
-      userId: user.id,
       message: e?.message, 
       details: e?.details || e?.hint,
       code: e?.code
     });
-    return res.status(500).json({ error: e.message || 'Internal error', step, code: e?.code });
+    return new Response(JSON.stringify({ error: e.message || 'Internal error', step, code: e?.code }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
-}
+});
