@@ -86,21 +86,21 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="bg-white text-primary hover:bg-white/90 shadow-glow"
                 onClick={() => navigate("/events")}
               >
                 <Calendar className="w-5 h-5 mr-2" />
                 I Miei Eventi
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="border-white/30 text-white hover:bg-white/10 backdrop-blur-sm"
+              <Button
+                size="lg"
+                variant="outline"
+                className="bg-white text-primary hover:bg-white/90 shadow-glow relative"
                 onClick={() => navigate("/ideas")}
               >
-                <Sparkles className="w-5 h-5 mr-2" />
+                <Sparkles className="w-5 h-5 mr-2 animate-sparkle text-yellow-500" />
                 Scopri Idee Regalo
               </Button>
             </div>
@@ -111,8 +111,8 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
       {/* Mobile In-Feed Ad */}
       {showMobileFeed && (
         <div className="lg:hidden px-4 py-8">
-          <AdSlot 
-            id="mobile-feed" 
+          <AdSlot
+            id="mobile-feed"
             className="w-full"
             placeholder="Contenuti sponsorizzati"
           />

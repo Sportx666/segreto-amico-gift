@@ -83,7 +83,7 @@ const AccountSettings = () => {
                       ) : (
                         <>
                           <Mail className="w-3 h-3 mr-1" />
-                          Solo Link Magico
+                          Link
                         </>
                       )}
                     </Badge>
@@ -92,18 +92,7 @@ const AccountSettings = () => {
                     <Badge variant="outline">Google</Badge>
                   )}
                 </div>
-              </div>
-              {!hasPassword && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowPasswordSetup(true)}
-                  className="text-primary hover:text-primary/80"
-                >
-                  <Shield className="w-4 h-4 mr-2" />
-                  Configura Password
-                </Button>
-              )}
+              </div>              
             </div>
           </div>
 

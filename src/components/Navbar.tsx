@@ -132,8 +132,7 @@ export const Navbar = () => {
           </div>
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-3">
-            <LanguageMenu />
+          <div className="hidden md:flex items-center gap-3">            
             <NotificationBell />
             <Link 
               to="/profile" 
@@ -156,6 +155,19 @@ export const Navbar = () => {
             >
               <LogOut className="w-4 h-4" />
               <span className="hidden lg:inline ml-2">{t('navbar.logout')}</span>
+            </Button>
+          </div>
+
+          {/* Mobile Actions */}
+          <div className="md:hidden items-center gap-3">
+            <NotificationBell />            
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleLogout}
+              className="text-muted-foreground hover:text-foreground"              
+            >
+              <LogOut className="w-4 h-4" />              
             </Button>
           </div>
 

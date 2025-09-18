@@ -96,6 +96,20 @@ export default {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			keyframes: {
+				'sparkle': {
+					"0%, 50%, 100%": {
+						transform: "scale(1) rotate(0deg)",
+						opacity: "1",
+					},
+					"25%": {
+						transform: "scale(1.3) rotate(15deg)",
+						opacity: "0.6",
+					},
+					"75%": {
+						transform: "scale(1.3) rotate(-15deg)",
+						opacity: "0.6",
+					},
+				},
 				'accordion-down': {
 					from: {
 						height: '0'
@@ -114,6 +128,7 @@ export default {
 				}
 			},
 			animation: {
+				'sparkle': "sparkle 1s ease-in-out infinite",
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out'
 			}
