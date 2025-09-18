@@ -165,23 +165,24 @@ const Profile = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 md:px-6 py-4 md:py-6">
-      <PageHeader 
-        title={t('profile.title')} 
-        description={t('profile.description')}
-      />
-      
-      <div className="grid gap-6 md:gap-8">
+    <div className="container max-w-4xl mx-auto py-4 sm:py-6 md:py-8 px-3 sm:px-4 md:px-6">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="px-1">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Profilo</h1>
+          <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
+            Gestisci le tue impostazioni e preferenze
+          </p>
+        </div>
         {/* Profile Form */}
-        <div className="grid gap-6 md:gap-8 md:grid-cols-3">
-          <div className="md:col-span-2">
+        <div className="grid gap-4 sm:gap-6 md:gap-8 md:grid-cols-3">
+          <div className="md:col-span-2 order-2 md:order-1">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">{t('profile.personal_info')}</CardTitle>
+                <CardTitle className="text-base sm:text-lg">{t('profile.personal_info')}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4 sm:space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="email">{t('profile.email')}</Label>
+                  <Label htmlFor="email" className="text-sm sm:text-base">{t('profile.email')}</Label>
                   <Input 
                     id="email"
                     value={user.email ?? ""} 
@@ -191,7 +192,7 @@ const Profile = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="displayName">{t('profile.display_name')}</Label>
+                  <Label htmlFor="displayName" className="text-sm sm:text-base">{t('profile.display_name')}</Label>
                   <Input
                     id="displayName"
                     placeholder={t('profile.display_name')}
@@ -201,7 +202,7 @@ const Profile = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">{t('profile.phone')}</Label>
+                  <Label htmlFor="phone" className="text-sm sm:text-base">{t('profile.phone')}</Label>
                   <Input 
                     id="phone"
                     placeholder={t('profile.phone')}
@@ -331,11 +332,12 @@ const Profile = () => {
         <AccountSettings />
       </div>
       
-      <div className="flex justify-end mt-6">
+      <div className="flex justify-end mt-4 sm:mt-6 px-1">
         <Button 
           onClick={handleSave} 
           disabled={uploadingAvatar}
           size="lg"
+          className="w-full xs:w-auto"
         >
           {uploadingAvatar ? t('profile.saving') : t('profile.save_changes')}
         </Button>

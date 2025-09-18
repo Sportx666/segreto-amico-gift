@@ -33,7 +33,7 @@ const ProductSkeleton = () => (
 export const ProductsGrid = ({ products, loading = false, onAddToWishlist }: ProductsGridProps) => {
   if (loading) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
         {Array.from({ length: 8 }).map((_, index) => (
           <ProductSkeleton key={index} />
         ))}
@@ -54,7 +54,7 @@ export const ProductsGrid = ({ products, loading = false, onAddToWishlist }: Pro
   }
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 xs:gap-4">
       {products.map((product) => (
         <ProductCard
           key={`${product.asin}-${product.url}`}

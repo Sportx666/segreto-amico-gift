@@ -166,33 +166,35 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-3 sm:p-4">
       <div className="w-full max-w-md">
         <Card className="shadow-elegant border-0 bg-white/95 backdrop-blur-sm">
-          <CardHeader className="text-center space-y-6 pb-6">
-            <div className="mx-auto w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center shadow-glow">
-              <Gift className="w-8 h-8 text-white" />
+          <CardHeader className="text-center space-y-4 sm:space-y-6 pb-4 sm:pb-6 px-4 sm:px-6">
+            <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-gradient-primary rounded-full flex items-center justify-center shadow-glow">
+              <Gift className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
-            <div className="space-y-2">
-              <CardTitle className="text-2xl md:text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            <div className="space-y-1 sm:space-y-2">
+              <CardTitle className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                 Amico Segreto
               </CardTitle>
-              <CardDescription className="text-base text-muted-foreground">
+              <CardDescription className="text-sm sm:text-base text-muted-foreground">
                 Entra per organizzare il tuo scambio di regali
               </CardDescription>
             </div>
           </CardHeader>
           
-          <CardContent className="pt-0">
+          <CardContent className="pt-0 px-4 sm:px-6">
             <TabsComponent value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="password" className="flex items-center gap-2">
-                  <Lock className="w-4 h-4" />
-                  Accesso Veloce
+              <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6 h-11">
+                <TabsTrigger value="password" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                  <Lock className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden xs:inline">Accesso Veloce</span>
+                  <span className="xs:hidden">Password</span>
                 </TabsTrigger>
-                <TabsTrigger value="magic" className="flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
-                  Link Magico
+                <TabsTrigger value="magic" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                  <Mail className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden xs:inline">Link Magico</span>
+                  <span className="xs:hidden">Link</span>
                 </TabsTrigger>
               </TabsList>
 

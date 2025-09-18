@@ -155,7 +155,7 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
               </div>
             )}
             
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {events.map((event) => (
                 <div key={event.id} className="group relative">
                   <Link to={`/events/${event.id}`} className="block">

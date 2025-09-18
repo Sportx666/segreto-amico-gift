@@ -139,7 +139,24 @@ All colors MUST be HSL.
   }
 
   .container {
-    @apply mx-auto px-4 md:px-6;
+    @apply mx-auto px-3 sm:px-4 md:px-6;
+  }
+
+  /* Mobile-first touch targets and spacing */
+  .mobile-touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  .mobile-text-sm {
+    @apply text-xs sm:text-sm;
+  }
+
+  .mobile-text-base {
+    @apply text-sm sm:text-base;
+  }
+
+  .mobile-spacing {
+    @apply space-y-3 sm:space-y-4;
   }
 }
 

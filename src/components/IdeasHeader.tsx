@@ -45,14 +45,14 @@ export const IdeasHeader = ({ onBucketClick, onCategoryClick }: IdeasHeaderProps
       </div>
 
       {/* Category Chips */}
-      <div className="grid grid-rows-2 grid-flow-col auto-cols-max gap-2 justify-center md:flex md:flex-wrap">
+      <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center">
         {CATEGORIES.map((category) => (
           <Button
             key={category.id}
             onClick={() => onCategoryClick(category.id)}
             variant="secondary"
             size="sm"
-            className="rounded-full"
+            className="rounded-full text-xs sm:text-sm h-8 sm:h-9 px-2.5 sm:px-3"
           >
             {category.name}
           </Button>
