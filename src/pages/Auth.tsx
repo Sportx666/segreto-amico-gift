@@ -188,7 +188,7 @@ const Auth = () => {
                        
             <GoogleButton 
               onClick={handleGoogleLogin}
-              type="light"
+              type="dark"
             />
 
             <div className="relative my-8">
