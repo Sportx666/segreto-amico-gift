@@ -12,6 +12,7 @@ import { Tabs as TabsComponent, TabsContent, TabsList, TabsTrigger } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import PasswordReset from "@/components/PasswordReset";
 import PasswordSetup from "@/components/PasswordSetup";
+import GoogleButton from 'react-google-button'
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -185,15 +186,15 @@ const Auth = () => {
           
           <CardContent className="pt-0 px-4 sm:px-6">
                        
-            <Button 
+            <GoogleButton 
               onClick={handleGoogleLogin}
-              variant="outline"
+              type="light"
               size="lg"
               className="w-full border-border hover:bg-accent transition-colors"
             >
               <Chrome className="w-4 h-4 mr-2" />
               Accedi con Google
-            </Button>
+            </GoogleButton>
 
             <div className="relative my-8">
               <div className="absolute inset-0 flex items-center" aria-hidden="true">
