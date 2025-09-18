@@ -685,6 +685,14 @@ export type Database = {
         Args: { eid: string; uid: string }
         Returns: boolean
       }
+      is_event_participant: {
+        Args: { _event_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_message_participant: {
+        Args: { _author_id: string; _recipient_id: string; _user_id: string }
+        Returns: boolean
+      }
       list_event_members: {
         Args: { _event_id: string }
         Returns: {
