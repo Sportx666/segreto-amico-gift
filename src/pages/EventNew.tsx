@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Euro, Gift, Users } from "lucide-react";
+import { ArrowLeft, Euro, Gift, Users } from "lucide-react";
 import { toast } from "sonner";
 import { uploadImage, resizeToWebP } from "@/lib/upload";
 import { useAuth } from "@/components/AuthProvider";
@@ -20,6 +20,9 @@ const EventNew = () => {
   const [coverUploading, setCoverUploading] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const today = new Date().toISOString().split("T")[0];
+
+
 
   const budgetPresets = [5, 10, 15, 20];
 
@@ -30,7 +33,7 @@ const EventNew = () => {
     setLoading(true);
     try {
       // First create or get user's profile
-        const { data: profile } = await supabase
+      const { data: profile } = await supabase
         .from("profiles")
         .select("id")
         .eq("id", user.id)
@@ -175,10 +178,13 @@ const EventNew = () => {
                 <Label htmlFor="name">Nome dell'evento</Label>
                 <Input
                   id="name"
-                  placeholder="Natale in famiglia 2024"
+                  placeholder="Natale in famiglia 2025"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
+                  onInvalid={(e) => {
+                    (e.target as HTMLInputElement).setCustomValidity("Per favore, inserisci un nome valido per lo scambio");
+                  }}
                 />
               </div>
 
@@ -214,9 +220,15 @@ const EventNew = () => {
                 <Input
                   id="date"
                   type="date"
+                  min={today}
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
+                  required
+                  onInvalid={(e) => {
+                    (e.target as HTMLInputElement).setCustomValidity("Per favore, inserisci una data valida per lo scambio");
+                  }}
                 />
+
               </div>
 
               <div className="space-y-2">
@@ -224,13 +236,14 @@ const EventNew = () => {
                 <Input
                   id="drawDate"
                   type="date"
+                  min={today}
                   value={drawDate}
                   onChange={(e) => setDrawDate(e.target.value)}
                 />
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full bg-gradient-primary hover:bg-primary-light transition-all duration-300 hover:shadow-glow"
                 disabled={loading || coverUploading}
               >
@@ -243,6 +256,13 @@ const EventNew = () => {
                   </>
                 )}
               </Button>
+              <Button
+                variant="destructive"               
+                className="w-full transition-all duration-300 hover:shadow-glow" 
+                onClick={() => navigate("/events")}>                
+                Annulla
+              </Button>
+
             </form>
           </CardContent>
         </Card>
