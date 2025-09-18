@@ -189,12 +189,7 @@ const Auth = () => {
             <GoogleButton 
               onClick={handleGoogleLogin}
               type="light"
-              size="lg"
-              className="w-full border-border hover:bg-accent transition-colors"
-            >
-              <Chrome className="w-4 h-4 mr-2" />
-              Accedi con Google
-            </GoogleButton>
+            />
 
             <div className="relative my-8">
               <div className="absolute inset-0 flex items-center" aria-hidden="true">
