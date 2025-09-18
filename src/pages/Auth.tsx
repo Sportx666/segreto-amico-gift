@@ -21,7 +21,7 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [showPasswordSetup, setShowPasswordSetup] = useState(false);
-  const [activeTab, setActiveTab] = useState("password");
+  const [activeTab, setActiveTab] = useState("magic");
   const navigate = useNavigate();
   const params = new URLSearchParams(window.location.search);
   const nextParam = params.get("next");
@@ -184,6 +184,27 @@ const Auth = () => {
           </CardHeader>
           
           <CardContent className="pt-0 px-4 sm:px-6">
+            <Button 
+              onClick={handleGoogleLogin}
+              variant="outline"
+              size="lg"
+              className="w-full border-border hover:bg-accent transition-colors mb-6"
+            >
+              <Chrome className="w-4 h-4 mr-2" />
+              Continua con Google
+            </Button>
+            
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-3 text-muted-foreground font-medium">
+                  O continua con
+                </span>
+              </div>
+            </div>
+
             <TabsComponent value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6 h-11">
                 <TabsTrigger value="password" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
