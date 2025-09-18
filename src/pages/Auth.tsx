@@ -185,11 +185,12 @@ const Auth = () => {
           </CardHeader>
           
           <CardContent className="pt-0 px-4 sm:px-6">
-                       
+            <div className="relative flex justify-center">           
             <GoogleButton 
               onClick={handleGoogleLogin}
-              type="dark"
+              type="light"
             />
+            </div>
 
             <div className="relative my-8">
               <div className="absolute inset-0 flex items-center" aria-hidden="true">
