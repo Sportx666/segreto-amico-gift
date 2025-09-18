@@ -27,7 +27,7 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
       if (!user) return;
       const { data: profileInfo } = await supabase
         .from("profiles")
-        .select("display_name, email")
+        .select("display_name")
         .eq("id", user.id)
         .single();
       const display = profileInfo?.display_name || (user.email?.split("@")[0] ?? null);

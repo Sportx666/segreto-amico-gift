@@ -41,7 +41,6 @@ const EventNew = () => {
           .from("profiles")
           .insert({
             id: user.id,
-            email: user.email,
             display_name: user.email?.split("@")[0]
           });
         if (profileError) throw profileError;
@@ -88,7 +87,7 @@ const EventNew = () => {
       // Load admin display name for membership label
       const { data: profileInfo } = await supabase
         .from("profiles")
-        .select("display_name, email")
+        .select("display_name")
         .eq("id", user.id)
         .single();
       const adminDisplay = profileInfo?.display_name || (user.email?.split("@")[0] ?? "Admin");

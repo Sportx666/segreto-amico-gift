@@ -50,12 +50,11 @@ const ensureProfile = async (user: User) => {
     // Extract display name from email (local part before @)
     const displayName = user.email?.split('@')[0] || 'User';
 
-    // Create new profile with defaults
+    // Create new profile with defaults (email removed for security)
     const { error: insertError } = await supabase
       .from('profiles')
       .insert({
         id: user.id,
-        email: user.email,
         display_name: displayName,
         avatar_url: null
       });

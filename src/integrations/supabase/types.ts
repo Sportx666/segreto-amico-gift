@@ -478,7 +478,6 @@ export type Database = {
           country: string | null
           created_at: string | null
           display_name: string | null
-          email: string | null
           family_group: string | null
           id: string
           phone: string | null
@@ -491,7 +490,6 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           display_name?: string | null
-          email?: string | null
           family_group?: string | null
           id: string
           phone?: string | null
@@ -504,7 +502,6 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           display_name?: string | null
-          email?: string | null
           family_group?: string | null
           id?: string
           phone?: string | null
@@ -676,6 +673,24 @@ export type Database = {
           family_group: string
           id: string
         }[]
+      }
+      get_own_profile: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          address: string
+          avatar_url: string
+          city: string
+          country: string
+          display_name: string
+          family_group: string
+          id: string
+          phone: string
+          postal_code: string
+        }[]
+      }
+      get_user_email: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       is_event_admin: {
         Args: { eid: string; uid: string }
