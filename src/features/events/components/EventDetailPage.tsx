@@ -29,6 +29,7 @@ import { debugLog, isDebug } from "@/lib/debug";
 import { useEvent, useEventRole } from "../hooks/useEvent";
 import { ApiService } from "@/services/api";
 import { useNickname } from "@/hooks/useNickname";
+import { useJoinedParticipantCount } from '@/hooks/useJoinedParticipantCount';
 
 export default function EventDetailPage() {
   const { id } = useParams();
@@ -43,6 +44,7 @@ export default function EventDetailPage() {
   const { data: event, isLoading: eventLoading } = useEvent(id);
   const { data: eventRole } = useEventRole(id);
   const { nickname } = useNickname(event?.id);
+  const { count: joinedCount, loading: countLoading } = useJoinedParticipantCount(id);
 
   // Reveal animation hook
   const { shouldShow, isPlaying, startAnimation } = useRevealAnimation({
@@ -351,9 +353,15 @@ export default function EventDetailPage() {
                 <Shuffle className="w-4 h-4" />
                 <span className="hidden sm:inline">Sorteggio</span>
               </TabsTrigger>
-              <TabsTrigger value="chat" className="flex items-center gap-2">
+              <TabsTrigger 
+                value="chat" 
+                disabled={joinedCount < 2}
+                className={`flex items-center gap-2 ${joinedCount < 2 ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
                 <MessageCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">Chat</span>
+                <span className="hidden sm:inline">
+                  Chat {joinedCount < 2 && `(${joinedCount}/2)`}
+                </span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -392,13 +400,26 @@ export default function EventDetailPage() {
           </TabsContent>
 
           <TabsContent value="chat">
-            <ChatManager
-              ref={chatManagerRef}
-              eventId={event.id}
-              eventStatus={event.draw_status}
-              openChat={openChat}
-              onOpenChatConsumed={handleOpenChatConsumed}
-            />
+            {joinedCount >= 2 ? (
+              <ChatManager
+                ref={chatManagerRef}
+                eventId={event.id}
+                eventStatus={event.draw_status}
+                openChat={openChat}
+                onOpenChatConsumed={handleOpenChatConsumed}
+              />
+            ) : (
+              <div className="text-center py-8 space-y-4">
+                <div className="text-muted-foreground">
+                  <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <h3 className="font-medium text-lg mb-2">Chat non disponibile</h3>
+                  <p>La chat sarà disponibile quando almeno 2 partecipanti si saranno uniti all'evento.</p>
+                  <p className="text-sm mt-2">
+                    Partecipanti attuali: <span className="font-medium">{joinedCount}/2</span>
+                  </p>
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="assegnazione">

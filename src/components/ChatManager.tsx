@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChat } from '@/hooks/useChat';
 import { useNickname } from '@/hooks/useNickname';
+import { useJoinedParticipantCount } from '@/hooks/useJoinedParticipantCount';
 import { NicknameManager } from './NicknameManager';
 import { ChatRecipientSelector } from './ChatRecipientSelector';
 import { MessageCircle, Users, Heart, Send, ChevronUp, Plus, X, Glasses} from 'lucide-react';
@@ -46,6 +47,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { nickname: nickData } = useNickname(eventId);
+  const { count: joinedCount } = useJoinedParticipantCount(eventId);
   
   // Determine which chat to use based on active channel
   const isEventChannel = activeChannel === 'event';
@@ -187,11 +189,12 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
               <MessageCircle className="w-5 h-5 text-primary" />
               Chat Evento
             </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
+            <Button 
+              variant="outline" 
+              size="sm" 
               onClick={() => setShowRecipientSelector(true)}
               className="flex items-center gap-2"
+              disabled={joinedCount < 2}
             >
               <Plus className="w-4 h-4" />
               Nuova Chat
@@ -430,6 +433,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
         onChatStart={handleChatStart}
         isOpen={showRecipientSelector}
         onOpenChange={setShowRecipientSelector}
+        disabled={joinedCount < 2}
       />
     </div>
   );

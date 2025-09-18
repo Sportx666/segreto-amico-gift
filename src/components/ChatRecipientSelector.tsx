@@ -19,9 +19,10 @@ interface ChatRecipientSelectorProps {
   onChatStart: (recipientId: string, recipientName: string) => void;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  disabled?: boolean;
 }
 
-export function ChatRecipientSelector({ eventId, onChatStart, isOpen, onOpenChange }: ChatRecipientSelectorProps) {
+export function ChatRecipientSelector({ eventId, onChatStart, isOpen, onOpenChange, disabled = false }: ChatRecipientSelectorProps) {
   const { user } = useAuth();
   const [members, setMembers] = useState<EventMember[]>([]);
   const [selectedRecipient, setSelectedRecipient] = useState<string>('');
@@ -102,9 +103,9 @@ export function ChatRecipientSelector({ eventId, onChatStart, isOpen, onOpenChan
         <div className="space-y-4">
           <div>
             <Label htmlFor="recipient">Destinatario</Label>
-            <Select value={selectedRecipient} onValueChange={setSelectedRecipient}>
+            <Select value={selectedRecipient} onValueChange={setSelectedRecipient} disabled={disabled}>
               <SelectTrigger>
-                <SelectValue placeholder="Scegli un membro..." />
+                <SelectValue placeholder={disabled ? "Chat non disponibile" : "Scegli un membro..."} />
               </SelectTrigger>
               <SelectContent>
                 {loading ? (
@@ -131,7 +132,7 @@ export function ChatRecipientSelector({ eventId, onChatStart, isOpen, onOpenChan
             </Button>
             <Button 
               onClick={handleStartChat} 
-              disabled={!selectedRecipient || loading}
+              disabled={!selectedRecipient || loading || disabled}
               className="flex-1"
             >
               Inizia Chat
