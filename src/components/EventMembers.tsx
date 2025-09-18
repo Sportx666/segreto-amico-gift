@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { useEventMembers } from "@/hooks/useEventMembers";
+import { useJoinedParticipantCount } from "@/hooks/useJoinedParticipantCount";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,10 +34,16 @@ interface Member {
   participant_id: string;
 }
 
+const getMemberName = (member: Member) => {
+  if (member.anonymous_name && member.anonymous_name.trim().length > 0) return member.anonymous_name;
+  if (member.anonymous_email && member.anonymous_email.trim().length > 0) return member.anonymous_email;
+  return "Partecipante";
+};
+
 export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersProps) => {
   const { user, session } = useAuth();
-  const [members, setMembers] = useState<Member[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { members, loading: isLoading } = useEventMembers(eventId);
+  const { count: joinedCount } = useJoinedParticipantCount(eventId);
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
@@ -45,8 +53,6 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
   const [inviteLinks, setInviteLinks] = useState<Record<string, any>>({});
 
   useEffect(() => {
-    fetchMembers();
-    
     // Get current user's participant ID
     const getCurrentUserParticipant = async () => {
       if (user) {
@@ -67,9 +73,12 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
     };
     
     getCurrentUserParticipant();
-  }, [eventId, userRole, user]);
+  }, [user]);
 
   const fetchMembers = async () => {
+    // This function is kept for backward compatibility with existing functionality
+    // but is no longer needed since we use the useEventMembers hook
+    // However, some debug and fallback logic still references it
     try {
       debugLog("EventMembers.fetch:start", { eventId, userId: user?.id });
       // Ensure the viewer has a participant id (RLS-friendly path)
@@ -84,20 +93,10 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
         }
       }
 
-      const { data, error } = await supabase
-        .from('event_members')
-        .select('id, role, anonymous_name, anonymous_email, status, participant_id')
-        .eq('event_id', eventId)
-        .order('created_at', { ascending: true });
-      debugLog("EventMembers.query", { count: data?.length, error });
-      if (!error && data) {
-        setMembers((data as any[] || []) as Member[]);
-        setDiag((d: any) => ({ ...d, membersCount: data?.length ?? 0 }));
-        return;
-      }
-
+      setDiag((d: any) => ({ ...d, membersCount: members?.length ?? 0 }));
+      
       // If blocked or empty, try to at least show current user's membership
-      if (user) {
+      if (user && members.length === 0) {
         const pid = await getOrCreateParticipantId(user.id);
         const { data: selfRow } = await supabase
           .from('event_members')
@@ -107,16 +106,11 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
           .maybeSingle();
         debugLog("EventMembers.selfRow", { selfRow });
         if (selfRow) {
-          setMembers([selfRow as Member]);
           setDiag((d: any) => ({ ...d, fallbackSelfRow: true }));
-          return;
         }
       }
     } catch (error: unknown) {
-      console.error('Error fetching members:', error);
-      toast.error("Errore nel caricamento dei partecipanti");
-    } finally {
-      setIsLoading(false);
+      console.error('Error in fetchMembers:', error);
     }
   };
 
@@ -163,7 +157,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
 
       setNewMemberName('');
       setNewMemberEmail('');
-      await fetchMembers();
+      // Members will auto-update via the useEventMembers hook
       toast.success('Partecipante aggiunto!');
     } catch (error: unknown) {
       console.error('Error adding member:', error);
@@ -250,7 +244,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
       setNewMemberName('');
       setNewMemberEmail('');
       setSendInviteEmail(false);
-      await fetchMembers();
+      // Members will auto-update via the useEventMembers hook
     } catch (error) {
       console.error('Error adding member via API:', error);
       toast.error('Errore nell\'aggiungere il partecipante');
@@ -313,7 +307,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
 
       if (error) throw error;
 
-      await fetchMembers();
+      // Members will auto-update via the useEventMembers hook
       toast.success("Partecipante rimosso");
     } catch (error: unknown) {
       console.error('Error removing member:', error);
@@ -335,7 +329,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
 
       if (error) throw error;
 
-      await fetchMembers();
+      // Members will auto-update via the useEventMembers hook
       toast.success("Invito rimosso");
       console.log('Removal result:', data);
     } catch (error: any) {
@@ -346,12 +340,6 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
         toast.error("Errore nella rimozione dell'invito");
       }
     }
-  };
-
-  const getMemberName = (member: Member) => {
-    if (member.anonymous_name && member.anonymous_name.trim().length > 0) return member.anonymous_name;
-    if (member.anonymous_email && member.anonymous_email.trim().length > 0) return member.anonymous_email;
-    return "Partecipante";
   };
 
   if (isLoading) {
@@ -382,9 +370,9 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-semibold">Partecipanti</h3>
+          <h3 className="text-lg font-semibold">Membri</h3>
           <p className="text-sm text-muted-foreground">
-            {members.length} partecipanti nell'evento
+            {members.length} membri totali • {joinedCount} partecipanti attivi
           </p>
         </div>
 
@@ -476,7 +464,13 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                           participantId={member.participant_id}
                           currentName={member.anonymous_name}
                           currentEmail={member.anonymous_email}
-                          onNameUpdated={fetchMembers}
+                          onNameUpdated={() => {
+                            // The hook will automatically refresh via real-time subscriptions
+                            // Force a small delay to ensure the update is processed
+                            setTimeout(() => {
+                              // Could trigger a manual refresh here if needed
+                            }, 100);
+                          }}
                         />
                       )}
                     </div>

@@ -1,13 +1,29 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-export function useJoinedParticipantCount(eventId: string | undefined) {
-  const [count, setCount] = useState(0);
+interface EventMemberData {
+  id: string;
+  role: string;
+  anonymous_name: string | null;
+  anonymous_email: string | null;
+  status: string;
+  participant_id: string;
+  event_id: string;
+  display_name?: string | null;
+  created_at: string;
+  join_token?: string | null;
+}
+
+/**
+ * Hook to get all event members (invited, joined, etc.) with real-time updates
+ */
+export function useEventMembers(eventId: string | undefined) {
+  const [members, setMembers] = useState<EventMemberData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!eventId) {
-      setCount(0);
+      setMembers([]);
       setLoading(false);
       return;
     }
@@ -15,34 +31,34 @@ export function useJoinedParticipantCount(eventId: string | undefined) {
     let isMounted = true;
 
     // Initial fetch
-    const fetchCount = async () => {
+    const fetchMembers = async () => {
       try {
-        const { count, error } = await supabase
+        const { data, error } = await supabase
           .from('event_members')
-          .select('*', { count: 'exact', head: true })
+          .select('*')
           .eq('event_id', eventId)
-          .eq('status', 'joined');
+          .order('created_at', { ascending: true });
 
         if (error) throw error;
         
         if (isMounted) {
-          setCount(count || 0);
+          setMembers(data || []);
           setLoading(false);
         }
       } catch (error) {
-        console.error('Error fetching participant count:', error);
+        console.error('Error fetching event members:', error);
         if (isMounted) {
-          setCount(0);
+          setMembers([]);
           setLoading(false);
         }
       }
     };
 
-    fetchCount();
+    fetchMembers();
 
     // Set up real-time subscription
     const channel = supabase
-      .channel(`event_members_count_${eventId}`)
+      .channel(`event_members_${eventId}`)
       .on(
         'postgres_changes',
         {
@@ -52,8 +68,8 @@ export function useJoinedParticipantCount(eventId: string | undefined) {
           filter: `event_id=eq.${eventId}`
         },
         async () => {
-          // Refetch count when members change
-          await fetchCount();
+          // Refetch members when they change
+          await fetchMembers();
         }
       )
       .subscribe();
@@ -64,5 +80,5 @@ export function useJoinedParticipantCount(eventId: string | undefined) {
     };
   }, [eventId]);
 
-  return { count, loading };
+  return { members, loading };
 }

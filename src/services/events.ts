@@ -93,7 +93,7 @@ export class EventService {
   }
 
   /**
-   * Get event members
+   * Get all event members (invited, joined, etc.)
    */
   static async getEventMembers(eventId: string): Promise<EventMember[]> {
     const members = await ApiService.supabaseQuery(
@@ -108,6 +108,25 @@ export class EventService {
       }
     );
     return members || [];
+  }
+
+  /**
+   * Get only joined event participants
+   */
+  static async getEventParticipants(eventId: string): Promise<EventMember[]> {
+    const participants = await ApiService.supabaseQuery(
+      'get_event_participants',
+      async () => {
+        const result = await supabase
+          .from('event_members')
+          .select('*')
+          .eq('event_id', eventId)
+          .eq('status', 'joined')
+          .order('created_at', { ascending: true });
+        return result;
+      }
+    );
+    return participants || [];
   }
 
   /**

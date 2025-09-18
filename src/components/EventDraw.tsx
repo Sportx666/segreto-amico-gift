@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useEventParticipants } from "@/hooks/useEventParticipants";
+import { useJoinedParticipantCount } from "@/hooks/useJoinedParticipantCount";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -39,16 +41,23 @@ interface Exclusion {
 }
 
 export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDrawProps) => {
-  const [members, setMembers] = useState<Member[]>([]);
+  const { participants, loading: participantsLoading } = useEventParticipants(eventId);
+  const { count: joinedCount, loading: countLoading } = useJoinedParticipantCount(eventId);
   const [exclusions, setExclusions] = useState<Exclusion[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [canDraw, setCanDraw] = useState(false);
   const [timeLeft, setTimeLeft] = useState("");
+  
+  const isLoading = participantsLoading || countLoading;
 
   useEffect(() => {
     fetchData();
   }, [eventId]);
+
+  useEffect(() => {
+    // Check if we can perform draw based on participant count
+    setCanDraw(joinedCount >= 2 && userRole === 'admin');
+  }, [joinedCount, userRole]);
 
   useEffect(() => {
     if (!event.draw_date || event.draw_status === 'completed') {
@@ -85,15 +94,6 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
 
   const fetchData = async () => {
     try {
-      // Fetch members
-      const { data: membersData, error: membersError } = await supabase
-        .from('event_members')
-        .select('*')
-        .eq('event_id', eventId);
-
-      if (membersError) throw membersError;
-      setMembers(membersData || []);
-
       // Fetch exclusions
       const { data: exclusionsData, error: exclusionsError } = await supabase
         .from('exclusions')
@@ -104,21 +104,15 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
       if (exclusionsError) throw exclusionsError;
       setExclusions(exclusionsData || []);
 
-      // Check if we can perform draw
-      const memberCount = membersData?.length || 0;
-      setCanDraw(memberCount >= 2 && userRole === 'admin');
-
     } catch (error: unknown) {
-      console.error('Error fetching data:', error);
-      toast.error("Errore nel caricamento dei dati del sorteggio");
-    } finally {
-      setIsLoading(false);
+      console.error('Error fetching exclusions data:', error);
+      toast.error("Errore nel caricamento delle esclusioni");
     }
   };
 
   const performDraw = async () => {
-    if (members.length < 2) {
-      toast.error("Servono almeno 2 partecipanti per il sorteggio");
+    if (joinedCount < 2) {
+      toast.error("Servono almeno 2 partecipanti attivi per il sorteggio");
       return;
     }
 
@@ -166,8 +160,8 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
   };
 
   const getMemberName = (memberId: string) => {
-    const member = members.find(m => (m.participant_id || m.id) === memberId);
-    return member?.anonymous_name || `Utente ${memberId.slice(0, 8)}`;
+    const participant = participants.find(p => (p.participant_id || p.id) === memberId);
+    return participant?.anonymous_name || `Utente ${memberId.slice(0, 8)}`;
   };
 
   if (isLoading) {
@@ -238,13 +232,13 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
-              {members.length >= 2 ? (
+              {joinedCount >= 2 ? (
                 <CheckCircle className="w-5 h-5 text-green-500" />
               ) : (
                 <AlertTriangle className="w-5 h-5 text-orange-500" />
               )}
-              <span className={members.length >= 2 ? "text-green-700" : "text-orange-700"}>
-                Partecipanti: {members.length} (minimo 2)
+              <span className={joinedCount >= 2 ? "text-green-700" : "text-orange-700"}>
+                Partecipanti attivi: {joinedCount} (minimo 2)
               </span>
             </div>
             

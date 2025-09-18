@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { useEventParticipants } from "@/hooks/useEventParticipants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -30,10 +31,11 @@ interface Exclusion {
 
 export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => {
   const { user } = useAuth();
-  const [members, setMembers] = useState<Member[]>([]);
+  const { participants, loading: participantsLoading } = useEventParticipants(eventId);
   const [exclusions, setExclusions] = useState<Exclusion[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [currentParticipantId, setCurrentParticipantId] = useState<string>("");
+  
+  const isLoading = participantsLoading;
 
   useEffect(() => {
     fetchData();
@@ -52,15 +54,6 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
         setCurrentParticipantId(participant.id);
       }
 
-      // Fetch members
-      const { data: membersData, error: membersError } = await supabase
-        .from('event_members')
-        .select('*')
-        .eq('event_id', eventId);
-
-      if (membersError) throw membersError;
-      setMembers(membersData || []);
-
       // Fetch exclusions
       const { data: exclusionsData, error: exclusionsError } = await supabase
         .from('exclusions')
@@ -71,10 +64,8 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
       if (exclusionsError) throw exclusionsError;
       setExclusions(exclusionsData || []);
     } catch (error: unknown) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching exclusions data:', error);
       toast.error("Errore nel caricamento delle esclusioni");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -158,7 +149,7 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
       </Card>
 
       {/* Exclusions Matrix */}
-      {members.length >= 2 ? (
+      {participants.length >= 2 ? (
         <Card>
           <CardContent className="p-6">
             <div className="overflow-x-auto">
@@ -166,7 +157,7 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
                 <thead>
                   <tr>
                     <th className="text-left p-3 font-medium">Regala a →</th>
-                    {members.map((member) => (
+                    {participants.map((member) => (
                       <th key={member.id} className="p-3 text-center min-w-[120px]">
                         <div className="text-sm font-medium truncate">
                           {getMemberName(member)}
@@ -176,7 +167,7 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
                   </tr>
                 </thead>
                 <tbody>
-                  {members.map((giver) => (
+                  {participants.map((giver) => (
                     <tr key={giver.id} className="border-t">
                       <td className="p-3 font-medium">
                         <div className="flex items-center gap-2">
@@ -186,7 +177,7 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
                           )}
                         </div>
                       </td>
-                      {members.map((receiver) => (
+                      {participants.map((receiver) => (
                         <td key={receiver.id} className="p-3 text-center">
                           {giver.id === receiver.id ? (
                             <div className="w-6 h-6 bg-muted rounded flex items-center justify-center mx-auto">
@@ -240,8 +231,8 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
           <CardContent>
             <div className="space-y-2">
               {exclusions.map((exclusion) => {
-                const giver = members.find(m => (m.participant_id || m.id) === exclusion.giver_id);
-                const blocked = members.find(m => (m.participant_id || m.id) === exclusion.blocked_id);
+                const giver = participants.find(m => (m.participant_id || m.id) === exclusion.giver_id);
+                const blocked = participants.find(m => (m.participant_id || m.id) === exclusion.blocked_id);
                 
                 if (!giver || !blocked) return null;
 
