@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { uploadImage, resizeToWebP } from "@/lib/upload";
 import { toast } from "sonner";
 import { Trash2, Upload, User } from "lucide-react";
+import AccountSettings from "@/components/AccountSettings";
 import { NotificationSettings } from '@/components/NotificationSettings';
 
 const Profile = () => {
@@ -325,6 +326,9 @@ const Profile = () => {
 
         {/* Notification Settings */}
         <NotificationSettings />
+
+        {/* Account Settings */}
+        <AccountSettings />
       </div>
       
       <div className="flex justify-end mt-6">

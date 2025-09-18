@@ -86,6 +86,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       // Ensure profile exists for authenticated user
       if (session?.user) {
+        // Mark if user set up password (for password auth tracking)
+        if (event === 'PASSWORD_RECOVERY' || event === 'USER_UPDATED') {
+          setTimeout(async () => {
+            await supabase.auth.updateUser({
+              data: { password_set: true }
+            });
+          }, 0);
+        }
+
         // Use setTimeout to avoid blocking the auth state change
         setTimeout(() => {
           ensureProfile(session.user);
