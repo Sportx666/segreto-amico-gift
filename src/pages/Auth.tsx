@@ -184,17 +184,18 @@ const Auth = () => {
           </CardHeader>
           
           <CardContent className="pt-0 px-4 sm:px-6">
+                       
             <Button 
               onClick={handleGoogleLogin}
               variant="outline"
               size="lg"
-              className="w-full border-border hover:bg-accent transition-colors mb-6"
+              className="w-full border-border hover:bg-accent transition-colors"
             >
               <Chrome className="w-4 h-4 mr-2" />
-              Continua con Google
+              Accedi con Google
             </Button>
-            
-            <div className="relative my-6">
+
+            <div className="relative my-8">
               <div className="absolute inset-0 flex items-center" aria-hidden="true">
                 <span className="w-full border-t" />
               </div>
@@ -204,7 +205,7 @@ const Auth = () => {
                 </span>
               </div>
             </div>
-
+            
             <TabsComponent value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6 h-11">
                 <TabsTrigger value="password" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
@@ -338,27 +339,6 @@ const Auth = () => {
                 </p>
               </TabsContent>
             </TabsComponent>
-            
-            <div className="relative my-8">
-              <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-3 text-muted-foreground font-medium">
-                  O continua con
-                </span>
-              </div>
-            </div>
-            
-            <Button 
-              onClick={handleGoogleLogin}
-              variant="outline"
-              size="lg"
-              className="w-full border-border hover:bg-accent transition-colors"
-            >
-              <Chrome className="w-4 h-4 mr-2" />
-              Accedi con Google
-            </Button>
           </CardContent>
         </Card>
       </div>
