@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Share2, Copy, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { shareViaWhatsApp, copyToClipboard } from "@/lib/whatsapp";
+import { WhatsappShareButton } from "react-share";
 
 interface InviteButtonProps {
   shareText: string;
@@ -46,13 +47,22 @@ export const InviteButton = ({ shareText, className }: InviteButtonProps) => {
 
   return (
     <div className="flex gap-2">
-      <Button
-        onClick={handleWhatsAppShare}
-        className={`flex-1 bg-[#25D366] hover:bg-[#20BD5A] text-white ${className}`}
+      <WhatsappShareButton
+        url={shareText}
+        title="Invito Amico Segreto"
+        className={`flex-1 ${className}`}
       >
-        <MessageCircle className="w-4 h-4 mr-2" />
-        WhatsApp
-      </Button>
+        <Button
+          className="w-full bg-[#25D366] hover:bg-[#20BD5A] text-white"
+          onClick={(e) => {
+            e.preventDefault();
+            toast.success("Apertura WhatsApp...");
+          }}
+        >
+          <MessageCircle className="w-4 h-4 mr-2" />
+          WhatsApp
+        </Button>
+      </WhatsappShareButton>
       
       <Button
         variant="outline"
