@@ -18,7 +18,7 @@ import { StatusChip } from "@/components/StatusChip";
 import { copyToClipboard, shareViaWhatsApp } from "@/lib/whatsapp";
 import { EventMemberNameEditor } from './EventMemberNameEditor';
 import { absUrl } from "@/lib/url";
-import { WhatsappShareButton } from "react-share";
+import { EmailIcon, EmailShareButton, WhatsappIcon, WhatsappShareButton } from "react-share";
 
 interface EventMembersProps {
   eventId: string;
@@ -67,7 +67,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
             .select('id')
             .eq('profile_id', user.id)
             .single();
-          
+
           if (participant) {
             setCurrentUserParticipantId(participant.id);
           }
@@ -76,7 +76,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
         }
       }
     };
-    
+
     getCurrentUserParticipant();
   }, [user]);
 
@@ -88,7 +88,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
       debugLog("EventMembers.fetch:start", { eventId, userId: user?.id });
       // Ensure the viewer has a participant id (RLS-friendly path)
       if (user) {
-        try { 
+        try {
           const pid = await getOrCreateParticipantId(user.id);
           debugLog("EventMembers.viewerParticipantId", { participantId: pid });
           setDiag((d: any) => ({ ...d, viewerParticipantId: pid }));
@@ -99,7 +99,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
       }
 
       setDiag((d: any) => ({ ...d, membersCount: members?.length ?? 0 }));
-      
+
       // If blocked or empty, try to at least show current user's membership
       if (user && members.length === 0) {
         const pid = await getOrCreateParticipantId(user.id);
@@ -188,11 +188,11 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
       const { data: body, error } = await supabase.functions.invoke('members-add', {
         body: { eventId, anonymousName: name, anonymousEmail: email || null },
       });
-      
+
       if (error) {
         let msg = 'Errore nell\'aggiungere il partecipante';
         console.error('members-add function error:', error);
-        
+
         if (error.message?.includes('duplicate_email')) {
           msg = 'Questa email è già stata invitata';
         } else if (error.message?.includes('Forbidden')) {
@@ -202,11 +202,11 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
         } else if (error.message) {
           msg = `Errore: ${error.message}`;
         }
-        
+
         toast.error(msg);
         return;
       }
-      
+
       // Members will auto-update via the useEventMembers hook with token data
       // Send invite email if requested
       if (sendInviteEmail && email && body?.invite) {
@@ -232,7 +232,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
       } else {
         toast.success('Partecipante aggiunto!');
       }
-      
+
       setNewMemberName('');
       setNewMemberEmail('');
       setSendInviteEmail(false);
@@ -250,7 +250,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
       const { data: debugData, error: debugError } = await supabase.functions.invoke('debug-rls', {
         body: { eventId }
       });
-      
+
       if (debugError) {
         setDiag((d: any) => ({ ...d, debugRls: { error: debugError.message } }));
         toast.error('Debug RLS errore');
@@ -271,7 +271,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
       const { data: addData, error: addError } = await supabase.functions.invoke('members-add', {
         body: { eventId, anonymousName: name, anonymousEmail: email || null, ttlDays: 1 }
       });
-      
+
       setDiag((d: any) => ({ ...d, debugAddResp: addError ? { error: addError.message } : addData }));
       if (addError) toast.error('members/add error');
       else toast.success('members/add OK');
@@ -372,8 +372,8 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
           <Dialog>
             <DialogTrigger asChild>
               <Button>
-                <UserPlus className="w-4 h-4"/>
-                <span className="hidden sm:inline">Aggiungi</span> 
+                <UserPlus className="w-4 h-4" />
+                <span className="hidden sm:inline">Aggiungi</span>
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -418,9 +418,9 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                     Invia email di invito
                   </Label>
                 </div>
-                <Button 
-                  onClick={addMemberServer} 
-                  className="w-full" 
+                <Button
+                  onClick={addMemberServer}
+                  className="w-full"
                   disabled={isAddingMember}
                 >
                   {isAddingMember ? "Aggiungendo..." : "Aggiungi Partecipante"}
@@ -466,14 +466,14 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                         />
                       )}
                     </div>
-                    
+
                     {/* Email row */}
                     {member.anonymous_email && (
                       <p className="text-sm text-muted-foreground mb-2 truncate">
                         {member.anonymous_email}
                       </p>
                     )}
-                    
+
                     {/* Badges row - responsive layout */}
                     <div className="flex items-center gap-2 sm:hidden">
                       <StatusChip status={member.status} />
@@ -483,7 +483,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Right side: badges (hidden on mobile) and action buttons */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {/* Badges - visible on desktop only */}
@@ -496,20 +496,15 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
 
                   {userRole === 'admin' && eventStatus === 'pending' && member.role !== 'admin' && (
                     <>
-                      {member.status === 'invited' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeUnjoinedMember(member.participant_id)}
-                          title="Rimuovi invito"
-                        >
-                          <UserX className="w-4 h-4 text-destructive" />
-                        </Button>
-                      )}
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeMember(member.id)}
+                        onClick={() => {
+                          removeMember(member.id);
+                          if (member.status === 'invited') {
+                            removeUnjoinedMember(member.participant_id);
+                          }
+                        }}
                         title="Rimuovi partecipante"
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />
@@ -518,7 +513,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                   )}
                 </div>
               </div>
-              
+
               {member.token_data && (
                 <div className="mt-3 flex gap-2">
                   {!member.token_data.used_at && new Date(member.token_data.expires_at) > new Date() ? (
@@ -537,51 +532,6 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                       >
                         <Copy className="w-4 h-4" />
                       </Button>
-                      <WhatsappShareButton
-                        url={absUrl(`/join/${member.token_data.token}`)}
-                        title="Invito Amico Segreto"
-                      >
-                        <Button
-                          size="sm"
-                          className="rounded-full w-10 h-10 p-0 bg-[#25D366] hover:bg-[#20BD5A] text-white"
-                          title="Condividi su WhatsApp"
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                        </Button>
-                      </WhatsappShareButton>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full w-10 h-10 p-0"
-                        onClick={async () => {
-                          if (!member.anonymous_email) {
-                            toast.error('Email non disponibile per questo membro');
-                            return;
-                          }
-                          try {
-                            const { error: mailError } = await supabase.functions.invoke('mail-invite', {
-                              body: {
-                                email: member.anonymous_email,
-                                eventId,
-                                participantId: member.participant_id,
-                                joinUrl: absUrl(`/join/${member.token_data!.token}`)
-                              }
-                            });
-                            if (mailError) {
-                              console.error('mail-invite failed', mailError);
-                              toast.error('Errore nell\'invio email');
-                              return;
-                            }
-                            toast.success('Email inviata');
-                          } catch {
-                            toast.error('Errore nell\'invio email');
-                          }
-                        }}
-                        title="Invia email"
-                        disabled={!member.anonymous_email}
-                      >
-                        <Mail className="w-4 h-4" />
-                      </Button>
                     </>
                   ) : (
                     <>
@@ -589,7 +539,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                       <Button
                         variant="outline"
                         size="sm"
-                        className="rounded-full w-10 h-10 p-0"
+                        className="rounded-full w-10 h-10 p-0 bg-yellow-100 hover:bg-yellow-200"
                         onClick={async () => {
                           try {
                             const { data: inviteData, error: inviteError } = await supabase.functions.invoke('join-create', {
@@ -609,31 +559,32 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                       >
                         <RefreshCw className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full w-10 h-10 p-0 opacity-50"
-                        disabled
-                        title="Link scaduto - rigenera per condividere"
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full w-10 h-10 p-0 opacity-50"
-                        disabled
-                        title="Link scaduto - rigenera per inviare email"
-                      >
-                        <Mail className="w-4 h-4" />
-                      </Button>
+
                     </>
                   )}
+                  <WhatsappShareButton
+                    url={absUrl(`/join/${member.token_data.token}`)}
+                    title="Condividi su WhatsApp"
+                    separator=" "
+                    disabled={!(!member.token_data.used_at && new Date(member.token_data.expires_at) > new Date())}
+                    disabledStyle={{ opacity: 0.5, cursor: 'not-allowed' }}
+                  >
+                    <WhatsappIcon round size={40} />
+                  </WhatsappShareButton>
+                  <EmailShareButton
+                    url=''
+                    subject="Invito a partecipare all'Amico Segreto"
+                    body={`Ciao!\n\nSei stato invitato a partecipare a un evento Amico Segreto. Clicca sul link qui sotto per unirti:\n\n${absUrl(`/join/${member.token_data.token}`)}\n\nA presto!`}
+                    disabled={!(!member.token_data.used_at && new Date(member.token_data.expires_at) > new Date())}
+                    disabledStyle={{ opacity: 0.5, cursor: 'not-allowed' }}
+                  >
+                    <EmailIcon round size={40} />
+                  </EmailShareButton>
                 </div>
               )}
-              </CardContent>
-            </Card>
-          ))}
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {members.length === 0 && (
