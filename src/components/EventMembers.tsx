@@ -18,6 +18,7 @@ import { StatusChip } from "@/components/StatusChip";
 import { copyToClipboard, shareViaWhatsApp } from "@/lib/whatsapp";
 import { EventMemberNameEditor } from './EventMemberNameEditor';
 import { absUrl } from "@/lib/url";
+import { WhatsappShareButton } from "react-share";
 
 interface EventMembersProps {
   eventId: string;
@@ -518,56 +519,118 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                 </div>
               </div>
               
-              {member.token_data && !member.token_data.used_at && new Date(member.token_data.expires_at) > new Date() && (
-                  <div className="mt-3 flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={async () => {
-                        const link = absUrl(`/join/${member.token_data!.token}`);
-                        await copyToClipboard(link);
-                        toast.success('Link copiato');
-                      }}
-                    >
-                      <Copy className="w-4 h-4 mr-2" />
-                      Copia Link
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="bg-[#25D366] hover:bg-[#20BD5A] text-white"
-                      onClick={() => {
-                        const link = absUrl(`/join/${member.token_data!.token}`);
-                        shareViaWhatsApp(link);
-                      }}
-                    >
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      WhatsApp
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          const { data: inviteData, error: inviteError } = await supabase.functions.invoke('join-create', {
-                            body: { eventId, participantId: member.participant_id }
-                          });
-                          if (inviteError) {
-                            console.error('join/create failed', inviteError);
-                            toast.error('Errore nel rigenerare il link');
+              {member.token_data && (
+                <div className="mt-3 flex gap-2">
+                  {!member.token_data.used_at && new Date(member.token_data.expires_at) > new Date() ? (
+                    <>
+                      {/* Valid token - show copy, whatsapp, email buttons */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full w-10 h-10 p-0"
+                        onClick={async () => {
+                          const link = absUrl(`/join/${member.token_data!.token}`);
+                          await copyToClipboard(link);
+                          toast.success('Link copiato');
+                        }}
+                        title="Copia link"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                      <WhatsappShareButton
+                        url={absUrl(`/join/${member.token_data.token}`)}
+                        title="Invito Amico Segreto"
+                      >
+                        <Button
+                          size="sm"
+                          className="rounded-full w-10 h-10 p-0 bg-[#25D366] hover:bg-[#20BD5A] text-white"
+                          title="Condividi su WhatsApp"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                        </Button>
+                      </WhatsappShareButton>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full w-10 h-10 p-0"
+                        onClick={async () => {
+                          if (!member.anonymous_email) {
+                            toast.error('Email non disponibile per questo membro');
                             return;
                           }
-                          // Token will be updated via real-time subscription
-                          toast.success('Link rigenerato');
-                        } catch {
-                          toast.error('Errore nel rigenerare il link');
-                        }
-                      }}
-                    >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Rigenera
-                    </Button>
-                  </div>
-                )}
+                          try {
+                            const { error: mailError } = await supabase.functions.invoke('mail-invite', {
+                              body: {
+                                email: member.anonymous_email,
+                                eventId,
+                                participantId: member.participant_id,
+                                joinUrl: absUrl(`/join/${member.token_data!.token}`)
+                              }
+                            });
+                            if (mailError) {
+                              console.error('mail-invite failed', mailError);
+                              toast.error('Errore nell\'invio email');
+                              return;
+                            }
+                            toast.success('Email inviata');
+                          } catch {
+                            toast.error('Errore nell\'invio email');
+                          }
+                        }}
+                        title="Invia email"
+                        disabled={!member.anonymous_email}
+                      >
+                        <Mail className="w-4 h-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      {/* Expired/used token - show regenerate and disabled buttons */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full w-10 h-10 p-0"
+                        onClick={async () => {
+                          try {
+                            const { data: inviteData, error: inviteError } = await supabase.functions.invoke('join-create', {
+                              body: { eventId, participantId: member.participant_id }
+                            });
+                            if (inviteError) {
+                              console.error('join/create failed', inviteError);
+                              toast.error('Errore nel rigenerare il link');
+                              return;
+                            }
+                            toast.success('Link rigenerato');
+                          } catch {
+                            toast.error('Errore nel rigenerare il link');
+                          }
+                        }}
+                        title="Rigenera link"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full w-10 h-10 p-0 opacity-50"
+                        disabled
+                        title="Link scaduto - rigenera per condividere"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full w-10 h-10 p-0 opacity-50"
+                        disabled
+                        title="Link scaduto - rigenera per inviare email"
+                      >
+                        <Mail className="w-4 h-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              )}
               </CardContent>
             </Card>
           ))}

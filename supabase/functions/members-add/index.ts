@@ -55,7 +55,7 @@ serve(async (req) => {
     }
     const user = userRes.user;
 
-    const { eventId, anonymousName, anonymousEmail, ttlDays = 30 } = await req.json();
+    const { eventId, anonymousName, anonymousEmail, ttlDays = 5 } = await req.json();
     if (!eventId || !anonymousName || typeof anonymousName !== 'string' || !anonymousName.trim()) {
       return new Response(JSON.stringify({ error: 'eventId and anonymousName required' }), {
         status: 400,
