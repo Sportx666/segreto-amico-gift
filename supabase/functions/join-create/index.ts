@@ -83,18 +83,30 @@ serve(async (req) => {
     const token = generateToken()
     const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000).toISOString()
 
-    const { error: insertError } = await supabase.from('join_tokens').insert({
+    const { data: tokenData, error: insertError } = await supabase.from('join_tokens').insert({
       event_id: eventId,
       participant_id: participantId,
       token,
       expires_at: expiresAt,
-    })
+    }).select('id').single()
 
-    if (insertError) {
-      return new Response(JSON.stringify({ error: insertError.message }), {
+    if (insertError || !tokenData) {
+      return new Response(JSON.stringify({ error: insertError?.message || 'Failed to create token' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
+    }
+
+    // Update the event_member with the token ID
+    const { error: updateError } = await supabase
+      .from('event_members')
+      .update({ join_token: tokenData.id })
+      .eq('event_id', eventId)
+      .eq('participant_id', participantId)
+
+    if (updateError) {
+      console.error('Failed to update member with token ID:', updateError)
+      // Don't fail the request, token creation succeeded
     }
 
     const baseUrl = 'https://amico-segreto.lovable.app'

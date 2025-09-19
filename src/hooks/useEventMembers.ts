@@ -12,6 +12,11 @@ interface EventMemberData {
   display_name?: string | null;
   created_at: string;
   join_token?: string | null;
+  token_data?: {
+    token: string;
+    expires_at: string;
+    used_at: string | null;
+  } | null;
 }
 
 /**
@@ -35,7 +40,14 @@ export function useEventMembers(eventId: string | undefined) {
       try {
         const { data, error } = await supabase
           .from('event_members')
-          .select('*')
+          .select(`
+            *,
+            token_data:join_tokens(
+              token,
+              expires_at,
+              used_at
+            )
+          `)
           .eq('event_id', eventId)
           .order('created_at', { ascending: true });
 

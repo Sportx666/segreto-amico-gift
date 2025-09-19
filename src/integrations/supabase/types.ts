@@ -222,6 +222,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "event_members_join_token_fkey"
+            columns: ["join_token"]
+            isOneToOne: false
+            referencedRelation: "join_tokens"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "event_members_participant_id_fkey"
             columns: ["participant_id"]
             isOneToOne: false

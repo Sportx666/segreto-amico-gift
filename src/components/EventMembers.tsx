@@ -32,6 +32,11 @@ interface Member {
   anonymous_email: string | null;
   status: string;
   participant_id: string;
+  token_data?: {
+    token: string;
+    expires_at: string;
+    used_at: string | null;
+  } | null;
 }
 
 const getMemberName = (member: Member) => {
@@ -50,7 +55,6 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
   const [sendInviteEmail, setSendInviteEmail] = useState(false);
   const [diag, setDiag] = useState<any>({});
   const [currentUserParticipantId, setCurrentUserParticipantId] = useState<string | null>(null);
-  const [inviteLinks, setInviteLinks] = useState<Record<string, any>>({});
 
   useEffect(() => {
     // Get current user's participant ID
@@ -145,19 +149,9 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
 
       if (memberError) throw memberError;
 
-      const { data: inviteData, error: inviteError } = await supabase.functions.invoke('join-create', {
-        body: { eventId, participantId: memberRow.participant_id }
-      });
-      if (inviteError) {
-        console.error('join/create failed', inviteError);
-        toast.error('Errore nel generare il link');
-      } else if (inviteData) {
-        setInviteLinks((prev) => ({ ...prev, [memberRow.id]: { ...inviteData, url: absUrl(`/join/${inviteData.token}`) } }));
-      }
-
+      // Members will auto-update via the useEventMembers hook with token data
       setNewMemberName('');
       setNewMemberEmail('');
-      // Members will auto-update via the useEventMembers hook
       toast.success('Partecipante aggiunto!');
     } catch (error: unknown) {
       console.error('Error adding member:', error);
@@ -211,34 +205,31 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
         toast.error(msg);
         return;
       }
-      if (body?.invite && body?.memberId) {
-        const invite = { ...body.invite, url: absUrl(`/join/${body.invite.token}`) };
-        setInviteLinks((prev) => ({ ...prev, [body.memberId]: invite }));
-
-        // Send invite email if requested
-        if (sendInviteEmail && email) {
-          try {
-            const { data: emailData, error: emailError } = await supabase.functions.invoke('mail-invite', {
-              body: {
-                email,
-                eventId,
-                participantId: body.participantId,
-                joinUrl: invite.url
-              }
-            });
-
-            if (!emailError) {
-              toast.success('Partecipante aggiunto e email inviata!');
-            } else {
-              toast.success('Partecipante aggiunto! (Errore nell\'invio email)');
+      
+      // Members will auto-update via the useEventMembers hook with token data
+      // Send invite email if requested
+      if (sendInviteEmail && email && body?.invite) {
+        try {
+          const { data: emailData, error: emailError } = await supabase.functions.invoke('mail-invite', {
+            body: {
+              email,
+              eventId,
+              participantId: body.participantId,
+              joinUrl: absUrl(`/join/${body.invite.token}`)
             }
-          } catch (emailError) {
-            console.error('Error sending invite email:', emailError);
+          });
+
+          if (!emailError) {
+            toast.success('Partecipante aggiunto e email inviata!');
+          } else {
             toast.success('Partecipante aggiunto! (Errore nell\'invio email)');
           }
-        } else {
-          toast.success('Partecipante aggiunto!');
+        } catch (emailError) {
+          console.error('Error sending invite email:', emailError);
+          toast.success('Partecipante aggiunto! (Errore nell\'invio email)');
         }
+      } else {
+        toast.success('Partecipante aggiunto!');
       }
       
       setNewMemberName('');
@@ -527,13 +518,13 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                 </div>
               </div>
               
-              {inviteLinks[member.id] && (
+              {member.token_data && !member.token_data.used_at && new Date(member.token_data.expires_at) > new Date() && (
                   <div className="mt-3 flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={async () => {
-                        const link = inviteLinks[member.id].url || absUrl(`/join/${inviteLinks[member.id].token}`);
+                        const link = absUrl(`/join/${member.token_data!.token}`);
                         await copyToClipboard(link);
                         toast.success('Link copiato');
                       }}
@@ -545,7 +536,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                       size="sm"
                       className="bg-[#25D366] hover:bg-[#20BD5A] text-white"
                       onClick={() => {
-                        const link = inviteLinks[member.id].url || absUrl(`/join/${inviteLinks[member.id].token}`);
+                        const link = absUrl(`/join/${member.token_data!.token}`);
                         shareViaWhatsApp(link);
                       }}
                     >
@@ -565,10 +556,8 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
                             toast.error('Errore nel rigenerare il link');
                             return;
                           }
-                          if (inviteData) {
-                            setInviteLinks((prev) => ({ ...prev, [member.id]: { ...inviteData, url: absUrl(`/join/${inviteData.token}`) } }));
-                            toast.success('Link rigenerato');
-                          }
+                          // Token will be updated via real-time subscription
+                          toast.success('Link rigenerato');
                         } catch {
                           toast.error('Errore nel rigenerare il link');
                         }
