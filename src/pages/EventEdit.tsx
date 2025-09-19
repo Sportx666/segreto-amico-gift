@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Euro, Gift, Users, ArrowLeft } from "lucide-react";
+import { Calendar, Euro, Gift, Users, ArrowLeft, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { uploadImage, resizeToWebP } from "@/lib/upload";
 import { useAuth } from "@/components/AuthProvider";
@@ -170,7 +170,27 @@ const EventEdit = () => {
                     className="w-full h-40 object-cover rounded border"
                   />
                 </div>
-                <Input type="file" accept="image/*" onChange={(e) => setCoverFile(e.target.files?.[0] || null)} />
+                <div className="grid grid-cols-4 gap-2 items-center">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+                    className={coverFile ? "col-span-3" : "col-span-4"}
+                  />
+                  {coverFile && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2 text-destructive"
+                      onClick={() => setCoverFile(null)}
+                      title="Remove picture"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span className="hidden sm:inline">Rimuovi</span>
+                    </Button>
+                  )}
+                </div>
+
               </div>
 
               <div className="space-y-2">
@@ -231,8 +251,8 @@ const EventEdit = () => {
                 />
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full bg-gradient-primary hover:bg-primary-light transition-all duration-300 hover:shadow-glow"
                 disabled={loading || coverUploading}
               >
