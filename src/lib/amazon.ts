@@ -6,10 +6,12 @@ const FALLBACK_PARTNER_TAG = 'yourtag-21'; // Fallback if no env is set
  * Validates that the tag is set in production builds
  */
 export function getAffiliateTag(): string {
+  // Try to get from environment first, then fallback
+  const envTag = import.meta.env.VITE_AMAZON_PARTNER_TAG;
+  const tag = envTag || FALLBACK_PARTNER_TAG;
+  
   // In production, we should have a proper tag configured
   const isProduction = import.meta.env.PROD;
-  const tag = FALLBACK_PARTNER_TAG; // Client-side uses constant
-  
   if (isProduction && tag === FALLBACK_PARTNER_TAG) {
     console.warn('⚠️ Amazon affiliate tag not properly configured for production');
   }

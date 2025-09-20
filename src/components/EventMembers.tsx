@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { getOrCreateParticipantId } from "@/lib/participants";
 import { debugLog, isDebug } from "@/lib/debug";
 import { StatusChip } from "@/components/StatusChip";
-import { copyToClipboard, shareViaWhatsApp } from "@/lib/whatsapp";
+import { copyToClipboard } from "@/lib/utils";
 import { EventMemberNameEditor } from './EventMemberNameEditor';
 import { absUrl } from "@/lib/url";
 import { EmailIcon, EmailShareButton, WhatsappIcon, WhatsappShareButton } from "react-share";
@@ -515,71 +515,76 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
               </div>
 
               {member.token_data && (
-                <div className="mt-3 flex gap-2">
-                  {!member.token_data.used_at && new Date(member.token_data.expires_at) > new Date() ? (
-                    <>
-                      {/* Valid token - show copy, whatsapp, email buttons */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full w-10 h-10 p-0"
-                        onClick={async () => {
-                          const link = absUrl(`/join/${member.token_data!.token}`);
-                          await copyToClipboard(link);
-                          toast.success('Link copiato');
-                        }}
-                        title="Copia link"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      {/* Expired/used token - show regenerate and disabled buttons */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full w-10 h-10 p-0 bg-yellow-100 hover:bg-yellow-200"
-                        onClick={async () => {
-                          try {
-                            const { data: inviteData, error: inviteError } = await supabase.functions.invoke('join-create', {
-                              body: { eventId, participantId: member.participant_id }
-                            });
-                            if (inviteError) {
-                              console.error('join/create failed', inviteError);
+                <div className="mt-3">
+                  <div className="flex flex-wrap gap-2 sm:flex-nowrap">
+                    {!member.token_data.used_at && new Date(member.token_data.expires_at) > new Date() ? (
+                      <>
+                        {/* Valid token - show copy, whatsapp, email buttons */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full min-w-[44px] min-h-[44px] p-0 touch-manipulation"
+                          onClick={async () => {
+                            const link = absUrl(`/join/${member.token_data!.token}`);
+                            await copyToClipboard(link);
+                            toast.success('Link copiato');
+                          }}
+                          title="Copia link"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        {/* Expired/used token - show regenerate and disabled buttons */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full min-w-[44px] min-h-[44px] p-0 bg-yellow-100 hover:bg-yellow-200 touch-manipulation"
+                          onClick={async () => {
+                            try {
+                              const { data: inviteData, error: inviteError } = await supabase.functions.invoke('join-create', {
+                                body: { eventId, participantId: member.participant_id }
+                              });
+                              if (inviteError) {
+                                console.error('join/create failed', inviteError);
+                                toast.error('Errore nel rigenerare il link');
+                                return;
+                              }
+                              toast.success('Link rigenerato');
+                            } catch {
                               toast.error('Errore nel rigenerare il link');
-                              return;
                             }
-                            toast.success('Link rigenerato');
-                          } catch {
-                            toast.error('Errore nel rigenerare il link');
-                          }
-                        }}
-                        title="Rigenera link"
+                          }}
+                          title="Rigenera link"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
+                    <div className="flex gap-2">
+                      <WhatsappShareButton
+                        url={absUrl(`/join/${member.token_data.token}`)}
+                        title="Condividi su WhatsApp"
+                        separator=" "
+                        disabled={!(!member.token_data.used_at && new Date(member.token_data.expires_at) > new Date())}
+                        disabledStyle={{ opacity: 0.5, cursor: 'not-allowed' }}
+                        className="touch-manipulation"
                       >
-                        <RefreshCw className="w-4 h-4" />
-                      </Button>
-
-                    </>
-                  )}
-                  <WhatsappShareButton
-                    url={absUrl(`/join/${member.token_data.token}`)}
-                    title="Condividi su WhatsApp"
-                    separator=" "
-                    disabled={!(!member.token_data.used_at && new Date(member.token_data.expires_at) > new Date())}
-                    disabledStyle={{ opacity: 0.5, cursor: 'not-allowed' }}
-                  >
-                    <WhatsappIcon round size={40} />
-                  </WhatsappShareButton>
-                  <EmailShareButton
-                    url=''
-                    subject="Invito a partecipare all'Amico Segreto"
-                    body={`Ciao!\n\nSei stato invitato a partecipare a un evento Amico Segreto. Clicca sul link qui sotto per unirti:\n\n${absUrl(`/join/${member.token_data.token}`)}\n\nA presto!`}
-                    disabled={!(!member.token_data.used_at && new Date(member.token_data.expires_at) > new Date())}
-                    disabledStyle={{ opacity: 0.5, cursor: 'not-allowed' }}
-                  >
-                    <EmailIcon round size={40} />
-                  </EmailShareButton>
+                        <WhatsappIcon round size={44} />
+                      </WhatsappShareButton>
+                      <EmailShareButton
+                        url=''
+                        subject="Invito a partecipare all'Amico Segreto"
+                        body={`Ciao!\n\nSei stato invitato a partecipare a un evento Amico Segreto. Clicca sul link qui sotto per unirti:\n\n${absUrl(`/join/${member.token_data.token}`)}\n\nA presto!`}
+                        disabled={!(!member.token_data.used_at && new Date(member.token_data.expires_at) > new Date())}
+                        disabledStyle={{ opacity: 0.5, cursor: 'not-allowed' }}
+                        className="touch-manipulation"
+                      >
+                        <EmailIcon round size={44} />
+                      </EmailShareButton>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>

@@ -1,4 +1,5 @@
 // WhatsApp sharing utilities for Italian market
+// Note: This file is kept for legacy support but most functions have been moved to utils.ts
 
 interface ShareEventParams {
   eventName: string;
@@ -7,6 +8,8 @@ interface ShareEventParams {
   joinUrl: string;
 }
 
+// Legacy function - kept for backward compatibility
+// Consider using react-share components instead
 export const createWhatsAppInviteText = ({ 
   eventName, 
   budget, 
@@ -33,37 +36,5 @@ export const createWhatsAppInviteText = ({
   return message;
 };
 
-export const shareViaWhatsApp = (text: string) => {
-  const encodedText = encodeURIComponent(text);
-  const whatsappUrl = `https://wa.me/?text=${encodedText}`;
-  
-  // Check if we're on mobile and have native sharing capability
-  if (navigator.share && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-    navigator.share({
-      title: "Invito Amico Segreto",
-      text: text
-    }).catch(() => {
-      // Fallback to WhatsApp web if native sharing fails
-      window.open(whatsappUrl, "_blank");
-    });
-  } else {
-    // Desktop or no native sharing - use WhatsApp web
-    window.open(whatsappUrl, "_blank");
-  }
-};
-
-export const copyToClipboard = async (text: string): Promise<boolean> => {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    // Fallback for older browsers
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-    document.body.appendChild(textArea);
-    textArea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textArea);
-    return true;
-  }
-};
+// Re-export from utils for backward compatibility
+export { copyToClipboard } from '@/lib/utils';
