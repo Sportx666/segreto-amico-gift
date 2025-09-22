@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { debugLog } from "@/lib/debug";
 import { toast } from "sonner";
 
 interface AuthContextType {
@@ -64,7 +65,7 @@ const ensureProfile = async (user: User) => {
       return;
     }
 
-    console.log('✅ Profile created for new user:', { userId: user.id, displayName });
+    debugLog('AuthProvider', `✅ Profile created for new user: ${user.id}, ${displayName}`);
     toast.success(`Welcome ${displayName}! Your profile has been created.`);
 
   } catch (error) {

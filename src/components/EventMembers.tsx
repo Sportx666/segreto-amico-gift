@@ -12,8 +12,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Checkbox } from "@/components/ui/checkbox";
 import { UserPlus, Trash2, Crown, User, Copy, RefreshCw, MessageCircle, Mail, UserX } from "lucide-react";
 import { toast } from "sonner";
-import { getOrCreateParticipantId } from "@/lib/participants";
 import { debugLog, isDebug } from "@/lib/debug";
+import { getOrCreateParticipantId } from "@/lib/participants";
 import { StatusChip } from "@/components/StatusChip";
 import { copyToClipboard } from "@/lib/utils";
 import { EventMemberNameEditor } from './EventMemberNameEditor';
@@ -182,7 +182,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
       return;
     }
 
-    console.log('Adding member:', { eventId, name, email, hasAuth: !!session.access_token });
+    debugLog('EventMembers', `Adding member: ${eventId}, ${name}, ${email}, hasAuth: ${!!session.access_token}`);
     setIsAddingMember(true);
     try {
       const { data: body, error } = await supabase.functions.invoke('members-add', {
@@ -323,7 +323,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
 
       // Members will auto-update via the useEventMembers hook
       toast.success("Invito rimosso");
-      console.log('Removal result:', data);
+      debugLog('EventMembers', `Removal result: ${JSON.stringify(data)}`);
     } catch (error: any) {
       console.error('Error removing unjoined member:', error);
       if (error.message?.includes('Cannot remove joined participant')) {
