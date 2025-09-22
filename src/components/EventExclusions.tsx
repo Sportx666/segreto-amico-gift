@@ -152,14 +152,18 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
       {participants.length >= 2 ? (
         <Card>
           <CardContent className="p-6">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-background">
+              {/* Mobile scroll hint */}
+              <div className="sm:hidden text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                ← Scorri per vedere tutti i partecipanti →
+              </div>
               <table className="w-full">
                 <thead>
                   <tr>
-                    <th className="text-left p-3 font-medium">Regala a →</th>
+                    <th className="text-left p-2 sm:p-3 font-medium sticky left-0 bg-background z-10 border-r">Regala a →</th>
                     {participants.map((member) => (
-                      <th key={member.id} className="p-3 text-center min-w-[120px]">
-                        <div className="text-sm font-medium truncate">
+                      <th key={member.id} className="p-2 sm:p-3 text-center min-w-[100px] sm:min-w-[120px]">
+                        <div className="text-xs sm:text-sm font-medium truncate">
                           {getMemberName(member)}
                         </div>
                       </th>
@@ -169,19 +173,19 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
                 <tbody>
                   {participants.map((giver) => (
                     <tr key={giver.id} className="border-t">
-                      <td className="p-3 font-medium">
-                        <div className="flex items-center gap-2">
-                          {getMemberName(giver)}
+                      <td className="p-2 sm:p-3 font-medium sticky left-0 bg-background z-10 border-r">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <span className="text-xs sm:text-sm truncate">{getMemberName(giver)}</span>
                           {giver.role === 'admin' && (
-                            <Badge variant="secondary" className="text-xs">Admin</Badge>
+                            <Badge variant="secondary" className="text-xs hidden sm:inline-flex">Admin</Badge>
                           )}
                         </div>
                       </td>
                       {participants.map((receiver) => (
-                        <td key={receiver.id} className="p-3 text-center">
+                        <td key={receiver.id} className="p-2 sm:p-3 text-center">
                           {giver.id === receiver.id ? (
-                            <div className="w-6 h-6 bg-muted rounded flex items-center justify-center mx-auto">
-                              <X className="w-4 h-4 text-muted-foreground" />
+                            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-muted rounded flex items-center justify-center mx-auto">
+                              <X className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground" />
                             </div>
                           ) : (
                             <Checkbox
@@ -190,7 +194,7 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
                                 toggleExclusion(giver.participant_id || giver.id, receiver.participant_id || receiver.id)
                               }
                               disabled={!canEditExclusions(giver.participant_id || giver.id)}
-                              className="mx-auto"
+                              className="mx-auto min-w-[20px] min-h-[20px] sm:min-w-[24px] sm:min-h-[24px] touch-manipulation"
                             />
                           )}
                         </td>

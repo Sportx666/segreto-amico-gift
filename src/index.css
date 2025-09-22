@@ -175,4 +175,48 @@ All colors MUST be HSL.
   .aspect-square {
     aspect-ratio: 1 / 1;
   }
+  
+  /* Custom scrollbar utilities for better mobile table experience */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  
+  .scrollbar-thumb-border {
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  
+  .scrollbar-track-background {
+    /* For WebKit browsers */
+    &::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: hsl(var(--background));
+      border-radius: 3px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: hsl(var(--border));
+      border-radius: 3px;
+    }
+    
+    &::-webkit-scrollbar-thumb:hover {
+      background: hsl(var(--muted-foreground));
+    }
+  }
+  
+  /* Touch-friendly focus states */
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Hover states that respect user preference */
+  @media (hover: hover) and (pointer: fine) {
+    .hover-only\:hover\:bg-accent:hover {
+      background-color: hsl(var(--accent));
+    }
+  }
 }
