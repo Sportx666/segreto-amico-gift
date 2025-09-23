@@ -148,7 +148,8 @@ export const MemberCard = ({
                       size="sm"
                       onClick={() => copyJoinToken(member.token_data!.token)}
                       disabled={copyingToken}
-                      className="flex items-center gap-2 text-xs"
+                      className="flex items-center gap-2 text-xs touch-target focus-ring"
+                      aria-label={`Copia link di invito per ${getMemberName(member)}`}
                     >
                       <Copy className="w-3 h-3" />
                       <span className="hidden sm:inline">Copia Link</span>
@@ -158,7 +159,8 @@ export const MemberCard = ({
                       variant="outline"
                       size="sm"
                       onClick={() => refreshToken(member.participant_id)}
-                      className="flex items-center gap-2 text-xs"
+                      className="flex items-center gap-2 text-xs touch-target focus-ring"
+                      aria-label={`Rinnova token per ${getMemberName(member)}`}
                     >
                       <RefreshCw className="w-3 h-3" />
                       <span className="hidden sm:inline">Rinnova</span>
@@ -203,25 +205,27 @@ export const MemberCard = ({
           {userRole === 'admin' && (
             <div className="flex flex-col gap-1">
               {member.status === 'invited' && eventStatus === 'pending' && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onRemoveUnjoinedMember(member.participant_id)}
-                  className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                >
-                  <UserX className="w-4 h-4" />
-                </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onRemoveUnjoinedMember(member.participant_id)}
+              className="touch-target text-muted-foreground hover:text-destructive focus-ring"
+              aria-label={`Rimuovi invito per ${getMemberName(member)}`}
+            >
+              <UserX className="w-4 h-4" />
+            </Button>
               )}
               
               {member.status === 'joined' && eventStatus === 'pending' && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onRemoveMember(member.id)}
-                  className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onRemoveMember(member.id)}
+              className="touch-target text-muted-foreground hover:text-destructive focus-ring"
+              aria-label={`Rimuovi ${getMemberName(member)} dall'evento`}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
               )}
             </div>
           )}

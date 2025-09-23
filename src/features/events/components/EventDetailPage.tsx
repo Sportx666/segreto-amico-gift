@@ -256,12 +256,14 @@ export default function EventDetailPage() {
       </div>
 
       <div className="container max-w-6xl py-6">
-        {/* Back Button */}
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/events")}
-          className="mb-6 text-muted-foreground hover:text-foreground"
-        >
+        <main id="main-content" className="focus:outline-none" tabIndex={-1}>
+          {/* Back Button */}
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/events")}
+            className="mb-6 text-muted-foreground hover:text-foreground focus-ring"
+            aria-label="Torna alla lista eventi"
+          >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Torna agli eventi
         </Button>
@@ -331,7 +333,11 @@ export default function EventDetailPage() {
         </Card>
 
         {/* Sticky Tabs */}
-        <div className="sticky top-0 z-40 bg-gradient-subtle/80 backdrop-blur-sm pb-6">
+        <nav 
+          className="sticky top-0 z-40 bg-gradient-subtle/80 backdrop-blur-sm pb-6"
+          role="navigation"
+          aria-label="Sezioni evento"
+        >
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className={`grid w-full grid-cols-4 bg-white/80 backdrop-blur-sm shadow-card`}>
               <TabsTrigger value="partecipanti" className="flex items-center gap-2">
@@ -365,10 +371,11 @@ export default function EventDetailPage() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-        </div>
+        </nav>
 
         {/* Tab Content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div role="tabpanel" aria-live="polite">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsContent value="partecipanti">
             <EventMembers eventId={event.id} userRole={userRole} eventStatus={event.draw_status} />
           </TabsContent>
@@ -429,7 +436,9 @@ export default function EventDetailPage() {
               onStartChat={handleStartChat}
             />
           </TabsContent>
-        </Tabs>
+          </Tabs>
+        </div>
+        </main>
       </div>
 
       {/* Reveal Animation Overlay */}

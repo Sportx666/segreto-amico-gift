@@ -61,7 +61,7 @@ export const Navbar = () => {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link 
             to="/" 
-            className="flex items-center gap-2 group"
+            className="flex items-center gap-2 group focus-ring rounded-lg p-1"
             aria-label="Torna alla homepage"
           >
             <Gift className="w-6 h-6 text-primary transition-transform group-hover:scale-110" />
@@ -102,6 +102,11 @@ export const Navbar = () => {
 
   return (
     <>
+      {/* Skip to main content link for accessibility */}
+      <a href="#main-content" className="skip-link">
+        Salta al contenuto principale
+      </a>
+      
       <nav className="bg-background/95 backdrop-blur-sm border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link 

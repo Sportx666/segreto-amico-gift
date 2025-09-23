@@ -189,13 +189,14 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
               <MessageCircle className="w-5 h-5 text-primary" />
               Chat Evento
             </CardTitle>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowRecipientSelector(true)}
-              className="flex items-center gap-2"
-              disabled={joinedCount < 2}
-            >
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowRecipientSelector(true)}
+                className="flex items-center gap-2 touch-target focus-ring"
+                disabled={joinedCount < 2}
+                aria-label="Inizia una nuova chat privata"
+              >
               <Plus className="w-4 h-4" />
               Nuova Chat
             </Button>
@@ -224,7 +225,8 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                         e.stopPropagation();
                         handleCloseChat(chat.recipientId);
                       }}
-                      className="h-auto w-auto p-0.5 ml-1 hover:bg-destructive hover:text-destructive-foreground"
+                      className="touch-target hover:bg-destructive hover:text-destructive-foreground focus-ring ml-1"
+                      aria-label={`Chiudi chat con ${chat.recipientName}`}
                     >
                       <X className="w-3 h-3" />
                     </Button>
@@ -256,7 +258,14 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                     )}
                     {hasMore && (
                       <div className="text-center">
-                        <Button variant="outline" size="sm" onClick={loadMore} disabled={loading}>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={loadMore} 
+                          disabled={loading}
+                          className="focus-ring" 
+                          aria-label="Carica messaggi precedenti"
+                        >
                           <ChevronUp className="w-4 h-4 mr-2" />
                           Carica messaggi precedenti
                         </Button>
@@ -319,7 +328,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                       maxLength={500}
                       disabled={sending}
                     />
-                    <Button type="submit" disabled={!messageText.trim() || sending}>
+                    <Button type="submit" disabled={!messageText.trim() || sending} className="touch-target focus-ring" aria-label="Invia messaggio">
                       <Send className="w-4 h-4" />
                     </Button>
                   </form>

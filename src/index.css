@@ -2,20 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Line clamp utilities */
-@layer utilities {
-  .line-clamp-1 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
-  }
-  
-  .line-clamp-2 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+/* Enhanced focus styles and touch targets */
+.focus-ring {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+}
+
+/* Minimum touch target size */
+.touch-target {
+  @apply min-h-[44px] min-w-[44px];
+}
+
+/* Enhanced button focus states */
+.btn-focus {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+}
+
+/* Skip to content link for keyboard navigation */
+.skip-link {
+  @apply absolute -top-full left-4 z-50 bg-primary text-primary-foreground px-4 py-2 rounded-md;
+  @apply focus:top-4 transition-all duration-200;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
