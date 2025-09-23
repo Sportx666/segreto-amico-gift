@@ -3,22 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useEventMembers } from "@/hooks/useEventMembers";
 import { useJoinedParticipantCount } from "@/hooks/useJoinedParticipantCount";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { UserPlus, Trash2, Crown, User, Copy, RefreshCw, MessageCircle, Mail, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { debugLog, isDebug } from "@/lib/debug";
 import { getOrCreateParticipantId } from "@/lib/participants";
-import { StatusChip } from "@/components/StatusChip";
-import { copyToClipboard } from "@/lib/utils";
-import { EventMemberNameEditor } from './EventMemberNameEditor';
-import { absUrl } from "@/lib/url";
-import { EmailIcon, EmailShareButton, WhatsappIcon, WhatsappShareButton } from "react-share";
+import { MemberCard } from "./members/MemberCard";
+import { AddMemberDialog } from "./members/AddMemberDialog";
+import { DebugPanel } from "./members/DebugPanel";
 
 interface EventMembersProps {
   eventId: string;
@@ -26,35 +16,15 @@ interface EventMembersProps {
   eventStatus?: string; // draw_status from event (e.g., 'pending', 'completed')
 }
 
-interface Member {
-  id: string;
-  role: string;
-  anonymous_name: string | null;
-  anonymous_email: string | null;
-  status: string;
-  participant_id: string;
-  token_data?: {
-    token: string;
-    expires_at: string;
-    used_at: string | null;
-  } | null;
+interface DebugData {
+  [key: string]: unknown;
 }
 
-const getMemberName = (member: Member) => {
-  if (member.anonymous_name && member.anonymous_name.trim().length > 0) return member.anonymous_name;
-  if (member.anonymous_email && member.anonymous_email.trim().length > 0) return member.anonymous_email;
-  return "Partecipante";
-};
-
 export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersProps) => {
-  const { user, session } = useAuth();
+  const { user } = useAuth();
   const { members, loading: isLoading } = useEventMembers(eventId);
   const { count: joinedCount } = useJoinedParticipantCount(eventId);
-  const [isAddingMember, setIsAddingMember] = useState(false);
-  const [newMemberName, setNewMemberName] = useState("");
-  const [newMemberEmail, setNewMemberEmail] = useState("");
-  const [sendInviteEmail, setSendInviteEmail] = useState(false);
-  const [diag, setDiag] = useState<any>({});
+  const [diag, setDiag] = useState<DebugData>({});
   const [currentUserParticipantId, setCurrentUserParticipantId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -91,14 +61,14 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
         try {
           const pid = await getOrCreateParticipantId(user.id);
           debugLog("EventMembers.viewerParticipantId", { participantId: pid });
-          setDiag((d: any) => ({ ...d, viewerParticipantId: pid }));
+          setDiag((d) => ({ ...d, viewerParticipantId: pid }));
         } catch (e) {
           debugLog("EventMembers.viewerParticipantId:error", { error: e });
-          setDiag((d: any) => ({ ...d, viewerParticipantIdError: String(e) }));
+          setDiag((d) => ({ ...d, viewerParticipantIdError: String(e) }));
         }
       }
 
-      setDiag((d: any) => ({ ...d, membersCount: members?.length ?? 0 }));
+      setDiag((d) => ({ ...d, membersCount: members?.length ?? 0 }));
 
       // If blocked or empty, try to at least show current user's membership
       if (user && members.length === 0) {
@@ -111,7 +81,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
           .maybeSingle();
         debugLog("EventMembers.selfRow", { selfRow });
         if (selfRow) {
-          setDiag((d: any) => ({ ...d, fallbackSelfRow: true }));
+          setDiag((d) => ({ ...d, fallbackSelfRow: true }));
         }
       }
     } catch (error: unknown) {
@@ -119,171 +89,9 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
     }
   };
 
-  const addMember = async () => {
-    if (!newMemberName.trim()) {
-      toast.error("Il nome è obbligatorio");
-      return;
-    }
-
-    setIsAddingMember(true);
-    try {
-      const { data: participant } = await supabase
-        .from('participants')
-        .insert({ profile_id: null })
-        .select('id')
-        .single();
-
-      if (!participant) throw new Error('Participant creation failed');
-
-      const { data: memberRow, error: memberError } = await supabase
-        .from('event_members')
-        .insert({
-          event_id: eventId,
-          participant_id: participant.id,
-          anonymous_name: newMemberName.trim(),
-          anonymous_email: newMemberEmail.trim() || null,
-          role: 'member',
-          status: 'invited'
-        })
-        .select('id, participant_id')
-        .single();
-
-      if (memberError) throw memberError;
-
-      // Members will auto-update via the useEventMembers hook with token data
-      setNewMemberName('');
-      setNewMemberEmail('');
-      toast.success('Partecipante aggiunto!');
-    } catch (error: unknown) {
-      console.error('Error adding member:', error);
-      toast.error('Errore nell\'aggiungere il partecipante');
-    } finally {
-      setIsAddingMember(false);
-    }
+  const handleMemberAdded = () => {
+    // The hook will automatically refresh via real-time subscriptions
   };
-
-  const addMemberServer = async () => {
-    const name = newMemberName.trim();
-    const email = newMemberEmail.trim();
-    if (!name) {
-      toast.error("Il nome è obbligatorio");
-      return;
-    }
-
-    // Debug: Check if we have authentication
-    if (!session?.access_token) {
-      toast.error("Non autenticato - riprova");
-      console.error('No access token available');
-      return;
-    }
-    if (!user?.id) {
-      toast.error("Utente non identificato - riprova");
-      console.error('No user ID available');
-      return;
-    }
-
-    debugLog('EventMembers', `Adding member: ${eventId}, ${name}, ${email}, hasAuth: ${!!session.access_token}`);
-    setIsAddingMember(true);
-    try {
-      const { data: body, error } = await supabase.functions.invoke('members-add', {
-        body: { eventId, anonymousName: name, anonymousEmail: email || null },
-      });
-
-      if (error) {
-        let msg = 'Errore nell\'aggiungere il partecipante';
-        console.error('members-add function error:', error);
-
-        if (error.message?.includes('duplicate_email')) {
-          msg = 'Questa email è già stata invitata';
-        } else if (error.message?.includes('Forbidden')) {
-          msg = 'Non hai i permessi per aggiungere partecipanti';
-        } else if (error.message?.includes('Unauthorized')) {
-          msg = 'Sessione scaduta - ricarica la pagina';
-        } else if (error.message) {
-          msg = `Errore: ${error.message}`;
-        }
-
-        toast.error(msg);
-        return;
-      }
-
-      // Members will auto-update via the useEventMembers hook with token data
-      // Send invite email if requested
-      if (sendInviteEmail && email && body?.invite) {
-        try {
-          const { data: emailData, error: emailError } = await supabase.functions.invoke('mail-invite', {
-            body: {
-              email,
-              eventId,
-              participantId: body.participantId,
-              joinUrl: absUrl(`/join/${body.invite.token}`)
-            }
-          });
-
-          if (!emailError) {
-            toast.success('Partecipante aggiunto e email inviata!');
-          } else {
-            toast.success('Partecipante aggiunto! (Errore nell\'invio email)');
-          }
-        } catch (emailError) {
-          console.error('Error sending invite email:', emailError);
-          toast.success('Partecipante aggiunto! (Errore nell\'invio email)');
-        }
-      } else {
-        toast.success('Partecipante aggiunto!');
-      }
-
-      setNewMemberName('');
-      setNewMemberEmail('');
-      setSendInviteEmail(false);
-      // Members will auto-update via the useEventMembers hook
-    } catch (error) {
-      console.error('Error adding member via API:', error);
-      toast.error('Errore nell\'aggiungere il partecipante');
-    } finally {
-      setIsAddingMember(false);
-    }
-  };
-
-  const debugCheckPermissions = async () => {
-    try {
-      const { data: debugData, error: debugError } = await supabase.functions.invoke('debug-rls', {
-        body: { eventId }
-      });
-
-      if (debugError) {
-        setDiag((d: any) => ({ ...d, debugRls: { error: debugError.message } }));
-        toast.error('Debug RLS errore');
-      } else {
-        setDiag((d: any) => ({ ...d, debugRls: debugData }));
-        toast.success('Debug RLS completato');
-      }
-    } catch (e) {
-      console.error('RLS debug failed', e);
-      toast.error('Debug RLS errore');
-    }
-  };
-
-  const debugAddMemberTest = async () => {
-    try {
-      const name = newMemberName.trim() || 'Test User';
-      const email = newMemberEmail.trim() || '';
-      const { data: addData, error: addError } = await supabase.functions.invoke('members-add', {
-        body: { eventId, anonymousName: name, anonymousEmail: email || null, ttlDays: 1 }
-      });
-
-      setDiag((d: any) => ({ ...d, debugAddResp: addError ? { error: addError.message } : addData }));
-      if (addError) toast.error('members/add error');
-      else toast.success('members/add OK');
-    } catch (e) {
-      console.error('debug add failed', e);
-      toast.error('Debug add errore');
-    }
-  };
-
-  function safeJson(text: string) {
-    try { return JSON.parse(text); } catch { return text; }
-  }
 
   const removeMember = async (memberId: string) => {
     // Guard: allow deletion only for admins when draw is pending
@@ -324,9 +132,10 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
       // Members will auto-update via the useEventMembers hook
       toast.success("Invito rimosso");
       debugLog('EventMembers', `Removal result: ${JSON.stringify(data)}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error removing unjoined member:', error);
-      if (error.message?.includes('Cannot remove joined participant')) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('Cannot remove joined participant')) {
         toast.error("Non puoi rimuovere un partecipante che ha già accettato l'invito");
       } else {
         toast.error("Errore nella rimozione dell'invito");
@@ -338,11 +147,9 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
     return (
       <div className="space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Card key={i} className="animate-pulse">
-            <CardContent className="p-4">
-              <div className="h-6 bg-muted rounded w-1/3"></div>
-            </CardContent>
-          </Card>
+          <div key={i} className="animate-pulse bg-card rounded-lg p-4">
+            <div className="h-6 bg-muted rounded w-1/3"></div>
+          </div>
         ))}
       </div>
     );
@@ -351,14 +158,15 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
   return (
     <div className="space-y-6">
       {isDebug() && (
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Button variant="secondary" size="sm" onClick={debugCheckPermissions}>Verifica permessi (RLS)</Button>
-            <Button variant="secondary" size="sm" onClick={debugAddMemberTest}>Test add via API</Button>
-          </div>
-          <pre className="text-xs whitespace-pre-wrap break-words">{JSON.stringify({ eventId, ...diag }, null, 2)}</pre>
-        </Card>
+        <DebugPanel 
+          eventId={eventId} 
+          diag={diag} 
+          setDiag={setDiag}
+          newMemberName=""
+          newMemberEmail=""
+        />
       )}
+      
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -369,239 +177,25 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
         </div>
 
         {userRole === 'admin' && (
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button>
-                <UserPlus className="w-4 h-4" />
-                <span className="hidden sm:inline">Aggiungi</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Aggiungi Partecipante</DialogTitle>
-                <DialogDescription>
-                  Aggiungi un nuovo partecipante all'evento
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Nome *</Label>
-                  <Input
-                    id="name"
-                    value={newMemberName}
-                    onChange={(e) => setNewMemberName(e.target.value)}
-                    placeholder="Nome del partecipante"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email (opzionale)</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={newMemberEmail}
-                    onChange={(e) => setNewMemberEmail(e.target.value)}
-                    placeholder="email@esempio.com"
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="send-invite"
-                    checked={sendInviteEmail}
-                    onCheckedChange={(checked) => setSendInviteEmail(checked as boolean)}
-                    disabled={!newMemberEmail.trim()}
-                  />
-                  <Label
-                    htmlFor="send-invite"
-                    className={`text-sm ${!newMemberEmail.trim() ? 'text-muted-foreground' : ''}`}
-                  >
-                    <Mail className="w-4 h-4 inline mr-2" />
-                    Invia email di invito
-                  </Label>
-                </div>
-                <Button
-                  onClick={addMemberServer}
-                  className="w-full"
-                  disabled={isAddingMember}
-                >
-                  {isAddingMember ? "Aggiungendo..." : "Aggiungi Partecipante"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <AddMemberDialog eventId={eventId} onMemberAdded={handleMemberAdded} />
         )}
       </div>
 
       {/* Members List */}
       <div className="space-y-3">
         {members.map((member) => (
-          <Card key={member.id}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3 min-w-0 flex-1">
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                    {member.role === 'admin' ? (
-                      <Crown className="w-5 h-5 text-primary" />
-                    ) : (
-                      <User className="w-5 h-5 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    {/* Name and editor row */}
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-medium truncate">{getMemberName(member)}</p>
-                      {/* Allow users to edit their own name */}
-                      {currentUserParticipantId === member.participant_id && (
-                        <EventMemberNameEditor
-                          eventId={eventId}
-                          participantId={member.participant_id}
-                          currentName={member.anonymous_name}
-                          currentEmail={member.anonymous_email}
-                          onNameUpdated={() => {
-                            // The hook will automatically refresh via real-time subscriptions
-                            // Force a small delay to ensure the update is processed
-                            setTimeout(() => {
-                              // Could trigger a manual refresh here if needed
-                            }, 100);
-                          }}
-                        />
-                      )}
-                    </div>
-
-                    {/* Email row */}
-                    {member.anonymous_email && (
-                      <p className="text-sm text-muted-foreground mb-2 truncate">
-                        {member.anonymous_email}
-                      </p>
-                    )}
-
-                    {/* Badges row - responsive layout */}
-                    <div className="flex items-center gap-2 sm:hidden">
-                      <StatusChip status={member.status} />
-                      {member.role === 'admin' && (
-                        <Badge variant="secondary" aria-label="Amministratore">Admin</Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right side: badges (hidden on mobile) and action buttons */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {/* Badges - visible on desktop only */}
-                  <div className="hidden sm:flex items-center gap-2">
-                    <StatusChip status={member.status} />
-                    {member.role === 'admin' && (
-                      <Badge variant="secondary" aria-label="Amministratore">Admin</Badge>
-                    )}
-                  </div>
-
-                  {userRole === 'admin' && eventStatus === 'pending' && member.role !== 'admin' && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          removeMember(member.id);
-                          if (member.status === 'invited') {
-                            removeUnjoinedMember(member.participant_id);
-                          }
-                        }}
-                        title="Rimuovi partecipante"
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {member.token_data && (
-                <div className="mt-3">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
-                    {/* Action buttons row */}
-                    <div className="flex items-center gap-2">
-                      {!member.token_data.used_at && new Date(member.token_data.expires_at) > new Date() ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="rounded-full min-w-[44px] min-h-[44px] p-0 touch-manipulation"
-                          onClick={async () => {
-                            const link = absUrl(`/join/${member.token_data!.token}`);
-                            await copyToClipboard(link);
-                            toast.success('Link copiato');
-                          }}
-                          title="Copia link"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="rounded-full min-w-[44px] min-h-[44px] p-0 bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900 dark:hover:bg-yellow-800 touch-manipulation"
-                          onClick={async () => {
-                            try {
-                              const { data: inviteData, error: inviteError } = await supabase.functions.invoke('join-create', {
-                                body: { eventId, participantId: member.participant_id }
-                              });
-                              if (inviteError) {
-                                console.error('join/create failed', inviteError);
-                                toast.error('Errore nel rigenerare il link');
-                                return;
-                              }
-                              toast.success('Link rigenerato');
-                            } catch {
-                              toast.error('Errore nel rigenerare il link');
-                            }
-                          }}
-                          title="Rigenera link"
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                        </Button>
-                      )}
-                      
-                      {/* Share buttons with proper spacing */}
-                      <div className="flex items-center gap-2 ml-2">
-                        <WhatsappShareButton
-                          url={absUrl(`/join/${member.token_data.token}`)}
-                          title="Condividi su WhatsApp"
-                          separator=" "
-                          disabled={!(!member.token_data.used_at && new Date(member.token_data.expires_at) > new Date())}
-                          disabledStyle={{ opacity: 0.5, cursor: 'not-allowed' }}
-                          className="touch-manipulation focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-full"
-                        >
-                          <WhatsappIcon round size={44} />
-                        </WhatsappShareButton>
-                        <EmailShareButton
-                          url=''
-                          subject="Invito a partecipare all'Amico Segreto"
-                          body={`Ciao!\n\nSei stato invitato a partecipare a un evento Amico Segreto. Clicca sul link qui sotto per unirti:\n\n${absUrl(`/join/${member.token_data.token}`)}\n\nA presto!`}
-                          disabled={!(!member.token_data.used_at && new Date(member.token_data.expires_at) > new Date())}
-                          disabledStyle={{ opacity: 0.5, cursor: 'not-allowed' }}
-                          className="touch-manipulation focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-full"
-                        >
-                          <EmailIcon round size={44} />
-                        </EmailShareButton>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <MemberCard
+            key={member.id}
+            member={member}
+            eventId={eventId}
+            userRole={userRole}
+            eventStatus={eventStatus || 'pending'}
+            currentUserParticipantId={currentUserParticipantId}
+            onRemoveMember={removeMember}
+            onRemoveUnjoinedMember={removeUnjoinedMember}
+          />
         ))}
       </div>
-
-      {members.length === 0 && (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-semibold mb-2">Nessun partecipante</h3>
-            <p className="text-sm text-muted-foreground">
-              Aggiungi i primi partecipanti per iniziare
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

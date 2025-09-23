@@ -32,6 +32,11 @@ export interface EventMember {
   event_id: string;
   display_name?: string | null;
   created_at: string;
+  token_data?: {
+    token: string;
+    expires_at: string;
+    used_at: string | null;
+  } | null;
 }
 
 export interface Participant {
