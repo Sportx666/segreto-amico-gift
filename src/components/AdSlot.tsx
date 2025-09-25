@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
+import { getAdUnitConfig, initializeAdSense, pushAd } from "@/lib/adsense";
 
 interface AdSlotProps {
   id: string;
@@ -25,11 +26,39 @@ export const AdSlot = ({ id, className = "", placeholder = "Pubblicità" }: AdSl
   useEffect(() => {
     if (!hasConsent || !isAdsEnabled || !adRef.current) return;
 
-    // Load ads script and render ad
-    const loadAds = async () => {
-      // Simulate ad loading - in production, replace with actual ad network code
+    const loadAdSense = () => {
+      const adConfig = getAdUnitConfig(id);
+      if (!adConfig) {
+        console.warn(`No AdSense configuration found for slot: ${id}`);
+        return;
+      }
+
       const adElement = adRef.current;
-      if (adElement) {
+      if (!adElement) return;
+
+      // Initialize AdSense
+      initializeAdSense();
+
+      // Create the ad unit HTML
+      const { style, slot, format, fullWidthResponsive, layoutKey } = adConfig;
+      const styleString = `display:${style.display}${style.width ? `;width:${style.width}` : ''}${style.height ? `;height:${style.height}` : ''}`;
+      
+      adElement.innerHTML = `
+        <ins class="adsbygoogle"
+             style="${styleString}"
+             data-ad-client="ca-pub-9283228458809671"
+             data-ad-slot="${slot}"
+             ${format ? `data-ad-format="${format}"` : ''}
+             ${fullWidthResponsive ? 'data-full-width-responsive="true"' : ''}
+             ${layoutKey ? `data-ad-layout-key="${layoutKey}"` : ''}></ins>
+      `;
+
+      // Push to AdSense
+      try {
+        pushAd({});
+      } catch (error) {
+        console.error('Failed to load AdSense ad:', error);
+        // Fallback to placeholder
         adElement.innerHTML = `
           <div class="w-full h-full bg-muted border border-border rounded-md flex items-center justify-center text-muted-foreground text-sm">
             ${placeholder}
@@ -38,9 +67,9 @@ export const AdSlot = ({ id, className = "", placeholder = "Pubblicità" }: AdSl
       }
     };
 
-    const timer = setTimeout(loadAds, 100);
+    const timer = setTimeout(loadAdSense, 100);
     return () => clearTimeout(timer);
-  }, [hasConsent, isAdsEnabled, placeholder]);
+  }, [hasConsent, isAdsEnabled, id, placeholder]);
 
   if (!isAdsEnabled) {
     return null;
