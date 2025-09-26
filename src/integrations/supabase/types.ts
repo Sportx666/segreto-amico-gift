@@ -289,6 +289,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "events_admin_profile_id_fkey"
+            columns: ["admin_profile_id"]
+            isOneToOne: false
+            referencedRelation: "safe_profile_display"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "events_previous_event_id_fkey"
             columns: ["previous_event_id"]
             isOneToOne: false
@@ -475,6 +482,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "participants_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "safe_profile_display"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profiles: {
@@ -646,7 +660,27 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      safe_profile_display: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       create_or_get_join_token: {
@@ -672,12 +706,11 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      get_event_member_profile: {
+      get_event_member_display_info: {
         Args: { member_profile_id: string }
         Returns: {
           avatar_url: string
           display_name: string
-          family_group: string
           id: string
         }[]
       }
