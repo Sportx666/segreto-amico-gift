@@ -75,7 +75,7 @@ export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssign
       let receiverName = 'Il tuo destinatario';
       if (assignmentData.participants?.profile_id) {
         const { data: profileData } = await supabase
-          .rpc('get_event_member_profile', { 
+          .rpc('get_event_member_display_info', { 
             member_profile_id: assignmentData.participants.profile_id 
           });
         

@@ -70,7 +70,7 @@ export function UserAssignment({ eventId, eventStatus, onRevealAnimation }: User
 
         // Use secure function to get only safe profile fields
         const { data: receiverData, error: receiverError } = await supabase
-          .rpc('get_event_member_profile', { 
+          .rpc('get_event_member_display_info', { 
             member_profile_id: participantData.profile_id 
           });
 

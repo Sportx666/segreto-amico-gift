@@ -289,13 +289,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "events_admin_profile_id_fkey"
-            columns: ["admin_profile_id"]
-            isOneToOne: false
-            referencedRelation: "safe_profile_display"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "events_previous_event_id_fkey"
             columns: ["previous_event_id"]
             isOneToOne: false
@@ -482,13 +475,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "participants_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "safe_profile_display"
-            referencedColumns: ["id"]
-          },
         ]
       }
       profiles: {
@@ -660,27 +646,7 @@ export type Database = {
       }
     }
     Views: {
-      safe_profile_display: {
-        Row: {
-          avatar_url: string | null
-          created_at: string | null
-          display_name: string | null
-          id: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string | null
-          display_name?: string | null
-          id?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string | null
-          display_name?: string | null
-          id?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       create_or_get_join_token: {
