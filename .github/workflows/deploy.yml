@@ -1,0 +1,54 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://eociecgrdwllggcohmko.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvY2llY2dyZHdsbGdnY29obWtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzODc5ODcsImV4cCI6MjA3MTk2Mzk4N30.frsU_PCHKJdz8lFv2IXqOiUVFwk28hXbZGWZAoYFfBY
+          VITE_SUPABASE_PROJECT_ID: eociecgrdwllggcohmko
+          VITE_PUBLIC_BASE_URL: https://amicosegreto.fun
+          VITE_AUTH_REDIRECT_OVERRIDE: https://amicosegreto.fun
+          VITE_ADS_ENABLED: true
+          VITE_ADSENSE_EDGE_LEFT_SLOT: ${{ secrets.ADSENSE_EDGE_LEFT_SLOT }}
+          VITE_ADSENSE_EDGE_RIGHT_SLOT: ${{ secrets.ADSENSE_EDGE_RIGHT_SLOT }}
+          VITE_ADSENSE_MOBILE_FEED_SLOT: ${{ secrets.ADSENSE_MOBILE_FEED_SLOT }}
+          VITE_AMAZON_PARTNER_TAG: sportyx06-20
+          VITE_I18N_ENABLED: false
+
+      - name: Deploy to Hostinger via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./dist/
+          server-dir: ./public_html/
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
