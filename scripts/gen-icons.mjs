@@ -1,6 +1,6 @@
 import sharp from "sharp";
 
-const src = "src/img/logo_01.png";
+const src = "src/img/logo.png";
 
 await sharp(src).resize(192, 192).toFile("public/android-chrome-192x192.png");
 await sharp(src).resize(512, 512).toFile("public/android-chrome-512x512.png");

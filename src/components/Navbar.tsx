@@ -7,9 +7,10 @@ import { useI18n } from "@/i18n";
 import { NotificationBell } from "./NotificationBell";
 import { LanguageMenu } from "./LanguageMenu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Gift, Calendar, Lightbulb, User, LogOut, Heart } from "lucide-react";
+import { Calendar, Lightbulb, User, LogOut, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import logo from "@/assets/logo.png";
 
 export const Navbar = () => {
   const { user, loading } = useAuth();
@@ -64,7 +65,7 @@ export const Navbar = () => {
             className="flex items-center gap-2 group focus-ring rounded-lg p-1"
             aria-label="Torna alla homepage"
           >
-            <Gift className="w-6 h-6 text-primary transition-transform group-hover:scale-110" />
+            <img src={logo} alt="Amico Segreto Logo" className="w-6 h-6 transition-transform group-hover:scale-110" />
             <span className="font-bold text-xl bg-gradient-primary bg-clip-text text-transparent">
               Amico Segreto
             </span>
@@ -114,7 +115,7 @@ export const Navbar = () => {
             className="flex items-center gap-2 group"
             aria-label="Torna alla homepage"
           >
-            <Gift className="w-6 h-6 text-primary transition-transform group-hover:scale-110" />
+            <img src={logo} alt="Amico Segreto Logo" className="w-6 h-6 transition-transform group-hover:scale-110" />
             <span className="font-bold text-xl bg-gradient-primary bg-clip-text text-transparent">
               Amico Segreto
             </span>

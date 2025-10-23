@@ -6,13 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Mail, Gift, Chrome, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, Chrome, Lock, Eye, EyeOff } from "lucide-react";
 import { getOAuthRedirectUrl, getMagicLinkRedirectUrl } from "@/lib/auth-urls";
 import { Tabs as TabsComponent, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import PasswordReset from "@/components/PasswordReset";
 import PasswordSetup from "@/components/PasswordSetup";
-import GoogleButton from 'react-google-button'
+import GoogleButton from 'react-google-button';
+import logo from "@/assets/logo.png";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -171,8 +172,8 @@ const Auth = () => {
       <div className="w-full max-w-md">
         <Card className="shadow-elegant border-0 bg-white/95 backdrop-blur-sm">
           <CardHeader className="text-center space-y-4 sm:space-y-6 pb-4 sm:pb-6 px-4 sm:px-6">
-            <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-gradient-primary rounded-full flex items-center justify-center shadow-glow">
-              <Gift className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+            <div className="mx-auto w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+              <img src={logo} alt="Amico Segreto Logo" className="w-full h-full object-contain" />
             </div>
             <div className="space-y-1 sm:space-y-2">
               <CardTitle className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">

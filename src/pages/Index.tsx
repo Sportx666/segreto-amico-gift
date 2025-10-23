@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdSlot } from "@/components/AdSlot";
 import { Gift, Heart, Users, Sparkles, Calendar } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 interface IndexProps {
   showMobileFeed?: boolean;
@@ -74,8 +75,8 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
       <div className="relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 py-16 text-center">
           <div className="space-y-6">
-            <div className="mx-auto w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-              <Gift className="w-10 h-10 text-white" />
+            <div className="mx-auto w-24 h-24 flex items-center justify-center">
+              <img src={logo} alt="Amico Segreto Logo" className="w-full h-full object-contain drop-shadow-2xl" />
             </div>
             <div>
               <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
