@@ -1,30 +1,91 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>amico-segreto</title>
-    <meta name="description" content="Amico Segreto - organizza il tuo scambio regali segreto">
-    <meta name="author" content="Lovable" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    
-    <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9283228458809671"
-     crossorigin="anonymous"></script>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <meta property="og:title" content="segreto-amico-gift" />
-    <meta property="og:description" content="Lovable Generated Project" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/LdFmIe5ULeXOBJWhSvtbaD9JG5i2/social-images/social-1757938107713-logo.png">
+  <!-- Page basics -->
+  <title>L’Amico Segreto — Organizza il Secret Santa in 60 secondi | amicosegreto.fun</title>
+  <meta name="description" content="Gioco di Natale semplice: fai un solo regalo ben pensato, entro un budget. Con amicosegreto.fun crei il gruppo, inviti su WhatsApp e il sorteggio è automatico." />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="theme-color" content="#102418" />
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/LdFmIe5ULeXOBJWhSvtbaD9JG5i2/social-images/social-1757938107713-logo.png">
-  </head>
+  <!-- Language / canonical -->
+  <link rel="canonical" href="https://amicosegreto.fun/" />
+  <meta http-equiv="content-language" content="it-IT" />
 
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+  <!-- Icons / PWA -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="apple-mobile-web-app-title" content="L’Amico Segreto" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+  <!-- Open Graph (WhatsApp/FB/IG) -->
+  <meta property="og:locale" content="it_IT" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="amicosegreto.fun" />
+  <meta property="og:title" content="L’Amico Segreto — Organizza il Secret Santa in 60 secondi" />
+  <meta property="og:description" content="Crea il gruppo, invita su WhatsApp, sorteggio automatico. Meno spesa, più significato." />
+  <meta property="og:url" content="https://amicosegreto.fun/" />
+  <meta property="og:image" content="https://amicosegreto.fun/pwa-512x512.png" />
+  <meta property="og:image:width" content="512" />
+  <meta property="og:image:height" content="512" />
+  <meta property="og:image:alt" content="Amico Segreto: crea gruppo, inviti su WhatsApp, sorteggio automatico" />
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="L’Amico Segreto — Organizza il Secret Santa in 60 secondi" />
+  <meta name="twitter:description" content="Crea il gruppo, invita su WhatsApp, sorteggio automatico. Meno spesa, più significato." />
+  <meta name="twitter:image" content="https://amicosegreto.fun/pwa-512x512.png" />
+  <meta name="twitter:image:alt" content="Amico Segreto: crea gruppo, inviti su WhatsApp, sorteggio automatico" />
+
+  <!-- AdSense (ok to keep while pending approval) -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9283228458809671" crossorigin="anonymous"></script>
+
+  <!-- Structured Data: WebApplication (helps understanding the app) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "L’Amico Segreto",
+    "url": "https://amicosegreto.fun/",
+    "applicationCategory": "LifestyleApplication",
+    "operatingSystem": "Web",
+    "inLanguage": "it-IT",
+    "description": "Organizza l’Amico Segreto in un minuto: crea il gruppo, invita su WhatsApp e il sorteggio avviene in automatico.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "EUR"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "amicosegreto.fun",
+      "url": "https://amicosegreto.fun/"
+    }
+  }
+  </script>
+
+  <!-- Structured Data: FAQ (rich results for “Cos’è l’Amico Segreto?”) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [{
+      "@type": "Question",
+      "name": "Che cos’è l’Amico Segreto?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "È un gioco di Natale: a ciascuno viene assegnato in segreto il nome di una persona a cui fare un solo regalo entro un budget. L’identità si rivela il giorno dello scambio."
+      }
+    },{
+      "@type": "Question",
+      "name": "Come funziona l’app amicosegreto.fun?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Imposti budget e data, crei il gruppo e condividi un link su WhatsApp. L’app gestisce le adesioni e fa il sorteggio in automatico."
+      }
+    }]
+  }
+  </script>
+</head>
