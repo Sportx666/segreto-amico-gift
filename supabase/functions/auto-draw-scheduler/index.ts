@@ -93,12 +93,12 @@ serve(async (req) => {
           assignedCount: drawResult.assignedCount
         })
 
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(`Error processing event ${event.id}:`, error)
         results.push({
           eventId: event.id,
           status: 'error',
-          error: error.message
+          error: error instanceof Error ? error.message : 'Unknown error'
         })
       }
     }
@@ -115,12 +115,12 @@ serve(async (req) => {
       }
     )
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Auto-draw scheduler error:', error)
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: error instanceof Error ? error.message : 'Unknown error' 
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
