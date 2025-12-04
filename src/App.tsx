@@ -83,8 +83,8 @@ const AppContent = () => {
 
       <Footer />
       
-      {/* Consent Banner */}
-      {showBanner && (
+      {/* Consent Banner - only shown when ads are enabled */}
+      {import.meta.env.VITE_ADS_ENABLED === 'true' && showBanner && (
         <ConsentBanner onAccept={acceptConsent} onReject={rejectConsent} />
       )}
     </div>
