@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react';
 import itTranslations from './it.json';
 import enTranslations from './en.json';
+import { featureFlags } from '@/lib/featureFlags';
 
 export type Language = 'it' | 'en';
 
@@ -21,10 +22,8 @@ export interface I18nContextType {
 
 export const I18nContext = createContext<I18nContextType | null>(null);
 
-const isI18nEnabled = import.meta.env.VITE_I18N_ENABLED !== 'false';
-
 export const useI18n = () => {
-  if (!isI18nEnabled) {
+  if (!featureFlags.i18n) {
     // Return Italian-only context when disabled
     return {
       language: 'it' as Language,

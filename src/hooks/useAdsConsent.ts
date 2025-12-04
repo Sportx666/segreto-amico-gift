@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-
-const isAdsEnabled = import.meta.env.VITE_ADS_ENABLED === 'true';
+import { featureFlags } from "@/lib/featureFlags";
 
 export const useAdsConsent = () => {
   const [hasConsent, setHasConsent] = useState<boolean | null>(null);
@@ -8,7 +7,7 @@ export const useAdsConsent = () => {
 
   useEffect(() => {
     // Skip consent logic entirely when ads are disabled
-    if (!isAdsEnabled) {
+    if (!featureFlags.ads) {
       setHasConsent(false);
       setShowBanner(false);
       return;

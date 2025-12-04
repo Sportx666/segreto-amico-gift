@@ -2,12 +2,11 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useI18n } from '@/i18n';
 import { Globe } from 'lucide-react';
-
-const isI18nEnabled = import.meta.env.VITE_I18N_ENABLED !== 'false';
+import { featureFlags } from '@/lib/featureFlags';
 
 export function LanguageMenu() {
   // Hide language menu when i18n is disabled
-  if (!isI18nEnabled) {
+  if (!featureFlags.i18n) {
     return null;
   }
 

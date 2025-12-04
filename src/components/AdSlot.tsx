@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { getAdUnitConfig, initializeAdSense, pushAd } from "@/lib/adsense";
+import { featureFlags } from "@/lib/featureFlags";
 
 interface AdSlotProps {
   id: string;
@@ -11,20 +12,15 @@ interface AdSlotProps {
 export const AdSlot = ({ id, className = "", placeholder = "Pubblicità" }: AdSlotProps) => {
   const adRef = useRef<HTMLDivElement>(null);
   const [hasConsent, setHasConsent] = useState(false);
-  const [isAdsEnabled, setIsAdsEnabled] = useState(false);
 
   useEffect(() => {
-    // Check env flag
-    const adsEnabled = import.meta.env.VITE_ADS_ENABLED === 'true';
-    setIsAdsEnabled(adsEnabled);
-
     // Check consent
     const consent = localStorage.getItem("ads-consent");
     setHasConsent(consent === "accepted");
   }, []);
 
   useEffect(() => {
-    if (!hasConsent || !isAdsEnabled || !adRef.current) return;
+    if (!hasConsent || !featureFlags.ads || !adRef.current) return;
 
     const loadAdSense = () => {
       const adConfig = getAdUnitConfig(id);
@@ -69,9 +65,9 @@ export const AdSlot = ({ id, className = "", placeholder = "Pubblicità" }: AdSl
 
     const timer = setTimeout(loadAdSense, 100);
     return () => clearTimeout(timer);
-  }, [hasConsent, isAdsEnabled, id, placeholder]);
+  }, [hasConsent, id, placeholder]);
 
-  if (!isAdsEnabled) {
+  if (!featureFlags.ads) {
     return null;
   }
 

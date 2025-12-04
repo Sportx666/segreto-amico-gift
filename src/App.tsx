@@ -10,6 +10,7 @@ import { AdSlot } from "@/components/AdSlot";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useAdsConsent } from "@/hooks/useAdsConsent";
 import { getAdSlotsForRoute } from "@/lib/adsConfig";
+import { featureFlags } from "@/lib/featureFlags";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Events from "./pages/Events";
@@ -84,7 +85,7 @@ const AppContent = () => {
       <Footer />
       
       {/* Consent Banner - only shown when ads are enabled */}
-      {import.meta.env.VITE_ADS_ENABLED === 'true' && showBanner && (
+      {featureFlags.ads && showBanner && (
         <ConsentBanner onAccept={acceptConsent} onReject={rejectConsent} />
       )}
     </div>

@@ -1,15 +1,14 @@
 import { ReactNode, useState, useEffect } from 'react';
 import { I18nContext, Language, createTranslator, getDefaultLanguage, saveLanguage } from '@/i18n';
+import { featureFlags } from '@/lib/featureFlags';
 
 interface I18nProviderProps {
   children: ReactNode;
 }
 
-const isI18nEnabled = import.meta.env.VITE_I18N_ENABLED !== 'false';
-
 export function I18nProvider({ children }: I18nProviderProps) {
   // If i18n is disabled, just render children without provider context
-  if (!isI18nEnabled) {
+  if (!featureFlags.i18n) {
     return <>{children}</>;
   }
 
