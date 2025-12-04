@@ -36,9 +36,10 @@ export const adsConfig = {
   }
 };
 
+import { featureFlags } from './featureFlags';
+
 export const isAdsEnabledForRoute = (path: string): boolean => {
-  const adsEnabled = import.meta.env.VITE_ADS_ENABLED === 'true';
-  if (!adsEnabled) return false;
+  if (!featureFlags.ads) return false;
 
   // Direct match first
   if (adsConfig.routes[path as keyof typeof adsConfig.routes]) {
