@@ -16,7 +16,7 @@ import { ProductsGrid } from "@/components/ProductsGrid";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonGrid } from "@/components/ui/skeleton-grid";
-import { Search, SquarePen, Trash2, Plus, ExternalLink, Heart } from "lucide-react";
+import { ArrowLeft, Search, SquarePen, Trash2, Plus, ExternalLink, Heart } from "lucide-react";
 import { withAffiliateTag, productUrlFromASIN } from "@/lib/amazon";
 import { WishlistItem } from "@/components/WishlistItem";
 
@@ -395,8 +395,20 @@ export default function Wishlist() {
   const hasWishlists = wishlists && wishlists.length > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-subtle py-6">
-      <div className="container max-w-4xl">
+    <div className="min-h-screen bg-gradient-subtle">
+      {/* Back Button Bar - Between Navbar and Content */}
+      <div className="container max-w-4xl py-2 md:py-3">
+        <Button
+          variant="ghost"
+          onClick={() => window.history.back()}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Torna indietro
+        </Button>
+      </div>
+
+      <div className="container max-w-4xl pb-6">
         {/* Clean Header - Only "Nuova lista" button */}
         <PageHeader
           title={selectedWishlistTitle ?? "Le mie liste dei desideri"}

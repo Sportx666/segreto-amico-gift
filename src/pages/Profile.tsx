@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PageHeader } from "@/components/ui/page-header";
 import { uploadImage, resizeToWebP } from "@/lib/upload";
 import { toast } from "sonner";
-import { Trash2, Upload, User } from "lucide-react";
+import { ArrowLeft, Trash2, Upload, User } from "lucide-react";
 import AccountSettings from "@/components/AccountSettings";
 import { NotificationSettings } from '@/components/NotificationSettings';
 
@@ -165,14 +165,27 @@ const Profile = () => {
   }
 
   return (
-    <div className="container max-w-4xl mx-auto py-4 sm:py-6 md:py-8 px-3 sm:px-4 md:px-6">
-      <div className="space-y-4 sm:space-y-6">
-        <div className="px-1">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Profilo</h1>
-          <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
-            Gestisci le tue impostazioni e preferenze
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-subtle">
+      {/* Back Button Bar - Between Navbar and Content */}
+      <div className="container max-w-4xl py-2 md:py-3">
+        <Button
+          variant="ghost"
+          onClick={() => window.history.back()}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Torna indietro
+        </Button>
+      </div>
+
+      <div className="container max-w-4xl mx-auto pb-4 sm:pb-6 md:pb-8 px-3 sm:px-4 md:px-6">
+        <div className="space-y-4 sm:space-y-6">
+          <div className="px-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Profilo</h1>
+            <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
+              Gestisci le tue impostazioni e preferenze
+            </p>
+          </div>
         {/* Profile Form */}
         <div className="grid gap-4 sm:gap-6 md:gap-8 md:grid-cols-3">
           <div className="md:col-span-2 order-2 md:order-1">
@@ -332,15 +345,16 @@ const Profile = () => {
         <AccountSettings />
       </div>
       
-      <div className="flex justify-end mt-4 sm:mt-6 px-1">
-        <Button 
-          onClick={handleSave} 
-          disabled={uploadingAvatar}
+        <div className="flex justify-end mt-4 sm:mt-6 px-1">
+          <Button 
+            onClick={handleSave} 
+            disabled={uploadingAvatar}
           size="lg"
           className="w-full xs:w-auto"
         >
-          {uploadingAvatar ? t('profile.saving') : t('profile.save_changes')}
-        </Button>
+            {uploadingAvatar ? t('profile.saving') : t('profile.save_changes')}
+          </Button>
+        </div>
       </div>
     </div>
   );
