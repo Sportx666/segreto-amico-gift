@@ -198,6 +198,19 @@ export default function EventDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
+      {/* Back Button Bar - Between Navbar and Content */}
+      <div className="container max-w-6xl py-2 md:py-3">
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/events")}
+          className="text-muted-foreground hover:text-foreground focus-ring"
+          aria-label="Torna alla lista eventi"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Torna agli eventi
+        </Button>
+      </div>
+
       {/* Hero Section with Cover Image */}
       <div className="relative">
         <div className="aspect-16-9 md:aspect-[3/1] lg:aspect-[4/1] overflow-hidden bg-gradient-primary">
@@ -289,16 +302,6 @@ export default function EventDetailPage() {
 
       <div className="container max-w-6xl py-6">
         <main id="main-content" className="focus:outline-none" tabIndex={-1}>
-          {/* Back Button */}
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/events")}
-            className="mb-6 text-muted-foreground hover:text-foreground focus-ring"
-            aria-label="Torna alla lista eventi"
-          >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Torna agli eventi
-        </Button>
         {/* Sticky Tabs */}
         <nav 
           className="sticky top-0 z-40 bg-gradient-subtle/80 backdrop-blur-sm pb-6"

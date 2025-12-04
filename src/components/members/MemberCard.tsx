@@ -280,8 +280,8 @@ export const MemberCard = ({
               </div>
             </div>
 
-            {/* Actions */}
-            {userRole === 'admin' && (
+            {/* Actions - Hide delete buttons if this is the admin's own card */}
+            {userRole === 'admin' && !(member.role === 'admin' && currentUserParticipantId === member.participant_id) && (
               <div className="flex flex-col gap-1">
                 {member.status === 'invited' && eventStatus === 'pending' && (
                   <Button

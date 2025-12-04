@@ -141,16 +141,20 @@ const EventEdit = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle p-4">
-      <div className="max-w-md mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-subtle">
+      {/* Back Button Bar - Between Navbar and Content */}
+      <div className="container max-w-md py-2 md:py-3">
         <Button
           variant="ghost"
           onClick={() => navigate(`/events/${id}`)}
-          className="mb-4 text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Torna all'evento
         </Button>
+      </div>
+
+      <div className="max-w-md mx-auto px-4 pb-4 space-y-6">
 
         <Card className="shadow-elegant border-0 bg-white/95 backdrop-blur-sm">
           <CardHeader className="text-center">
