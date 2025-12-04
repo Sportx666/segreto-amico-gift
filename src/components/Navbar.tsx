@@ -227,8 +227,8 @@ export const Navbar = () => {
         </div>
       </div>
       
-      {/* Spacer for mobile bottom navigation */}
-      <div className="md:hidden h-16"></div>
+      {/* Spacer for mobile bottom navigation - reduced height for tighter gap */}
+      <div className="md:hidden h-14"></div>
     </>
   );
 };

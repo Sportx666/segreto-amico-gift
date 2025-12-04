@@ -136,15 +136,23 @@ const Auth = () => {
     navigate(next);
   };
 
-  // Check if we should show password setup after magic link login
+  // Check if we should show password setup after magic link login or handle password recovery
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Handle password recovery flow
+      if (event === 'PASSWORD_RECOVERY') {
+        // User clicked password reset link - show password setup
+        setShowPasswordSetup(true);
+        return;
+      }
+
       if (event === 'SIGNED_IN' && session?.user) {
         // Check if this is a new user from magic link who doesn't have password
         const isNewUser = session.user.created_at === session.user.last_sign_in_at;
+        const hasPasswordSet = session.user.user_metadata?.password_set === true;
         const signedInWithMagicLink = !session.user.app_metadata?.providers?.includes('password');
         
-        if (isNewUser && signedInWithMagicLink) {
+        if (isNewUser && signedInWithMagicLink && !hasPasswordSet) {
           // Show password setup for new magic link users
           setTimeout(() => setShowPasswordSetup(true), 1000);
         }

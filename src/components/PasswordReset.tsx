@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Mail, ArrowLeft, RotateCcw } from "lucide-react";
-import { getMagicLinkRedirectUrl } from "@/lib/auth-urls";
 
 interface PasswordResetProps {
   onBack: () => void;
@@ -24,8 +23,10 @@ const PasswordReset = ({ onBack }: PasswordResetProps) => {
     setLoading(true);
     
     try {
+      // Use auth page for recovery flow - this triggers PASSWORD_RECOVERY event
+      const redirectUrl = `${window.location.origin}/auth`;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: getMagicLinkRedirectUrl('/')
+        redirectTo: redirectUrl
       });
 
       if (error) throw error;

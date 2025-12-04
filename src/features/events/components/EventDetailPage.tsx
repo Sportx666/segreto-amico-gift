@@ -7,7 +7,6 @@ import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, Users, Gift, Share2, Shuffle, Ban, ImageUp, Trash2, MessageCircle, Edit } from "lucide-react";
@@ -217,12 +216,36 @@ export default function EventDetailPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
         </div>
 
+        {/* Admin Controls - Top Right in Hero */}
+        {userRole === 'admin' && (
+          <div className="absolute top-3 right-3 md:top-4 md:right-4 flex items-center gap-2">
+            {event.draw_status !== 'completed' && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => navigate(`/events/${event.id}/edit`)}
+                className="h-8 w-8 p-0 bg-white/90 hover:bg-white text-foreground"
+              >
+                <Edit className="w-4 h-4" />
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => setShowDeleteDialog(true)}
+              className="h-8 w-8 p-0"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
+
         {/* Title overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
+        <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8">
           <div className="container max-w-6xl">
-            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div className="space-y-2">
-                <h1 className="text-2xl md:text-4xl font-bold text-white">
+                <h1 className="text-xl md:text-4xl font-bold text-white">
                   {event.name}
                 </h1>
                 <div className="flex flex-col gap-1 text-white/90">
@@ -240,13 +263,22 @@ export default function EventDetailPage() {
                       </span>
                     </div>
                   )}
+                  {/* Budget - shown in overlay on mobile */}
+                  {event.budget && (
+                    <div className="flex items-center gap-2">
+                      <Gift className="w-4 h-4" />
+                      <span className="text-xs md:text-sm opacity-80">
+                        Budget: €{event.budget}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 {getStatusBadge(event.draw_status)}
                 {userRole === 'admin' && (
-                  <Badge variant="outline" className="bg-white/10 border-white/20 text-white">
-                    Amministratore
+                  <Badge variant="outline" className="bg-white/10 border-white/20 text-white text-xs">
+                    Admin
                   </Badge>
                 )}
               </div>
@@ -267,71 +299,6 @@ export default function EventDetailPage() {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Torna agli eventi
         </Button>
-
-        {/* Event Info Card */}
-        <Card className="mb-6 shadow-card border-0 bg-white/80 backdrop-blur-sm">
-          <CardContent className="p-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
-                {event.budget && (
-                  <div className="flex items-center gap-2">
-                    <Gift className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">Budget: €{event.budget}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Admin Controls */}
-              <div className="flex items-center gap-2">
-                {userRole === 'admin' && event.draw_status !== 'completed' && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => navigate(`/events/${event.id}/edit`)}
-                      className="hidden sm:flex"
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      Modifica Evento
-                    </Button>
-
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => navigate(`/events/${event.id}/edit`)}
-                      className="sm:hidden"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                  </>
-                )}
-                {userRole === 'admin' && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => setShowDeleteDialog(true)}
-                      className="hidden sm:flex"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Rimuovi Evento
-                    </Button>
-
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => setShowDeleteDialog(true)}
-                      className="sm:hidden"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Sticky Tabs */}
         <nav 
           className="sticky top-0 z-40 bg-gradient-subtle/80 backdrop-blur-sm pb-6"
