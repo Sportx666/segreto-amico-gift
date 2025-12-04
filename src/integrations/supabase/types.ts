@@ -664,14 +664,8 @@ export type Database = {
         Args: { _event_id: string; _profile_id: string }
         Returns: Json
       }
-      generate_join_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_join_token: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_join_code: { Args: never; Returns: string }
+      generate_join_token: { Args: never; Returns: string }
       get_event_member_display_info: {
         Args: { member_profile_id: string }
         Returns: {
@@ -681,7 +675,7 @@ export type Database = {
         }[]
       }
       get_own_profile: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           address: string
           avatar_url: string
@@ -694,18 +688,9 @@ export type Database = {
           postal_code: string
         }[]
       }
-      get_user_email: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      is_event_admin: {
-        Args: { eid: string; uid: string }
-        Returns: boolean
-      }
-      is_event_member: {
-        Args: { eid: string; uid: string }
-        Returns: boolean
-      }
+      get_user_email: { Args: never; Returns: string }
+      is_event_admin: { Args: { eid: string; uid: string }; Returns: boolean }
+      is_event_member: { Args: { eid: string; uid: string }; Returns: boolean }
       is_event_participant: {
         Args: { _event_id: string; _user_id: string }
         Returns: boolean
@@ -726,10 +711,7 @@ export type Database = {
         Args: { _event_id: string; _participant_id: string }
         Returns: Json
       }
-      reset_event_draw: {
-        Args: { _event_id: string }
-        Returns: undefined
-      }
+      reset_event_draw: { Args: { _event_id: string }; Returns: undefined }
       update_profile_display_name: {
         Args: { _name: string; _profile_id: string }
         Returns: undefined
