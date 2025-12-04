@@ -48,8 +48,10 @@ const PasswordSetup = ({ onComplete, onSkip }: PasswordSetupProps) => {
     setLoading(true);
     
     try {
+      // Update password AND set the password_set flag in user_metadata
       const { error } = await supabase.auth.updateUser({
-        password: password
+        password: password,
+        data: { password_set: true }
       });
 
       if (error) throw error;

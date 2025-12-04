@@ -21,17 +21,21 @@ export function usePasswordAuth(): UsePasswordAuthReturn {
     }
 
     try {
-      // Check if user has password set by examining user metadata
-      // Users who signed up with password will have different metadata than magic link users
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       
       if (currentUser) {
-        // If user has app_metadata.provider === 'email' and no phone, likely has password
-        // This is a heuristic since Supabase doesn't expose password status directly
+        // Check multiple indicators for password presence:
+        // 1. user_metadata.password_set flag (set by PasswordSetup)
+        // 2. identities array contains an email identity
+        // 3. app_metadata.providers includes 'email'
+        const passwordSetFlag = currentUser.user_metadata?.password_set === true;
+        const hasEmailIdentity = currentUser.identities?.some(
+          (identity) => identity.provider === 'email'
+        );
         const hasEmailProvider = currentUser.app_metadata?.providers?.includes('email');
-        const signedUpWithPassword = currentUser.user_metadata?.password_set === true;
         
-        setHasPassword(hasEmailProvider && (signedUpWithPassword || false));
+        // User has password if any reliable indicator is true
+        setHasPassword(passwordSetFlag || (hasEmailIdentity && hasEmailProvider) || false);
       }
       
       setLoading(false);
