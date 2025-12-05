@@ -7,7 +7,8 @@ import { AdSlot } from "@/components/AdSlot";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonGrid } from "@/components/ui/skeleton-grid";
-import { Plus, Calendar, Users, Euro, Edit, Shuffle } from "lucide-react";
+import { Plus, Calendar, Users, Euro, Edit, Shuffle, Home } from "lucide-react";
+import { useI18n } from "@/i18n";
 import { toast } from "sonner";
 import { useAuth } from "@/components/AuthProvider";
 import { getOrCreateParticipantId } from "@/lib/participants";
@@ -36,6 +37,7 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [diag, setDiag] = useState<any>({});
+  const { t } = useI18n();
 
   useEffect(() => {
     if (authLoading) return;
@@ -109,11 +111,23 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle py-6">
-      <div className="container max-w-6xl">
+    <div className="min-h-screen bg-gradient-subtle">
+      {/* Home Button Bar - Between Navbar and Content */}
+      <div className="container max-w-6xl py-2 md:py-3">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/')}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <Home className="w-4 h-4 mr-2" />
+          {t('buttons.home')}
+        </Button>
+      </div>
+      
+      <div className="container max-w-6xl pb-6">
         <PageHeader
-          title="I Miei Eventi"
-          description="Gestisci i tuoi scambi di regali"
+          title={t('events.my_events')}
+          description={t('events.manage_events')}
         >
           <Link to="/events/new">
             <Button className="bg-gradient-primary hover:bg-primary-light shadow-card hover:shadow-elegant transition-all duration-300">
@@ -235,6 +249,7 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
             </div>
           </>
         )}
+        </div>
       </div>
     </div>
   );

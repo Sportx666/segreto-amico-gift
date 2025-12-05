@@ -14,7 +14,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHeader } from "@/components/ui/section-header";
 import { ProductSelectionDialog } from "./ProductSelectionDialog";
-import { Search } from "lucide-react";
+import { Search, Home } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import { useI18n } from "@/i18n";
 import { useAddProductForUser, useUserWishlists } from "@/features/wishlist/hooks/useWishlist";
 import { type Product } from "@/services/wishlist";
@@ -28,6 +30,7 @@ interface IdeasPageProps {
 export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
   const { user, loading: authLoading, isAuthenticated } = useAuthGuard();
   const { t } = useI18n();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [priceFilter, setPriceFilter] = useState<{min?: number, max?: number}>({});
@@ -106,8 +109,20 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle py-6">
-      <div className="container max-w-6xl">
+    <div className="min-h-screen bg-gradient-subtle">
+      {/* Home Button Bar - Between Navbar and Content */}
+      <div className="container max-w-6xl py-2 md:py-3">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/')}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <Home className="w-4 h-4 mr-2" />
+          {t('buttons.home')}
+        </Button>
+      </div>
+      
+      <div className="container max-w-6xl pb-6">
         <PageHeader
           className="hidden"
           title={t('ideas.title') || "Idee Regalo"}

@@ -10,19 +10,51 @@
     "login": "Login",
     "signup": "Sign Up"
   },
+  "buttons": {
+    "home": "Home",
+    "back": "Back",
+    "create": "Create",
+    "join": "Join",
+    "view_all": "View all",
+    "view_wishlist": "View list"
+  },
   "events": {
     "title": "Your Events",
     "create": "Create Event",
     "join": "Join",
     "share": "Share",
     "members": "Members",
-    "draw": "Draw"
+    "draw": "Draw",
+    "no_events": "No events yet",
+    "no_events_desc": "Create your first gift exchange to get started!",
+    "create_first": "Create First Event",
+    "my_events": "My Events",
+    "manage_events": "Manage your gift exchanges",
+    "event_date": "Event Date",
+    "draw_date": "Draw",
+    "status_pending": "Pending",
+    "status_drawn": "Drawn",
+    "status_completed": "Completed"
+  },
+  "event_detail": {
+    "participants_tab": "Participants",
+    "exclusions_tab": "Exclusions",
+    "draw_tab": "Draw",
+    "chat_tab": "Chat",
+    "assignment_tab": "Your Assignment",
+    "delete_event": "Delete Event",
+    "delete_confirm": "Confirm Deletion",
+    "delete_warning": "Are you sure you want to delete this event? This action cannot be undone."
   },
   "ideas": {
     "title": "Gift Ideas",
     "description": "Find the perfect gift by searching on Amazon",
     "start_search": "Start searching",
-    "search_hint": "Use the categories above or search for something specific to find gift ideas"
+    "search_hint": "Use the categories above or search for something specific to find gift ideas",
+    "results_for": "Results for",
+    "products_found": "products",
+    "sample_data": "sample data",
+    "service_unavailable": "service temporarily unavailable"
   },
   "wishlist": {
     "add": "Add to Wishlist",
@@ -31,7 +63,21 @@
     "purchased": "Purchased",
     "title": "Wishlist",
     "choose_list": "Choose a list",
-    "choose_list_desc": "Select the wishlist where you want to add the product."
+    "choose_list_desc": "Select the wishlist where you want to add the product.",
+    "my_wishlists": "My wishlists",
+    "manage_desc": "Manage your desired products",
+    "new_list": "New list",
+    "active_list": "Active list",
+    "select_list": "Select a list",
+    "no_title": "Untitled list"
+  },
+  "wishlist_preview": {
+    "title": "Wishlist",
+    "no_items": "No items in wishlist",
+    "create_wishlist": "Create wishlist",
+    "add_items": "Add items",
+    "view_full": "View all",
+    "more_items": "more"
   },
   "profile": {
     "title": "Profile",
@@ -116,6 +162,22 @@
     "share_email": "Share via Email",
     "invite_email_subject": "Invitation to join Secret Santa",
     "invite_email_body": "Hello!\\n\\nYou've been invited to participate in a Secret Santa event. Click the link below to join:\\n\\n{link}\\n\\nSee you soon!"
+  },
+  "chat": {
+    "title": "Chat",
+    "unavailable": "Chat unavailable",
+    "min_participants": "Chat will be available when at least 2 participants have joined",
+    "type_message": "Type a message...",
+    "send": "Send"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "new_message": "New message",
+    "private_message": "New private message",
+    "event_message": "wrote in the event chat",
+    "sent_message": "sent you a message",
+    "mark_all_read": "Mark all as read",
+    "no_notifications": "No notifications"
   },
   "errors": {
     "unexpected_error": "An unexpected error occurred. Reload the page to try again.",

@@ -15,6 +15,7 @@ import { copyToClipboard } from "@/lib/utils";
 import { EventMemberNameEditor } from '../EventMemberNameEditor';
 import { absUrl } from "@/lib/url";
 import { WhatsappIcon, WhatsappShareButton } from "react-share";
+import { MemberWishlistPreview } from "./MemberWishlistPreview";
 
 interface Member {
   id: string;
@@ -286,8 +287,16 @@ export const MemberCard = ({
                     </div>
                   </div>
                 )}
-              </div>
             </div>
+            
+            {/* Wishlist Preview - only for joined members */}
+            <MemberWishlistPreview
+              participantId={member.participant_id}
+              eventId={eventId}
+              isCurrentUser={currentUserParticipantId === member.participant_id}
+              memberStatus={member.status}
+            />
+          </div>
 
             {/* Actions */}
             {userRole === 'admin' && (

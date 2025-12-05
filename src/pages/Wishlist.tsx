@@ -16,7 +16,8 @@ import { ProductsGrid } from "@/components/ProductsGrid";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonGrid } from "@/components/ui/skeleton-grid";
-import { ArrowLeft, Search, SquarePen, Trash2, Plus, ExternalLink, Heart } from "lucide-react";
+import { Home, Search, SquarePen, Trash2, Plus, ExternalLink, Heart } from "lucide-react";
+import { useI18n } from "@/i18n";
 import { withAffiliateTag, productUrlFromASIN } from "@/lib/amazon";
 import { WishlistItem } from "@/components/WishlistItem";
 
@@ -53,6 +54,7 @@ interface WishlistRow {
 export default function Wishlist() {
   // Authentication guard - will redirect if not authenticated
   const { user, loading: authLoading, isAuthenticated } = useAuthGuard();
+  const { t } = useI18n();
 
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -396,15 +398,15 @@ export default function Wishlist() {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
-      {/* Back Button Bar - Between Navbar and Content */}
+      {/* Home Button Bar - Between Navbar and Content */}
       <div className="container max-w-4xl py-2 md:py-3">
         <Button
           variant="ghost"
-          onClick={() => window.history.back()}
+          onClick={() => window.location.href = '/'}
           className="text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Torna indietro
+          <Home className="w-4 h-4 mr-2" />
+          {t('buttons.home')}
         </Button>
       </div>
 
