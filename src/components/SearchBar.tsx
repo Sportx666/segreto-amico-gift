@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, X } from "lucide-react";
+import { useI18n } from "@/i18n";
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -13,11 +14,12 @@ interface SearchBarProps {
 
 export const SearchBar = ({ 
   onSearch, 
-  placeholder = "Cerca prodotti su Amazon...", 
+  placeholder, 
   disabled = false,
   value,
   onChangeText,
 }: SearchBarProps) => {
+  const { t } = useI18n();
   const [inner, setInner] = useState("");
   const isControlled = value !== undefined;
   const query = isControlled ? (value as string) : inner;
@@ -45,7 +47,7 @@ export const SearchBar = ({
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={placeholder}
+          placeholder={placeholder || t('search_bar.placeholder')}
           disabled={disabled}
           className="pr-10"
         />
@@ -67,9 +69,8 @@ export const SearchBar = ({
         className="px-6"
       >
         <Search className="w-4 h-4" />
-        <span className="hidden md:inline">Cerca</span>
+        <span className="hidden md:inline">{t('search_bar.search')}</span>
       </Button>
     </form>
   );
 };
-

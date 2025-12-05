@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Eye, EyeOff, Shield, CheckCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useI18n } from "@/i18n";
 
 interface PasswordSetupProps {
   onComplete: () => void;
@@ -14,6 +15,7 @@ interface PasswordSetupProps {
 }
 
 const PasswordSetup = ({ onComplete, onSkip }: PasswordSetupProps) => {
+  const { t } = useI18n();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -29,26 +31,25 @@ const PasswordSetup = ({ onComplete, onSkip }: PasswordSetupProps) => {
   };
 
   const strength = getPasswordStrength(password);
-  const strengthLabel = strength < 50 ? "Debole" : strength < 75 ? "Media" : "Forte";
+  const strengthLabel = strength < 50 ? t('password_setup.weak') : strength < 75 ? t('password_setup.medium') : t('password_setup.strong');
   const strengthColor = strength < 50 ? "bg-destructive" : strength < 75 ? "bg-yellow-500" : "bg-primary";
 
   const handleSetupPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (password !== confirmPassword) {
-      toast.error("Le password non corrispondono");
+      toast.error(t('password_setup.passwords_dont_match'));
       return;
     }
 
     if (password.length < 8) {
-      toast.error("La password deve essere di almeno 8 caratteri");
+      toast.error(t('password_setup.password_too_short'));
       return;
     }
 
     setLoading(true);
     
     try {
-      // Update password AND set the password_set flag in user_metadata
       const { error } = await supabase.auth.updateUser({
         password: password,
         data: { password_set: true }
@@ -56,13 +57,13 @@ const PasswordSetup = ({ onComplete, onSkip }: PasswordSetupProps) => {
 
       if (error) throw error;
 
-      toast.success("Password impostata! 🔒", {
-        description: "Ora puoi accedere più velocemente con email e password."
+      toast.success(t('password_setup.password_set_success'), {
+        description: t('password_setup.password_set_desc')
       });
       onComplete();
     } catch (error: unknown) {
       const description = error instanceof Error ? error.message : undefined;
-      toast.error("Errore nell'impostazione della password", {
+      toast.error(t('password_setup.password_set_error'), {
         description
       });
     } finally {
@@ -80,10 +81,10 @@ const PasswordSetup = ({ onComplete, onSkip }: PasswordSetupProps) => {
             </div>
             <div className="space-y-2">
               <CardTitle className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                Accesso Più Veloce
+                {t('password_setup.title')}
               </CardTitle>
               <CardDescription className="text-base">
-                Imposta una password per accedere senza controllare l'email ogni volta
+                {t('password_setup.description')}
               </CardDescription>
             </div>
           </CardHeader>
@@ -91,12 +92,12 @@ const PasswordSetup = ({ onComplete, onSkip }: PasswordSetupProps) => {
           <CardContent className="space-y-6">
             <form onSubmit={handleSetupPassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="password">Nuova Password</Label>
+                <Label htmlFor="password">{t('password_setup.new_password')}</Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Almeno 8 caratteri"
+                    placeholder={t('password_setup.at_least_8_chars')}
                     className="pr-10"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -120,7 +121,7 @@ const PasswordSetup = ({ onComplete, onSkip }: PasswordSetupProps) => {
                 {password && (
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Sicurezza:</span>
+                      <span className="text-muted-foreground">{t('password_setup.security')}:</span>
                       <span className={`font-medium ${strength < 50 ? "text-destructive" : strength < 75 ? "text-yellow-600" : "text-primary"}`}>
                         {strengthLabel}
                       </span>
@@ -131,11 +132,11 @@ const PasswordSetup = ({ onComplete, onSkip }: PasswordSetupProps) => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Conferma Password</Label>
+                <Label htmlFor="confirmPassword">{t('password_setup.confirm_password')}</Label>
                 <Input
                   id="confirmPassword"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Ripeti la password"
+                  placeholder={t('password_setup.repeat_password')}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
@@ -148,10 +149,10 @@ const PasswordSetup = ({ onComplete, onSkip }: PasswordSetupProps) => {
                 className="w-full bg-gradient-primary hover:bg-primary/90 transition-all duration-300 hover:shadow-glow"
                 disabled={loading || strength < 50}
               >
-                {loading ? "Impostazione..." : (
+                {loading ? t('password_setup.setting_up') : (
                   <>
                     <CheckCircle className="w-4 h-4 mr-2" />
-                    Imposta Password
+                    {t('password_setup.set_password')}
                   </>
                 )}
               </Button>
@@ -159,8 +160,8 @@ const PasswordSetup = ({ onComplete, onSkip }: PasswordSetupProps) => {
 
             <div className="text-center space-y-4">
               <div className="text-xs text-muted-foreground space-y-1">
-                <p>• La password deve contenere almeno 8 caratteri</p>
-                <p>• Usa lettere maiuscole, minuscole e numeri</p>
+                <p>• {t('password_setup.hint_length')}</p>
+                <p>• {t('password_setup.hint_chars')}</p>
               </div>
               
               <Button 
@@ -168,7 +169,7 @@ const PasswordSetup = ({ onComplete, onSkip }: PasswordSetupProps) => {
                 onClick={onSkip}
                 className="text-muted-foreground hover:text-foreground"
               >
-                Salta per ora
+                {t('password_setup.skip_for_now')}
               </Button>
             </div>
           </CardContent>

@@ -3,6 +3,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Gift, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import confetti from "canvas-confetti";
+import { useI18n } from "@/i18n";
 
 interface FirstDrawRevealDialogProps {
   eventId: string;
@@ -11,6 +12,7 @@ interface FirstDrawRevealDialogProps {
 }
 
 export function FirstDrawRevealDialog({ eventId, assignedName, onClose }: FirstDrawRevealDialogProps) {
+  const { t } = useI18n();
   const [isVisible, setIsVisible] = useState(false);
   const [shouldShow, setShouldShow] = useState(false);
 
@@ -25,7 +27,7 @@ export function FirstDrawRevealDialog({ eventId, assignedName, onClose }: FirstD
           .from('participants')
           .select('id')
           .eq('profile_id', user.user.id)
-          .maybeSingle(); // or .maybeSingle() if it might not exist
+          .maybeSingle();
 
         if (pErr || !participant) {
           throw pErr ?? new Error('Participant not found for current user');
@@ -37,11 +39,11 @@ export function FirstDrawRevealDialog({ eventId, assignedName, onClose }: FirstD
           .select('first_reveal_pending')
           .eq('event_id', eventId)
           .eq('giver_id', participant.id)
-          .maybeSingle(); // returns null if not found without throwing
+          .maybeSingle();
 
         if (mErr) throw mErr;
 
-        if (member.first_reveal_pending && assignedName) {
+        if (member?.first_reveal_pending && assignedName) {
           setShouldShow(true);
           setIsVisible(true);
 
@@ -95,13 +97,13 @@ export function FirstDrawRevealDialog({ eventId, assignedName, onClose }: FirstD
 
           {/* Title */}
           <h2 className="text-2xl font-bold text-primary mb-2">
-            🎉 Sorteggio Completato! 🎉
+            {t('first_reveal.title')}
           </h2>
 
           {/* Assigned Name with Animation */}
           <div className="bg-white/50 rounded-lg p-6 mb-4 border border-primary/20">
             <p className="text-sm text-muted-foreground mb-2">
-              Il tuo abbinamento è:
+              {t('first_reveal.your_match_is')}
             </p>
             <div className="text-3xl font-bold text-primary animate-pulse">
               {assignedName}
@@ -110,7 +112,7 @@ export function FirstDrawRevealDialog({ eventId, assignedName, onClose }: FirstD
 
           {/* Message */}
           <p className="text-sm text-muted-foreground">
-            Ora puoi vedere la lista dei desideri e iniziare a pensare al regalo perfetto!
+            {t('first_reveal.message')}
           </p>
 
           {/* Auto-close indicator */}

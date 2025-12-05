@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ideaBucketUrl } from "@/lib/amazon";
+import { useI18n } from "@/i18n";
 
 interface IdeasHeaderProps {
   onBucketClick: (budget: number) => void;
@@ -7,26 +7,19 @@ interface IdeasHeaderProps {
 }
 
 const PRICE_BUCKETS = [5, 10, 20, 50] as const;
-const CATEGORIES = [
-  { id: "ufficio", name: "Ufficio" },
-  { id: "cucina", name: "Cucina" },
-  { id: "tech", name: "Tech" },
-  { id: "bambini", name: "Bambini" },
-  { id: "relax", name: "Relax" },
-  { id: "eco", name: "Eco" },
-  { id: "sport", name: "Sport" },
-  { id: "moda", name: "Moda" },
-];
+const CATEGORY_KEYS = ["office", "kitchen", "tech", "kids", "relax", "eco", "sports", "fashion"] as const;
 
 export const IdeasHeader = ({ onBucketClick, onCategoryClick }: IdeasHeaderProps) => {
+  const { t } = useI18n();
+
   return (
     <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-xl p-6 mb-6">
       <div className="text-center mb-6">
         <h1 className="text-2xl font-bold text-foreground mb-2">
-          🎁 Idee regalo veloci
+          {t('ideas.quick_ideas')}
         </h1>
         <p className="text-muted-foreground">
-          Trova il regalo perfetto senza uscire dalla pagina
+          {t('ideas.quick_ideas_desc')}
         </p>
       </div>
 
@@ -46,15 +39,15 @@ export const IdeasHeader = ({ onBucketClick, onCategoryClick }: IdeasHeaderProps
 
       {/* Category Chips */}
       <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center">
-        {CATEGORIES.map((category) => (
+        {CATEGORY_KEYS.map((categoryKey) => (
           <Button
-            key={category.id}
-            onClick={() => onCategoryClick(category.id)}
+            key={categoryKey}
+            onClick={() => onCategoryClick(categoryKey)}
             variant="secondary"
             size="sm"
             className="rounded-full text-xs sm:text-sm h-8 sm:h-9 px-2.5 sm:px-3"
           >
-            {category.name}
+            {t(`ideas.categories.${categoryKey}`)}
           </Button>
         ))}
       </div>

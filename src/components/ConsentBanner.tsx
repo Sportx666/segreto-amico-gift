@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Cookie, X } from "lucide-react";
+import { Cookie } from "lucide-react";
+import { useI18n } from "@/i18n";
 
 interface ConsentBannerProps {
   onAccept: () => void;
@@ -9,6 +10,7 @@ interface ConsentBannerProps {
 }
 
 export const ConsentBanner = ({ onAccept, onReject }: ConsentBannerProps) => {
+  const { t } = useI18n();
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -40,10 +42,10 @@ export const ConsentBanner = ({ onAccept, onReject }: ConsentBannerProps) => {
             <Cookie className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
             <div className="flex-1">
               <h3 className="font-medium text-card-foreground mb-1">
-                Cookie e Privacy
+                {t('consent_banner.title')}
               </h3>
               <p className="text-sm text-muted-foreground">
-                Utilizziamo cookie per personalizzare contenuti e annunci. Continuando acconsenti al loro uso.
+                {t('consent_banner.description')}
               </p>
             </div>
           </div>
@@ -53,7 +55,7 @@ export const ConsentBanner = ({ onAccept, onReject }: ConsentBannerProps) => {
               onClick={handleAccept}
               className="flex-1"
             >
-              Accetta
+              {t('consent_banner.accept')}
             </Button>
             <Button
               size="sm"
@@ -61,7 +63,7 @@ export const ConsentBanner = ({ onAccept, onReject }: ConsentBannerProps) => {
               onClick={handleReject}
               className="flex-1"
             >
-              Rifiuta
+              {t('consent_banner.reject')}
             </Button>
           </div>
         </CardContent>
