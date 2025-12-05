@@ -4,9 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useI18n } from '@/i18n';
 import { Bell, Check, CheckCheck, Clock, Gift, MessageCircle, CalendarDays } from 'lucide-react';
 import { format } from 'date-fns';
-import { it } from 'date-fns/locale';
+import { it, enUS } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
 const typeIcons = {
@@ -23,7 +24,10 @@ const typeColors = {
 
 export function NotificationBell() {
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
+  const { t, language } = useI18n();
   const [open, setOpen] = useState(false);
+  
+  const dateLocale = language === 'it' ? it : enUS;
 
   const handleNotificationClick = async (notificationId: string, isRead: boolean, notification: any) => {
     if (!isRead) {
@@ -32,13 +36,10 @@ export function NotificationBell() {
     
     // Handle navigation based on notification type
     if (notification.type === 'assignment' && notification.body.includes('evento')) {
-      // Extract event ID from notification body if available
-      // For now, navigate to events page
       window.location.href = '/events';
     } else if (notification.type === 'event') {
       window.location.href = '/events';
     } else if (notification.type === 'chat') {
-      // Navigate to the specific event if event ID is available
       window.location.href = '/events';
     }
     
@@ -69,7 +70,7 @@ export function NotificationBell() {
       
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between p-4 border-b">
-          <h4 className="font-semibold">Notifiche</h4>
+          <h4 className="font-semibold">{t('notifications.title')}</h4>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
@@ -78,7 +79,7 @@ export function NotificationBell() {
               className="text-xs"
             >
               <CheckCheck className="w-4 h-4 mr-1" />
-              Segna tutte lette
+              {t('notifications.mark_all_read')}
             </Button>
           )}
         </div>
@@ -87,12 +88,12 @@ export function NotificationBell() {
           {loading ? (
             <div className="flex items-center justify-center p-4 text-muted-foreground">
               <Clock className="w-4 h-4 mr-2" />
-              Caricamento...
+              {t('notifications.loading')}
             </div>
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-8 text-muted-foreground">
               <Bell className="w-8 h-8 mb-2 opacity-50" />
-              <p>Nessuna notifica</p>
+              <p>{t('notifications.no_notifications')}</p>
             </div>
           ) : (
             <div className="divide-y">
@@ -134,13 +135,13 @@ export function NotificationBell() {
                         
                         <div className="flex items-center gap-2 mt-2">
                           <time className="text-xs text-muted-foreground">
-                            {format(new Date(notification.created_at), 'dd MMM, HH:mm', { locale: it })}
+                            {format(new Date(notification.created_at), 'dd MMM, HH:mm', { locale: dateLocale })}
                           </time>
                           
                           {isRead && (
                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
                               <Check className="w-3 h-3" />
-                              Letta
+                              {t('notifications.read')}
                             </div>
                           )}
                         </div>

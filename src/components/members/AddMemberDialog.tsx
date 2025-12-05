@@ -8,6 +8,7 @@ import { UserPlus, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { useI18n } from "@/i18n";
 import { debugLog } from "@/lib/debug";
 import { absUrl } from "@/lib/url";
 
@@ -18,6 +19,7 @@ interface AddMemberDialogProps {
 
 export const AddMemberDialog = ({ eventId, onMemberAdded }: AddMemberDialogProps) => {
   const { user, session } = useAuth();
+  const { t } = useI18n();
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
@@ -28,18 +30,18 @@ export const AddMemberDialog = ({ eventId, onMemberAdded }: AddMemberDialogProps
     const name = newMemberName.trim();
     const email = newMemberEmail.trim();
     if (!name) {
-      toast.error("Il nome è obbligatorio");
+      toast.error(t('members.name_required'));
       return;
     }
 
     // Debug: Check if we have authentication
     if (!session?.access_token) {
-      toast.error("Non autenticato - riprova");
+      toast.error(t('members.error_session_expired'));
       console.error('No access token available');
       return;
     }
     if (!user?.id) {
-      toast.error("Utente non identificato - riprova");
+      toast.error(t('members.error_session_expired'));
       console.error('No user ID available');
       return;
     }
@@ -52,17 +54,17 @@ export const AddMemberDialog = ({ eventId, onMemberAdded }: AddMemberDialogProps
       });
 
       if (error) {
-        let msg = 'Errore nell\'aggiungere il partecipante';
+        let msg = t('members.error_adding_participant');
         console.error('members-add function error:', error);
 
         if (error.message?.includes('duplicate_email')) {
-          msg = 'Questa email è già stata invitata';
+          msg = t('members.error_duplicate_email');
         } else if (error.message?.includes('Forbidden')) {
-          msg = 'Non hai i permessi per aggiungere partecipanti';
+          msg = t('members.error_no_permission');
         } else if (error.message?.includes('Unauthorized')) {
-          msg = 'Sessione scaduta - ricarica la pagina';
+          msg = t('members.error_session_expired');
         } else if (error.message) {
-          msg = `Errore: ${error.message}`;
+          msg = `${t('common.error')}: ${error.message}`;
         }
 
         toast.error(msg);
@@ -82,16 +84,16 @@ export const AddMemberDialog = ({ eventId, onMemberAdded }: AddMemberDialogProps
           });
 
           if (!emailError) {
-            toast.success('Partecipante aggiunto e email inviata!');
+            toast.success(t('members.participant_added_email_sent'));
           } else {
-            toast.success('Partecipante aggiunto! (Errore nell\'invio email)');
+            toast.success(t('members.participant_added_email_error'));
           }
         } catch (emailError) {
           console.error('Error sending invite email:', emailError);
-          toast.success('Partecipante aggiunto! (Errore nell\'invio email)');
+          toast.success(t('members.participant_added_email_error'));
         }
       } else {
-        toast.success('Partecipante aggiunto!');
+        toast.success(t('members.participant_added'));
       }
 
       setNewMemberName('');
@@ -101,7 +103,7 @@ export const AddMemberDialog = ({ eventId, onMemberAdded }: AddMemberDialogProps
       onMemberAdded();
     } catch (error) {
       console.error('Error adding member via API:', error);
-      toast.error('Errore nell\'aggiungere il partecipante');
+      toast.error(t('members.error_adding_participant'));
     } finally {
       setIsAddingMember(false);
     }
@@ -112,28 +114,28 @@ export const AddMemberDialog = ({ eventId, onMemberAdded }: AddMemberDialogProps
       <DialogTrigger asChild>
         <Button>
           <UserPlus className="w-4 h-4" />
-          <span className="hidden sm:inline">Aggiungi</span>
+          <span className="hidden sm:inline">{t('common.add')}</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Aggiungi Partecipante</DialogTitle>
+          <DialogTitle>{t('members.add_participant')}</DialogTitle>
           <DialogDescription>
-            Aggiungi un nuovo partecipante all'evento
+            {t('members.add_participant_desc')}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="name">Nome *</Label>
+            <Label htmlFor="name">{t('common.name')} *</Label>
             <Input
               id="name"
               value={newMemberName}
               onChange={(e) => setNewMemberName(e.target.value)}
-              placeholder="Nome del partecipante"
+              placeholder={t('common.name')}
             />
           </div>
           <div>
-            <Label htmlFor="email">Email (opzionale)</Label>
+            <Label htmlFor="email">{t('members.email_optional')}</Label>
             <Input
               id="email"
               type="email"
@@ -154,7 +156,7 @@ export const AddMemberDialog = ({ eventId, onMemberAdded }: AddMemberDialogProps
               className={`text-sm ${!newMemberEmail.trim() ? 'text-muted-foreground' : ''}`}
             >
               <Mail className="w-4 h-4 inline mr-2" />
-              Invia email di invito
+              {t('members.send_invite_email')}
             </Label>
           </div>
           <Button
@@ -162,7 +164,7 @@ export const AddMemberDialog = ({ eventId, onMemberAdded }: AddMemberDialogProps
             className="w-full"
             disabled={isAddingMember}
           >
-            {isAddingMember ? "Aggiungendo..." : "Aggiungi Partecipante"}
+            {isAddingMember ? t('common.adding') : t('members.add_participant')}
           </Button>
         </div>
       </DialogContent>

@@ -8,11 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChat } from '@/hooks/useChat';
 import { useNickname } from '@/hooks/useNickname';
 import { useJoinedParticipantCount } from '@/hooks/useJoinedParticipantCount';
+import { useI18n } from '@/i18n';
 import { NicknameManager } from './NicknameManager';
 import { ChatRecipientSelector } from './ChatRecipientSelector';
 import { MessageCircle, Users, Heart, Send, ChevronUp, Plus, X, Glasses} from 'lucide-react';
 import { format } from 'date-fns';
-import { it } from 'date-fns/locale';
+import { it, enUS } from 'date-fns/locale';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -33,13 +34,14 @@ export interface ChatManagerHandle {
 }
 
 export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ eventId, eventStatus, openChat, onOpenChatConsumed }, ref) => {
+  const { t, language } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   
   // Make URL params the source of truth - derive state from URL
   const dmParam = searchParams.get('dm');
   const activeChannel = dmParam ? 'pair' : 'event';
   const [activeChats, setActiveChats] = useState<ActiveChat[]>(() => (
-    dmParam ? [{ recipientId: dmParam, recipientName: 'Utente Anonimo' }] : []
+    dmParam ? [{ recipientId: dmParam, recipientName: t('chat.anonymous_user') }] : []
   ));
   
   const [messageText, setMessageText] = useState('');
@@ -48,6 +50,9 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
   const inputRef = useRef<HTMLInputElement>(null);
   const { nickname: nickData } = useNickname(eventId);
   const { count: joinedCount } = useJoinedParticipantCount(eventId);
+  
+  // Get locale for date-fns
+  const dateLocale = language === 'it' ? it : enUS;
   
   // Determine which chat to use based on active channel
   const isEventChannel = activeChannel === 'event';
@@ -61,22 +66,22 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
       if (!existingChat) {
         setActiveChats(prev => [...prev, {
           recipientId: openChat.recipientId,
-          recipientName: openChat.recipientName || 'Utente Anonimo'
+          recipientName: openChat.recipientName || t('chat.anonymous_user')
         }]);
       }
       onOpenChatConsumed?.();
     }
-  }, [openChat, setSearchParams, onOpenChatConsumed]);
+  }, [openChat, setSearchParams, onOpenChatConsumed, t]);
   
   // Sync activeChats when URL changes (for refresh/deep-link support)
   useEffect(() => {
     if (dmParam && !activeChats.find(chat => chat.recipientId === dmParam)) {
       setActiveChats(prev => [...prev, {
         recipientId: dmParam,
-        recipientName: 'Utente Anonimo'
+        recipientName: t('chat.anonymous_user')
       }]);
     }
-  }, [dmParam]);
+  }, [dmParam, t]);
   
   
   const {
@@ -99,7 +104,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
     if (!existingChat) {
       const newChat: ActiveChat = {
         recipientId,
-        recipientName: recipientName || 'Utente Anonimo',
+        recipientName: recipientName || t('chat.anonymous_user'),
       };
       setActiveChats(prev => [...prev, newChat]);
     }
@@ -134,7 +139,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
 
     // Prevent sending in private chat without a nickname
     if (!isEventChannel && !nickData?.nickname) {
-      toast.error('Imposta il tuo nickname anonimo per inviare messaggi privati');
+      toast.error(t('chat.set_nickname_error'));
       return;
     }
 
@@ -157,11 +162,11 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
   }, [messages]);
 
   const formatMessageTime = (timestamp: string) => {
-    return format(new Date(timestamp), 'HH:mm', { locale: it });
+    return format(new Date(timestamp), 'HH:mm', { locale: dateLocale });
   };
 
   const formatMessageDate = (timestamp: string) => {
-    return format(new Date(timestamp), 'dd MMM', { locale: it });
+    return format(new Date(timestamp), 'dd MMM', { locale: dateLocale });
   };
 
   const groupMessagesByDate = (messages: any[]) => {
@@ -187,7 +192,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-primary" />
-              Chat Evento
+              {t('chat.event_chat')}
             </CardTitle>
               <Button 
                 variant="outline" 
@@ -195,10 +200,10 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                 onClick={() => setShowRecipientSelector(true)}
                 className="flex items-center gap-2 touch-target focus-ring"
                 disabled={joinedCount < 2}
-                aria-label="Inizia una nuova chat privata"
+                aria-label={t('chat.start_private_chat')}
               >
               <Plus className="w-4 h-4" />
-              Nuova Chat
+              {t('chat.new_chat')}
             </Button>
           </div>
         </CardHeader>
@@ -208,7 +213,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
               <TabsList className={`grid ${activeChats.length === 0 ? 'grid-cols-1' : `grid-cols-${Math.min(activeChats.length + 1, 4)}`}`}>
                 <TabsTrigger value="event" className="flex items-center gap-2">
                   <Users className="w-4 h-4" />
-                  Chat Generale
+                  {t('chat.general_chat')}
                 </TabsTrigger>
                 {activeChats.map(chat => (
                   <TabsTrigger 
@@ -226,7 +231,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                         handleCloseChat(chat.recipientId);
                       }}
                       className="touch-target hover:bg-destructive hover:text-destructive-foreground focus-ring ml-1"
-                      aria-label={`Chiudi chat con ${chat.recipientName}`}
+                      aria-label={t('chat.close_chat_with').replace('{name}', chat.recipientName)}
                     >
                       <X className="w-3 h-3" />
                     </Button>
@@ -264,10 +269,10 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                           onClick={loadMore} 
                           disabled={loading}
                           className="focus-ring" 
-                          aria-label="Carica messaggi precedenti"
+                          aria-label={t('chat.load_previous')}
                         >
                           <ChevronUp className="w-4 h-4 mr-2" />
-                          Carica messaggi precedenti
+                          {t('chat.load_previous')}
                         </Button>
                       </div>
                     )}
@@ -290,7 +295,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="font-medium text-sm">
-                                  {message.alias_snapshot || 'Anonimo'}
+                                  {message.alias_snapshot || t('chat.anonymous')}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
                                   {formatMessageTime(message.created_at)}
@@ -308,8 +313,8 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                     {messages.length === 0 && !loading && (
                       <div className="text-center py-8 text-muted-foreground">
                         <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <p>Nessun messaggio ancora.</p>
-                        <p className="text-sm">Inizia la conversazione!</p>
+                        <p>{t('chat.no_messages')}</p>
+                        <p className="text-sm">{t('chat.start_conversation')}</p>
                       </div>
                     )}
 
@@ -324,11 +329,11 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                       ref={inputRef}
                       value={messageText}
                       onChange={(e) => setMessageText(e.target.value)}
-                      placeholder="Scrivi un messaggio..."
+                      placeholder={t('chat.placeholder')}
                       maxLength={500}
                       disabled={sending}
                     />
-                    <Button type="submit" disabled={!messageText.trim() || sending} className="touch-target focus-ring" aria-label="Invia messaggio">
+                    <Button type="submit" disabled={!messageText.trim() || sending} className="touch-target focus-ring" aria-label={t('chat.send_message')}>
                       <Send className="w-4 h-4" />
                     </Button>
                   </form>
@@ -363,7 +368,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                         <div className="text-center">
                           <Button variant="outline" size="sm" onClick={loadMore} disabled={loading}>
                             <ChevronUp className="w-4 h-4 mr-2" />
-                            Carica messaggi precedenti
+                            {t('chat.load_previous')}
                           </Button>
                         </div>
                       )}
@@ -386,7 +391,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
                                   <span className="font-medium text-sm">
-                                    {message.alias_snapshot || 'Anonimo'}
+                                    {message.alias_snapshot || t('chat.anonymous')}
                                   </span>
                                   <span className="text-xs text-muted-foreground">
                                     {formatMessageTime(message.created_at)}
@@ -404,8 +409,8 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                       {messages.length === 0 && !loading && (
                         <div className="text-center py-8 text-muted-foreground">
                           <Heart className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                          <p>Nessun messaggio privato ancora.</p>
-                          <p className="text-sm">Inizia la conversazione anonima!</p>
+                          <p>{t('chat.no_private_messages')}</p>
+                          <p className="text-sm">{t('chat.start_anonymous')}</p>
                         </div>
                       )}
 
@@ -420,11 +425,16 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                         ref={inputRef}
                         value={messageText}
                         onChange={(e) => setMessageText(e.target.value)}
-                        placeholder={`Messaggio privato come "${nickData?.nickname ?? 'imposta il tuo nickname'}"...`}
+                        placeholder={t('chat.private_placeholder').replace('{nickname}', nickData?.nickname ?? t('chat.set_nickname'))}
                         maxLength={500}
-                        disabled={sending}
+                        disabled={sending || !nickData?.nickname}
                       />
-                      <Button type="submit" disabled={!messageText.trim() || sending}>
+                      <Button 
+                        type="submit" 
+                        disabled={!messageText.trim() || sending || !nickData?.nickname}
+                        className="touch-target focus-ring"
+                        aria-label={t('chat.send_message')}
+                      >
                         <Send className="w-4 h-4" />
                       </Button>
                     </form>
@@ -436,13 +446,12 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
         </CardContent>
       </Card>
 
-      {/* Recipient Selector Dialog */}
+      {/* Recipient Selector Modal */}
       <ChatRecipientSelector
         eventId={eventId}
-        onChatStart={handleChatStart}
         isOpen={showRecipientSelector}
         onOpenChange={setShowRecipientSelector}
-        disabled={joinedCount < 2}
+        onChatStart={handleChatStart}
       />
     </div>
   );

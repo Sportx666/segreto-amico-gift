@@ -6,15 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Crown, User, Copy, RefreshCw, UserX, Trash2, Mail, ArrowRightLeft } from "lucide-react";
+import { Crown, User, Copy, RefreshCw, UserX, Trash2, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/i18n";
 import { debugLog } from "@/lib/debug";
 import { StatusChip } from "@/components/StatusChip";
 import { copyToClipboard } from "@/lib/utils";
 import { EventMemberNameEditor } from '../EventMemberNameEditor';
 import { absUrl } from "@/lib/url";
-import { WhatsappIcon, WhatsappShareButton } from "react-share";
 import { MemberWishlistPreview } from "./MemberWishlistPreview";
 
 interface Member {
@@ -42,10 +42,10 @@ interface MemberCardProps {
   onTransferAdmin: (participantId: string) => void;
 }
 
-const getMemberName = (member: Member) => {
+const getMemberName = (member: Member, t: (key: string) => string) => {
   if (member.anonymous_name && member.anonymous_name.trim().length > 0) return member.anonymous_name;
   if (member.anonymous_email && member.anonymous_email.trim().length > 0) return member.anonymous_email;
-  return "Partecipante";
+  return t('member_card.participant');
 };
 
 export const MemberCard = ({ 
@@ -58,11 +58,14 @@ export const MemberCard = ({
   onRemoveUnjoinedMember,
   onTransferAdmin
 }: MemberCardProps) => {
+  const { t } = useI18n();
   const [copyingToken, setCopyingToken] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [memberEmail, setMemberEmail] = useState("");
   const [savingEmail, setSavingEmail] = useState(false);
+
+  const memberName = getMemberName(member, t);
 
   const copyJoinToken = async (token: string) => {
     setCopyingToken(true);
@@ -70,13 +73,13 @@ export const MemberCard = ({
       const joinUrl = absUrl(`/join/${token}`);
       const success = await copyToClipboard(joinUrl);
       if (success) {
-        toast.success("Link di invito copiato!");
+        toast.success(t('toasts.invite_link_copied'));
       } else {
-        toast.error("Errore nel copiare il link");
+        toast.error(t('toasts.copy_error'));
       }
     } catch (error) {
       console.error('Error copying token:', error);
-      toast.error("Errore nel copiare il link");
+      toast.error(t('toasts.copy_error'));
     } finally {
       setCopyingToken(false);
     }
@@ -91,10 +94,10 @@ export const MemberCard = ({
       if (error) throw error;
 
       debugLog('EventMembers.tokenRefreshed', { data });
-      toast.success("Token aggiornato!");
+      toast.success(t('toasts.token_refreshed'));
     } catch (error) {
       console.error('Error refreshing token:', error);
-      toast.error("Errore nell'aggiornare il token");
+      toast.error(t('toasts.token_error'));
     }
   };
 
@@ -114,13 +117,13 @@ export const MemberCard = ({
 
   const sendEmailInvite = async (email: string) => {
     if (!member.token_data?.token) {
-      toast.error("Token non disponibile");
+      toast.error(t('toasts.token_unavailable'));
       return;
     }
 
     const joinUrl = getJoinUrl(member.token_data.token);
-    const subject = encodeURIComponent("Invito per partecipare all'evento");
-    const body = encodeURIComponent(`Ciao! Sei stato invitato a partecipare a un evento. Clicca qui per unirti: ${joinUrl}`);
+    const subject = encodeURIComponent(t('members.invite_email_subject'));
+    const body = encodeURIComponent(t('members.invite_email_body').replace('{link}', joinUrl));
     
     // Use mailto link
     window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
@@ -128,7 +131,7 @@ export const MemberCard = ({
 
   const handleSaveEmailAndInvite = async () => {
     if (!memberEmail.trim() || !memberEmail.includes('@')) {
-      toast.error("Inserisci un'email valida");
+      toast.error(t('toasts.invalid_email'));
       return;
     }
 
@@ -142,14 +145,14 @@ export const MemberCard = ({
 
       if (error) throw error;
 
-      toast.success("Email salvata!");
+      toast.success(t('toasts.email_saved'));
       setShowEmailDialog(false);
       
       // Send the invite
       sendEmailInvite(memberEmail.trim());
     } catch (error) {
       console.error('Error saving email:', error);
-      toast.error("Errore nel salvare l'email");
+      toast.error(t('toasts.email_error'));
     } finally {
       setSavingEmail(false);
     }
@@ -160,7 +163,7 @@ export const MemberCard = ({
     if (!member.token_data?.token) return;
     
     const joinUrl = getJoinUrl(member.token_data.token);
-    const text = encodeURIComponent(`Ciao! Sei stato invitato a partecipare a un evento. Clicca qui per unirti: ${joinUrl}`);
+    const text = encodeURIComponent(t('members.invite_email_body').replace('{link}', joinUrl));
     
     // Use window.location.href to avoid opening a new tab
     window.location.href = `https://wa.me/?text=${text}`;
@@ -189,7 +192,7 @@ export const MemberCard = ({
               <div className="min-w-0 flex-1">
                 {/* Name and editor row */}
                 <div className="flex items-center gap-2 mb-1">
-                  <p className="font-medium truncate text-sm sm:text-base">{getMemberName(member)}</p>
+                  <p className="font-medium truncate text-sm sm:text-base">{memberName}</p>
                   {/* Allow users to edit their own name */}
                   {currentUserParticipantId === member.participant_id && (
                     <EventMemberNameEditor
@@ -232,10 +235,10 @@ export const MemberCard = ({
                         onClick={() => copyJoinToken(member.token_data!.token)}
                         disabled={copyingToken}
                         className="flex items-center gap-1 text-xs h-7 px-2 sm:h-8 sm:px-3 touch-target focus-ring"
-                        aria-label={`Copia link di invito per ${getMemberName(member)}`}
+                        aria-label={t('member_card.copy_invite_for').replace('{name}', memberName)}
                       >
                         <Copy className="w-3 h-3" />
-                        <span className="hidden xs:inline sm:inline">Copia</span>
+                        <span className="hidden xs:inline sm:inline">{t('member_card.copy')}</span>
                       </Button>
                       
                       <Button
@@ -243,10 +246,10 @@ export const MemberCard = ({
                         size="sm"
                         onClick={() => refreshToken(member.participant_id)}
                         className="flex items-center gap-1 text-xs h-7 px-2 sm:h-8 sm:px-3 touch-target focus-ring"
-                        aria-label={`Rinnova token per ${getMemberName(member)}`}
+                        aria-label={t('member_card.refresh_token_for').replace('{name}', memberName)}
                       >
                         <RefreshCw className="w-3 h-3" />
-                        <span className="hidden xs:inline sm:inline">Rinnova</span>
+                        <span className="hidden xs:inline sm:inline">{t('member_card.refresh')}</span>
                       </Button>
                       
                       {/* Email button */}
@@ -255,7 +258,7 @@ export const MemberCard = ({
                         size="sm"
                         onClick={handleEmailClick}
                         className="p-0 h-7 w-7 rounded-full hover:opacity-80 transition-opacity"
-                        aria-label="Invia invito via email"
+                        aria-label={t('member_card.send_email_invite')}
                       >
                         <div className="w-7 h-7 bg-[#EA4335] rounded-full flex items-center justify-center">
                           <Mail className="w-4 h-4 text-white" />
@@ -268,7 +271,7 @@ export const MemberCard = ({
                         size="sm"
                         onClick={handleWhatsAppShare}
                         className="p-0 h-7 w-7 rounded-full hover:opacity-80 transition-opacity"
-                        aria-label="Invia invito via WhatsApp"
+                        aria-label={t('member_card.send_whatsapp_invite')}
                       >
                         <div className="w-7 h-7 bg-[#25D366] rounded-full flex items-center justify-center">
                           <svg viewBox="0 0 24 24" className="w-4 h-4 text-white fill-current">
@@ -280,9 +283,9 @@ export const MemberCard = ({
 
                     {/* Token info */}
                     <div className="text-xs text-muted-foreground space-y-0.5">
-                      <p>Scade: {new Date(member.token_data.expires_at).toLocaleDateString()}</p>
+                      <p>{t('member_card.expires')}: {new Date(member.token_data.expires_at).toLocaleDateString()}</p>
                       {member.token_data.used_at && (
-                        <p>Usato: {new Date(member.token_data.used_at).toLocaleDateString()}</p>
+                        <p>{t('member_card.used')}: {new Date(member.token_data.used_at).toLocaleDateString()}</p>
                       )}
                     </div>
                   </div>
@@ -308,8 +311,8 @@ export const MemberCard = ({
                     size="sm"
                     onClick={() => setShowTransferDialog(true)}
                     className="touch-target text-muted-foreground hover:text-primary focus-ring h-8 w-8 p-0"
-                    aria-label={`Trasferisci ruolo admin a ${getMemberName(member)}`}
-                    title="Trasferisci ruolo admin"
+                    aria-label={t('member_card.transfer_admin_to').replace('{name}', memberName)}
+                    title={t('member_card.transfer_admin')}
                   >
                     <Crown className="w-4 h-4" />
                   </Button>
@@ -324,7 +327,7 @@ export const MemberCard = ({
                         size="sm"
                         onClick={() => onRemoveUnjoinedMember(member.participant_id)}
                         className="touch-target text-muted-foreground hover:text-destructive focus-ring h-8 w-8 p-0"
-                        aria-label={`Rimuovi invito per ${getMemberName(member)}`}
+                        aria-label={t('member_card.remove_invite').replace('{name}', memberName)}
                       >
                         <UserX className="w-4 h-4" />
                       </Button>
@@ -336,7 +339,7 @@ export const MemberCard = ({
                         size="sm"
                         onClick={() => onRemoveMember(member.id)}
                         className="touch-target text-muted-foreground hover:text-destructive focus-ring h-8 w-8 p-0"
-                        aria-label={`Rimuovi ${getMemberName(member)} dall'evento`}
+                        aria-label={t('member_card.remove_member').replace('{name}', memberName)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -353,14 +356,14 @@ export const MemberCard = ({
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Aggiungi Email</DialogTitle>
+            <DialogTitle>{t('member_card.add_email')}</DialogTitle>
             <DialogDescription>
-              Inserisci l'email di {getMemberName(member)} per inviargli l'invito.
+              {t('member_card.add_email_desc').replace('{name}', memberName)}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="member-email">Email</Label>
+              <Label htmlFor="member-email">{t('common.email')}</Label>
               <Input
                 id="member-email"
                 type="email"
@@ -373,10 +376,10 @@ export const MemberCard = ({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEmailDialog(false)}>
-              Annulla
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleSaveEmailAndInvite} disabled={savingEmail}>
-              {savingEmail ? "Salvataggio..." : "Salva e Invia Invito"}
+              {savingEmail ? t('member_card.saving') : t('member_card.save_and_send')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -386,19 +389,19 @@ export const MemberCard = ({
       <AlertDialog open={showTransferDialog} onOpenChange={setShowTransferDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Trasferisci ruolo Admin</AlertDialogTitle>
+            <AlertDialogTitle>{t('member_card.transfer_admin')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Sei sicuro di voler trasferire il ruolo di amministratore a "{getMemberName(member)}"?
-              Perderai la possibilità di gestire l'evento, i membri e le impostazioni.
+              {t('member_card.transfer_admin_confirm').replace('{name}', memberName)}
+              {' '}{t('member_card.transfer_admin_warning')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={() => {
               onTransferAdmin(member.participant_id);
               setShowTransferDialog(false);
             }}>
-              Trasferisci
+              {t('member_card.transfer')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

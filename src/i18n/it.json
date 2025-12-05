@@ -300,6 +300,7 @@
     "new_chat": "Nuova Chat",
     "general_chat": "Chat Generale",
     "anonymous_user": "Utente Anonimo",
+    "anonymous": "Anonimo",
     "close_chat_with": "Chiudi chat con {name}",
     "no_messages": "Nessun messaggio ancora.",
     "start_conversation": "Inizia la conversazione!",
@@ -309,7 +310,9 @@
     "placeholder": "Scrivi un messaggio...",
     "private_placeholder": "Messaggio privato come \"{nickname}\"...",
     "set_nickname": "imposta il tuo nickname",
-    "set_nickname_error": "Imposta il tuo nickname anonimo per inviare messaggi privati"
+    "set_nickname_error": "Imposta il tuo nickname anonimo per inviare messaggi privati",
+    "start_private_chat": "Inizia una nuova chat privata",
+    "send_message": "Invia messaggio"
   },
   "notifications": {
     "title": "Notifiche",
@@ -317,14 +320,57 @@
     "private_message": "Nuovo messaggio privato",
     "event_message": "ha scritto nella chat dell'evento",
     "sent_message": "ti ha inviato un messaggio",
-    "mark_all_read": "Segna tutto come letto",
-    "no_notifications": "Nessuna notifica"
+    "mark_all_read": "Segna tutte lette",
+    "no_notifications": "Nessuna notifica",
+    "loading": "Caricamento...",
+    "read": "Letta"
   },
   "toasts": {
     "logout_success": "Logout effettuato con successo",
     "logout_error": "Errore durante il logout",
     "link_copied": "Copiato negli appunti!",
-    "copy_error": "Errore nella copia"
+    "copy_error": "Errore nella copia",
+    "invite_link_copied": "Link di invito copiato!",
+    "token_refreshed": "Token aggiornato!",
+    "token_error": "Errore nell'aggiornare il token",
+    "email_saved": "Email salvata!",
+    "email_error": "Errore nel salvare l'email",
+    "invalid_email": "Inserisci un'email valida",
+    "token_unavailable": "Token non disponibile"
+  },
+  "event_share": {
+    "title": "Condividi Evento",
+    "description": "Invita amici e familiari a partecipare al tuo evento \"Amico Segreto\"",
+    "go_to_participants": "Vai su Partecipanti → Aggiungi per creare l'invito personale.",
+    "share_link": "Condividi il link generato direttamente con il partecipante.",
+    "email_hint": "Se inserisci un'email, eviti duplicati e colleghi automaticamente l'account se esiste.",
+    "how_it_works": "Come Funziona",
+    "step_1": "1. Genera e invia link personali di invito dalla sezione Partecipanti.",
+    "step_2": "2. Gli invitati aprono il link, si autenticano e si uniscono all'evento.",
+    "step_3": "3. Quando tutti hanno aderito, configura le esclusioni ed esegui il sorteggio.",
+    "step_4": "4. Ogni partecipante riceverà la sua assegnazione segreta."
+  },
+  "member_card": {
+    "participant": "Partecipante",
+    "copy": "Copia",
+    "refresh": "Rinnova",
+    "expires": "Scade",
+    "used": "Usato",
+    "add_email": "Aggiungi Email",
+    "add_email_desc": "Inserisci l'email di {name} per inviargli l'invito.",
+    "save_and_send": "Salva e Invia Invito",
+    "saving": "Salvataggio...",
+    "transfer_admin": "Trasferisci ruolo Admin",
+    "transfer_admin_confirm": "Sei sicuro di voler trasferire il ruolo di amministratore a \"{name}\"?",
+    "transfer_admin_warning": "Perderai la possibilità di gestire l'evento, i membri e le impostazioni.",
+    "transfer": "Trasferisci",
+    "remove_invite": "Rimuovi invito per {name}",
+    "remove_member": "Rimuovi {name} dall'evento",
+    "copy_invite_for": "Copia link di invito per {name}",
+    "refresh_token_for": "Rinnova token per {name}",
+    "send_email_invite": "Invia invito via email",
+    "send_whatsapp_invite": "Invia invito via WhatsApp",
+    "transfer_admin_to": "Trasferisci ruolo admin a {name}"
   },
   "accessibility": {
     "skip_to_content": "Salta al contenuto principale",
