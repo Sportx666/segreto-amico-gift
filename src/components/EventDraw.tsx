@@ -315,7 +315,7 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
       {/* Auto Draw Toggle */}
       <AutoDrawToggle 
         eventId={eventId}
-        eventDate={event.date}
+        drawDate={event.draw_date}
         drawStatus={event.draw_status}
         isAdmin={userRole === 'admin'}
       />

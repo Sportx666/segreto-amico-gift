@@ -9,12 +9,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface AutoDrawToggleProps {
   eventId: string;
-  eventDate: string | null;
+  drawDate: string | null | undefined;
   drawStatus: string;
   isAdmin: boolean;
 }
 
-export function AutoDrawToggle({ eventId, eventDate, drawStatus, isAdmin }: AutoDrawToggleProps) {
+export function AutoDrawToggle({ eventId, drawDate, drawStatus, isAdmin }: AutoDrawToggleProps) {
   const [autoDrawEnabled, setAutoDrawEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -27,8 +27,8 @@ export function AutoDrawToggle({ eventId, eventDate, drawStatus, isAdmin }: Auto
     try {
       if (enabled) {
         // Enable auto-draw - create a scheduled job
-        const eventDateObj = eventDate ? new Date(eventDate) : new Date();
-        eventDateObj.setHours(9, 0, 0, 0); // Schedule for 9 AM on event date
+        const drawDateObj = drawDate ? new Date(drawDate) : new Date();
+        drawDateObj.setHours(9, 0, 0, 0); // Schedule for 9 AM on draw date
         
         // Store auto-draw preference (you'd typically store this in database)
         toast.success("Sorteggio automatico programmato per le 9:00 del giorno dell'evento");
@@ -47,8 +47,8 @@ export function AutoDrawToggle({ eventId, eventDate, drawStatus, isAdmin }: Auto
   };
 
   const getScheduledTime = () => {
-    if (!eventDate) return "Data evento non impostata";
-    const date = new Date(eventDate);
+    if (!drawDate) return "Data sorteggio non impostata";
+    const date = new Date(drawDate);
     date.setHours(9, 0, 0, 0);
     return date.toLocaleDateString('it-IT', {
       weekday: 'long',
@@ -107,7 +107,7 @@ export function AutoDrawToggle({ eventId, eventDate, drawStatus, isAdmin }: Auto
 
         <div className="text-xs text-amber-700 bg-white/40 rounded p-2">
           <Settings className="w-3 h-3 inline mr-1" />
-          Il sorteggio verrà eseguito automaticamente alle 9:00 del mattino della data dell'evento.
+          Il sorteggio verrà eseguito automaticamente alle 9:00 del mattino della data del sorteggio.
           Tutti i partecipanti riceveranno una notifica.
         </div>
       </CardContent>

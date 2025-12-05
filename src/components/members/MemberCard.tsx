@@ -220,10 +220,11 @@ export const MemberCard = ({
                   )}
                 </div>
 
-                {/* Token management section */}
-                {member.token_data && userRole === 'admin' && (
+                {/* Token management section - hidden for joined members */}
+                {member.token_data && userRole === 'admin' && member.status !== 'joined' && (
                   <div className="space-y-2">
-                    <div className="flex flex-wrap gap-1 sm:gap-2">
+                    {/* All action buttons in one aligned row */}
+                    <div className="flex flex-wrap items-center gap-1 sm:gap-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -246,11 +247,8 @@ export const MemberCard = ({
                         <RefreshCw className="w-3 h-3" />
                         <span className="hidden xs:inline sm:inline">Rinnova</span>
                       </Button>
-                    </div>
-
-                    {/* Share buttons - always show email button */}
-                    <div className="flex gap-1">
-                      {/* Email button - always visible */}
+                      
+                      {/* Email button */}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -263,7 +261,7 @@ export const MemberCard = ({
                         </div>
                       </Button>
                       
-                      {/* WhatsApp button - use custom handler to avoid extra tab */}
+                      {/* WhatsApp button */}
                       <Button
                         variant="ghost"
                         size="sm"
