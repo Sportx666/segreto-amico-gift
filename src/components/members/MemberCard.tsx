@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Crown, User, Copy, RefreshCw, UserX, Trash2, Mail } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Crown, User, Copy, RefreshCw, UserX, Trash2, Mail, ArrowRightLeft } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { debugLog } from "@/lib/debug";
@@ -37,6 +38,7 @@ interface MemberCardProps {
   currentUserParticipantId: string | null;
   onRemoveMember: (memberId: string) => void;
   onRemoveUnjoinedMember: (participantId: string) => void;
+  onTransferAdmin: (participantId: string) => void;
 }
 
 const getMemberName = (member: Member) => {
@@ -52,10 +54,12 @@ export const MemberCard = ({
   eventStatus, 
   currentUserParticipantId, 
   onRemoveMember, 
-  onRemoveUnjoinedMember 
+  onRemoveUnjoinedMember,
+  onTransferAdmin
 }: MemberCardProps) => {
   const [copyingToken, setCopyingToken] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [memberEmail, setMemberEmail] = useState("");
   const [savingEmail, setSavingEmail] = useState(false);
 
@@ -160,6 +164,13 @@ export const MemberCard = ({
     // Use window.location.href to avoid opening a new tab
     window.location.href = `https://wa.me/?text=${text}`;
   };
+
+  // Check if this member can receive admin transfer
+  const canReceiveAdminTransfer = 
+    userRole === 'admin' && 
+    member.status === 'joined' && 
+    member.role !== 'admin' &&
+    currentUserParticipantId !== member.participant_id;
 
   return (
     <>
@@ -280,31 +291,50 @@ export const MemberCard = ({
               </div>
             </div>
 
-            {/* Actions - Hide delete buttons if this is the admin's own card */}
-            {userRole === 'admin' && !(member.role === 'admin' && currentUserParticipantId === member.participant_id) && (
+            {/* Actions */}
+            {userRole === 'admin' && (
               <div className="flex flex-col gap-1">
-                {member.status === 'invited' && eventStatus === 'pending' && (
+                {/* Transfer Admin button - for joined non-admin members */}
+                {canReceiveAdminTransfer && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onRemoveUnjoinedMember(member.participant_id)}
-                    className="touch-target text-muted-foreground hover:text-destructive focus-ring h-8 w-8 p-0"
-                    aria-label={`Rimuovi invito per ${getMemberName(member)}`}
+                    onClick={() => setShowTransferDialog(true)}
+                    className="touch-target text-muted-foreground hover:text-primary focus-ring h-8 w-8 p-0"
+                    aria-label={`Trasferisci ruolo admin a ${getMemberName(member)}`}
+                    title="Trasferisci ruolo admin"
                   >
-                    <UserX className="w-4 h-4" />
+                    <Crown className="w-4 h-4" />
                   </Button>
                 )}
-                
-                {member.status === 'joined' && eventStatus === 'pending' && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onRemoveMember(member.id)}
-                    className="touch-target text-muted-foreground hover:text-destructive focus-ring h-8 w-8 p-0"
-                    aria-label={`Rimuovi ${getMemberName(member)} dall'evento`}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+
+                {/* Delete buttons - Hide if this is the admin's own card */}
+                {!(member.role === 'admin' && currentUserParticipantId === member.participant_id) && (
+                  <>
+                    {member.status === 'invited' && eventStatus === 'pending' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onRemoveUnjoinedMember(member.participant_id)}
+                        className="touch-target text-muted-foreground hover:text-destructive focus-ring h-8 w-8 p-0"
+                        aria-label={`Rimuovi invito per ${getMemberName(member)}`}
+                      >
+                        <UserX className="w-4 h-4" />
+                      </Button>
+                    )}
+                    
+                    {member.status === 'joined' && eventStatus === 'pending' && member.role !== 'admin' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onRemoveMember(member.id)}
+                        className="touch-target text-muted-foreground hover:text-destructive focus-ring h-8 w-8 p-0"
+                        aria-label={`Rimuovi ${getMemberName(member)} dall'evento`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -344,6 +374,28 @@ export const MemberCard = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Transfer Admin Confirmation Dialog */}
+      <AlertDialog open={showTransferDialog} onOpenChange={setShowTransferDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Trasferisci ruolo Admin</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler trasferire il ruolo di amministratore a "{getMemberName(member)}"?
+              Perderai la possibilità di gestire l'evento, i membri e le impostazioni.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              onTransferAdmin(member.participant_id);
+              setShowTransferDialog(false);
+            }}>
+              Trasferisci
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
