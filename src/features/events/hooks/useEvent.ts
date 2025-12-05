@@ -5,9 +5,11 @@ import { useAuth } from '@/components/AuthProvider';
 import { EventService, type Event } from '@/services/events';
 import { useApiQuery, useApiMutation } from '@/hooks/useApiQuery';
 import { toast } from 'sonner';
+import { useI18n } from '@/i18n';
 
 export function useEvent(eventId: string | undefined) {
   const { user } = useAuth();
+  const { t } = useI18n();
 
   return useApiQuery(
     ['event', eventId],
@@ -17,13 +19,14 @@ export function useEvent(eventId: string | undefined) {
     },
     {
       enabled: !!eventId,
-      errorMessage: "Errore nel caricamento dell'evento"
+      errorMessage: t('toasts.load_event_error')
     }
   );
 }
 
 export function useUserEvents() {
   const { user } = useAuth();
+  const { t } = useI18n();
 
   return useApiQuery(
     ['user-events', user?.id],
@@ -33,13 +36,14 @@ export function useUserEvents() {
     },
     {
       enabled: !!user,
-      errorMessage: "Errore nel caricamento degli eventi"
+      errorMessage: t('toasts.load_events_error')
     }
   );
 }
 
 export function useEventRole(eventId: string | undefined) {
   const { user } = useAuth();
+  const { t } = useI18n();
 
   return useApiQuery(
     ['event-role', eventId, user?.id],
@@ -51,13 +55,14 @@ export function useEventRole(eventId: string | undefined) {
     },
     {
       enabled: !!eventId && !!user,
-      errorMessage: "Errore nel verificare i permessi"
+      errorMessage: t('toasts.check_permissions_error')
     }
   );
 }
 
 export function useDeleteEvent() {
   const { user } = useAuth();
+  const { t } = useI18n();
 
   return useApiMutation(
     (eventId: string) => {
@@ -66,10 +71,10 @@ export function useDeleteEvent() {
     },
     {
       onSuccess: () => {
-        toast.success("Evento eliminato con successo");
+        toast.success(t('toasts.event_deleted'));
       },
       invalidateQueries: [['user-events']],
-      errorMessage: "Errore nell'eliminazione dell'evento"
+      errorMessage: t('toasts.delete_event_error')
     }
   );
 }

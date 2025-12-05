@@ -6,6 +6,7 @@ import { ChevronUp, MessageCircle, Heart } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import type { ChatMessage } from '@/types';
+import { useI18n } from '@/i18n';
 
 interface MessageGroupsProps {
   messageGroups: { [key: string]: ChatMessage[] };
@@ -13,6 +14,8 @@ interface MessageGroupsProps {
 }
 
 export const MessageGroups = ({ messageGroups, formatMessageTime }: MessageGroupsProps) => {
+  const { t } = useI18n();
+  
   return (
     <>
       {Object.entries(messageGroups).map(([date, dayMessages]) => (
@@ -33,7 +36,7 @@ export const MessageGroups = ({ messageGroups, formatMessageTime }: MessageGroup
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-medium text-sm">
-                    {message.alias_snapshot || 'Anonimo'}
+                    {message.alias_snapshot || t('chat.anonymous')}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     {formatMessageTime(message.created_at)}
@@ -79,6 +82,8 @@ interface EmptyStateProps {
 }
 
 export const EmptyState = ({ isPrivate = false }: EmptyStateProps) => {
+  const { t } = useI18n();
+  
   return (
     <div className="text-center py-8 text-muted-foreground">
       {isPrivate ? (
@@ -87,10 +92,10 @@ export const EmptyState = ({ isPrivate = false }: EmptyStateProps) => {
         <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
       )}
       <p>
-        {isPrivate ? 'Nessun messaggio privato ancora.' : 'Nessun messaggio ancora.'}
+        {isPrivate ? t('chat.no_private_messages') : t('chat.no_messages')}
       </p>
       <p className="text-sm">
-        {isPrivate ? 'Inizia la conversazione anonima!' : 'Inizia la conversazione!'}
+        {isPrivate ? t('chat.start_anonymous') : t('chat.start_conversation')}
       </p>
     </div>
   );
@@ -103,13 +108,15 @@ interface LoadMoreButtonProps {
 }
 
 export const LoadMoreButton = ({ hasMore, loading, onLoadMore }: LoadMoreButtonProps) => {
+  const { t } = useI18n();
+  
   if (!hasMore) return null;
 
   return (
     <div className="text-center">
       <Button variant="outline" size="sm" onClick={onLoadMore} disabled={loading}>
         <ChevronUp className="w-4 h-4 mr-2" />
-        Carica messaggi precedenti
+        {t('chat.load_previous')}
       </Button>
     </div>
   );

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useI18n } from '@/i18n';
 
 interface Notification {
   id: string;
@@ -22,6 +23,7 @@ interface NotificationSettings {
 
 export function useNotifications() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -44,7 +46,7 @@ export function useNotifications() {
       setUnreadCount(data?.filter(n => !n.read_at).length || 0);
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      toast.error('Errore nel caricamento delle notifiche');
+      toast.error(t('toasts.load_notifications_error'));
     } finally {
       setLoading(false);
     }
@@ -75,7 +77,7 @@ export function useNotifications() {
       return true;
     } catch (error) {
       console.error('Error marking notification as read:', error);
-      toast.error('Errore nell\'aggiornamento della notifica');
+      toast.error(t('toasts.update_notification_error'));
       return false;
     }
   };
@@ -101,7 +103,7 @@ export function useNotifications() {
       return true;
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
-      toast.error('Errore nell\'aggiornamento delle notifiche');
+      toast.error(t('toasts.update_notifications_error'));
       return false;
     }
   };
@@ -154,6 +156,7 @@ export function useNotifications() {
 
 export function useNotificationSettings() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -191,7 +194,7 @@ export function useNotificationSettings() {
       setSettings(data);
     } catch (error) {
       console.error('Error fetching notification settings:', error);
-      toast.error('Errore nel caricamento delle impostazioni');
+      toast.error(t('toasts.load_settings_error'));
     } finally {
       setLoading(false);
     }
@@ -212,11 +215,11 @@ export function useNotificationSettings() {
       if (error) throw error;
 
       setSettings(data);
-      toast.success('Impostazioni aggiornate');
+      toast.success(t('toasts.settings_updated'));
       return true;
     } catch (error) {
       console.error('Error updating notification settings:', error);
-      toast.error('Errore nell\'aggiornamento delle impostazioni');
+      toast.error(t('toasts.update_settings_error'));
       return false;
     } finally {
       setSaving(false);

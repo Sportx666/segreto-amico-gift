@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Edit2 } from "lucide-react";
 import { toast } from "sonner";
+import { useI18n } from "@/i18n";
 
 interface EventMemberNameEditorProps {
   eventId: string;
@@ -23,6 +24,7 @@ export const EventMemberNameEditor = ({
   onNameUpdated 
 }: EventMemberNameEditorProps) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [newName, setNewName] = useState(currentName || '');
@@ -30,7 +32,7 @@ export const EventMemberNameEditor = ({
 
   const handleUpdateName = async () => {
     if (!newName.trim()) {
-      toast.error("Il nome è obbligatorio");
+      toast.error(t('toasts.name_required'));
       return;
     }
 
@@ -44,7 +46,7 @@ export const EventMemberNameEditor = ({
         .single();
 
       if (!participant || participant.profile_id !== user?.id) {
-        toast.error("Non puoi modificare il nome di altri partecipanti");
+        toast.error(t('toasts.cannot_edit_others'));
         return;
       }
 
@@ -59,12 +61,12 @@ export const EventMemberNameEditor = ({
 
       if (error) throw error;
 
-      toast.success("Nome aggiornato con successo");
+      toast.success(t('toasts.name_updated'));
       setIsOpen(false);
       onNameUpdated();
     } catch (error: unknown) {
       console.error('Error updating name:', error);
-      toast.error("Errore nell'aggiornare il nome");
+      toast.error(t('toasts.name_update_error'));
     } finally {
       setIsUpdating(false);
     }
@@ -79,35 +81,35 @@ export const EventMemberNameEditor = ({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Modifica il tuo nome per questo evento</DialogTitle>
+          <DialogTitle>{t('member_name_editor.title')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium">Nome</label>
+            <label className="text-sm font-medium">{t('member_name_editor.name_label')}</label>
             <Input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Il tuo nome per questo evento"
+              placeholder={t('member_name_editor.name_placeholder')}
             />
           </div>
           <div>
-            <label className="text-sm font-medium">Email (opzionale)</label>
+            <label className="text-sm font-medium">{t('member_name_editor.email_label')}</label>
             <Input
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
-              placeholder="email@esempio.com"
+              placeholder={t('member_name_editor.email_placeholder')}
               type="email"
             />
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setIsOpen(false)}>
-              Annulla
+              {t('common.cancel')}
             </Button>
             <Button 
               onClick={handleUpdateName} 
               disabled={isUpdating || !newName.trim()}
             >
-              {isUpdating ? "Aggiornando..." : "Aggiorna"}
+              {isUpdating ? t('member_name_editor.updating') : t('member_name_editor.update')}
             </Button>
           </div>
         </div>

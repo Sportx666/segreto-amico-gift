@@ -4,8 +4,11 @@
 import { WishlistService, type Product } from '@/services/wishlist';
 import { useApiMutation } from '@/hooks/useApiQuery';
 import { toast } from 'sonner';
+import { useI18n } from '@/i18n';
 
 export function useAddProductToWishlist() {
+  const { t } = useI18n();
+
   return useApiMutation(
     async ({ ownerId, wishlistId, product }: { 
       ownerId: string; 
@@ -16,10 +19,10 @@ export function useAddProductToWishlist() {
     },
     {
       onSuccess: () => {
-        toast.success('Prodotto aggiunto alla lista!');
+        toast.success(t('toasts.product_added_list'));
       },
       invalidateQueries: [['user-wishlists']],
-      errorMessage: "Errore nell'aggiunta del prodotto"
+      errorMessage: t('toasts.add_product_to_list_error')
     }
   );
 }

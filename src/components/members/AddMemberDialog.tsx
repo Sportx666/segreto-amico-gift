@@ -141,7 +141,7 @@ export const AddMemberDialog = ({ eventId, onMemberAdded }: AddMemberDialogProps
               type="email"
               value={newMemberEmail}
               onChange={(e) => setNewMemberEmail(e.target.value)}
-              placeholder="email@esempio.com"
+              placeholder={t('member_name_editor.email_placeholder')}
             />
           </div>
           <div className="flex items-center space-x-2">

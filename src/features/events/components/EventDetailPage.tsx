@@ -29,9 +29,11 @@ import { useEvent, useEventRole } from "../hooks/useEvent";
 import { ApiService } from "@/services/api";
 import { useNickname } from "@/hooks/useNickname";
 import { useJoinedParticipantCount } from '@/hooks/useJoinedParticipantCount';
+import { useI18n } from "@/i18n";
 
 export default function EventDetailPage() {
   const { id } = useParams();
+  const { t } = useI18n();
   // Authentication guard - will redirect if not authenticated  
   const { user, loading: authLoading, isAuthenticated } = useAuthGuard();
   const navigate = useNavigate();
@@ -95,7 +97,7 @@ export default function EventDetailPage() {
               .eq('participant_id', assignment.receiver_id)
               .single();
 
-            setAssignedName(member?.anonymous_name || 'Utente Anonimo');
+            setAssignedName(member?.anonymous_name || t('chat.anonymous_user'));
             setShowFirstReveal(true);
           }
         } catch (error) {
@@ -105,7 +107,7 @@ export default function EventDetailPage() {
 
       fetchAssignment();
     }
-  }, [event?.draw_status, event?.id, user]);
+  }, [event?.draw_status, event?.id, user, t]);
 
   const handleRevealAnimation = (name?: string) => {
     if (name) setRecipientName(name);
@@ -144,10 +146,10 @@ export default function EventDetailPage() {
         }
       );
 
-      toast.success("Evento rimosso dalla lista");
+      toast.success(t('toasts.event_removed'));
       navigate("/events");
     } catch (error) {
-      ApiService.handleError(error, 'delete_event', "Errore nella rimozione dell'evento");
+      ApiService.handleError(error, 'delete_event', t('toasts.event_remove_error'));
     }
     setShowDeleteDialog(false);
   };
@@ -155,9 +157,9 @@ export default function EventDetailPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="secondary">In attesa</Badge>;
+        return <Badge variant="secondary">{t('events.status_pending')}</Badge>;
       case 'completed':
-        return <Badge variant="default" className="bg-green-100 text-green-800">Completato</Badge>;
+        return <Badge variant="default" className="bg-green-100 text-green-800">{t('events.status_completed')}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -204,10 +206,10 @@ export default function EventDetailPage() {
           variant="ghost"
           onClick={() => navigate("/events")}
           className="text-muted-foreground hover:text-foreground focus-ring"
-          aria-label="Torna alla lista eventi"
+          aria-label={t('buttons.back_to_events')}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Torna agli eventi
+          {t('buttons.back_to_events')}
         </Button>
       </div>
 
@@ -272,7 +274,7 @@ export default function EventDetailPage() {
                     <div className="flex items-center gap-2">
                       <Shuffle className="w-4 h-4" />
                       <span className="text-xs md:text-sm opacity-80">
-                        Sorteggio: {formatDate(event.draw_date)}
+                        {t('events.draw_date')}: {formatDate(event.draw_date)}
                       </span>
                     </div>
                   )}
@@ -306,28 +308,28 @@ export default function EventDetailPage() {
         <nav 
           className="sticky top-0 z-40 bg-gradient-subtle/80 backdrop-blur-sm pb-6"
           role="navigation"
-          aria-label="Sezioni evento"
+          aria-label={t('event_detail.participants_tab')}
         >
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className={`grid w-full grid-cols-4 bg-white/80 backdrop-blur-sm shadow-card`}>
               <TabsTrigger value="partecipanti" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
-                <span className="hidden sm:inline">Partecipanti</span>
+                <span className="hidden sm:inline">{t('event_detail.participants_tab')}</span>
               </TabsTrigger>
               {event.draw_status !== 'completed' && (
                 <TabsTrigger value="esclusioni" className="flex items-center gap-2">
                   <Ban className="w-4 h-4" />
-                  <span className="hidden sm:inline">Esclusioni</span>
+                  <span className="hidden sm:inline">{t('event_detail.exclusions_tab')}</span>
                 </TabsTrigger>
               ) || (
                   <TabsTrigger value="assegnazione" className="flex items-center gap-2 bg-yellow-500/40 hover:bg-yellow-500/80 transition-all duration-300 data-[state=active]:text-red-500">
                     <Gift className="w-4 h-4 animate-bounce" />
-                    <span className="hidden sm:inline font-semibold">Il tuo abbinamento</span>
+                    <span className="hidden sm:inline font-semibold">{t('event_detail.assignment_tab')}</span>
                   </TabsTrigger>
                 )}
               <TabsTrigger value="sorteggio" className="flex items-center gap-2">
                 <Shuffle className="w-4 h-4" />
-                <span className="hidden sm:inline">Sorteggio</span>
+                <span className="hidden sm:inline">{t('event_detail.draw_tab')}</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="chat" 
@@ -336,7 +338,7 @@ export default function EventDetailPage() {
               >
                 <MessageCircle className="w-4 h-4" />
                 <span className="hidden sm:inline">
-                  Chat {joinedCount < 2 && `(${joinedCount}/2)`}
+                  {t('event_detail.chat_tab')} {joinedCount < 2 && `(${joinedCount}/2)`}
                 </span>
               </TabsTrigger>
             </TabsList>
@@ -389,10 +391,10 @@ export default function EventDetailPage() {
               <div className="text-center py-8 space-y-4">
                 <div className="text-muted-foreground">
                   <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <h3 className="font-medium text-lg mb-2">Chat non disponibile</h3>
-                  <p>La chat sarà disponibile quando almeno 2 partecipanti si saranno uniti all'evento.</p>
+                  <h3 className="font-medium text-lg mb-2">{t('chat.unavailable')}</h3>
+                  <p>{t('chat.min_participants')}</p>
                   <p className="text-sm mt-2">
-                    Partecipanti attuali: <span className="font-medium">{joinedCount}/2</span>
+                    {t('members.active_participants')}: <span className="font-medium">{joinedCount}/2</span>
                   </p>
                 </div>
               </div>
@@ -433,16 +435,15 @@ export default function EventDetailPage() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Conferma Eliminazione</AlertDialogTitle>
+            <AlertDialogTitle>{t('event_detail.delete_confirm')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Sei sicuro di voler eliminare l'evento "{event.name}"? 
-              Questa azione non può essere annullata e rimuoverà tutti i dati associati inclusi messaggi, assegnazioni e liste dei desideri.
+              {t('event_detail.delete_warning')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteEvent} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Elimina Evento
+              {t('event_detail.delete_event')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

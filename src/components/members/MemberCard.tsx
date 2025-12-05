@@ -367,7 +367,7 @@ export const MemberCard = ({
               <Input
                 id="member-email"
                 type="email"
-                placeholder="email@esempio.com"
+                placeholder={t('member_name_editor.email_placeholder')}
                 value={memberEmail}
                 onChange={(e) => setMemberEmail(e.target.value)}
                 autoFocus

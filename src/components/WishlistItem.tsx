@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, ExternalLink, Trash2 } from "lucide-react";
 import { withAffiliateTag } from "@/lib/amazon";
+import { useI18n } from "@/i18n";
+
 type WishlistItemData = {
   id: string;
   asin: string;
@@ -17,6 +19,7 @@ type WishlistItemData = {
   lastUpdated?: string | null;
   wishlist_id: string;
 };
+
 interface Props {
   item: WishlistItemData;
   onDelete(id: string): Promise<void> | void;
@@ -25,11 +28,14 @@ interface Props {
   wishlistTitle?: string;
   eventTitle?: string;
 }
+
 export function WishlistItem({ item, onDelete, onAddManual, onOpenSearch, wishlistTitle, eventTitle }: Props) {
+  const { t } = useI18n();
   const [manualOpen, setManualOpen] = useState(false);
   const [manualTitle, setManualTitle] = useState("");
   const [manualUrl, setManualUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
   const handleSubmitManual = async () => {
     if (!manualUrl.trim()) return;
     setSubmitting(true);
@@ -46,7 +52,9 @@ export function WishlistItem({ item, onDelete, onAddManual, onOpenSearch, wishli
       setSubmitting(false);
     }
   };
+
   const affiliateUrl = withAffiliateTag(item.url);
+
   return (
     <Card>
       <CardContent className="p-4">
@@ -81,7 +89,7 @@ export function WishlistItem({ item, onDelete, onAddManual, onOpenSearch, wishli
               )}
               {item.lastUpdated && (
                 <div className="text-xs text-muted-foreground mt-1">
-                  Prezzo aggiornato {new Date(item.lastUpdated).toLocaleDateString()}
+                  {t('wishlist_item.price_updated')} {new Date(item.lastUpdated).toLocaleDateString()}
                 </div>
               )}
             </div>
@@ -91,11 +99,11 @@ export function WishlistItem({ item, onDelete, onAddManual, onOpenSearch, wishli
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm underline text-primary focus:outline focus:ring-2 focus:ring-primary rounded px-1"
-              aria-label="Vedi su Amazon"
+              aria-label={t('wishlist_item.view_amazon')}
               >
               <span className="inline-flex items-center gap-1">
                 <ExternalLink className="w-3.5 h-3.5" />
-                Vedi su Amazon
+                {t('wishlist_item.view_amazon')}
               </span>
               </a>
               <div className="ml-auto">
@@ -103,11 +111,11 @@ export function WishlistItem({ item, onDelete, onAddManual, onOpenSearch, wishli
                 size="sm"
                 variant="destructive"
                 onClick={() => onDelete(item.id)}
-                aria-label="Rimuovi"
+                aria-label={t('wishlist_item.remove')}
                 className="min-h-[44px] text-red-90 hover:text-red-50"
               >
                 <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                <span className="hidden sm:inline">Rimuovi</span>
+                <span className="hidden sm:inline">{t('wishlist_item.remove')}</span>
               </Button>
               </div>
             </div>
@@ -115,30 +123,30 @@ export function WishlistItem({ item, onDelete, onAddManual, onOpenSearch, wishli
               <div className="mt-4 space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor={`title-${item.id}`}>Titolo</Label>
+                    <Label htmlFor={`title-${item.id}`}>{t('wishlist_item.title_label')}</Label>
                     <Input
                       id={`title-${item.id}`}
                       value={manualTitle}
                       onChange={(e) => setManualTitle(e.target.value)}
-                      placeholder="Titolo del prodotto"
+                      placeholder={t('wishlist.product_title_placeholder')}
                     />
                   </div>
                   <div>
-                    <Label htmlFor={`url-${item.id}`}>URL Amazon</Label>
+                    <Label htmlFor={`url-${item.id}`}>{t('wishlist_item.url_label')}</Label>
                     <Input
                       id={`url-${item.id}`}
                       value={manualUrl}
                       onChange={(e) => setManualUrl(e.target.value)}
-                      placeholder="https://www.amazon.it/dp/..."
+                      placeholder={t('wishlist.amazon_url_placeholder')}
                     />
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={handleSubmitManual} disabled={submitting} className="flex-1">
-                    Aggiungi
+                    {t('wishlist_item.add')}
                   </Button>
                   <Button variant="outline" onClick={() => setManualOpen(false)} className="flex-1">
-                    Annulla
+                    {t('common.cancel')}
                   </Button>
                 </div>
               </div>
@@ -149,4 +157,5 @@ export function WishlistItem({ item, onDelete, onAddManual, onOpenSearch, wishli
     </Card>
   );
 }
+
 export default WishlistItem;

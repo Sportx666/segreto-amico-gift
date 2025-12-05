@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useI18n } from '@/i18n';
 
 interface ChatMessage {
   id: string;
@@ -17,6 +18,7 @@ interface ChatMessage {
 
 export function useChat(eventId?: string, channel: 'event' | 'pair' = 'event', recipientId?: string) {
   const { session } = useAuth();
+  const { t } = useI18n();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -83,11 +85,11 @@ const [offset, setOffset] = useState(0);
     } catch (error: any) {
       if (error?.name === 'AbortError') return; // ignore aborted
       console.error('Error fetching messages:', error);
-      toast.error('Errore nel caricamento dei messaggi');
+      toast.error(t('toasts.load_messages_error'));
     } finally {
       if (fetchId === fetchIdRef.current) setLoading(false);
     }
-  }, [eventId, channel, session, recipientId, offset]);
+  }, [eventId, channel, session, recipientId, offset, t]);
 
   const sendMessage = useCallback(async (content: string) => {
     if (!eventId || !session?.access_token || !content.trim()) return false;
@@ -119,12 +121,12 @@ const [offset, setOffset] = useState(0);
     } catch (error) {
       console.error('Error sending message:', error);
       console.log('Send message payload:', { eventId, channel, content: content.trim(), recipientId });
-      toast.error('Errore nell\'invio del messaggio');
+      toast.error(t('toasts.send_message_error'));
       return false;
     } finally {
       setSending(false);
     }
-  }, [eventId, channel, session, recipientId]);
+  }, [eventId, channel, session, recipientId, t]);
 
   const loadMore = () => {
     if (!loading && hasMore) {
