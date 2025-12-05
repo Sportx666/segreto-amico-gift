@@ -10,8 +10,10 @@ import { toast } from "sonner";
 import { uploadImage, resizeToWebP } from "@/lib/upload";
 import { useAuth } from "@/components/AuthProvider";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { useI18n } from "@/i18n";
 
 const EventEdit = () => {
+  const { t } = useI18n();
   const { id } = useParams();
   const [name, setName] = useState("");
   const [budget, setBudget] = useState<number | "">("");
@@ -47,13 +49,13 @@ const EventEdit = () => {
       if (error) throw error;
 
       if (!event) {
-        toast.error("Evento non trovato o non hai i permessi per modificarlo");
+        toast.error(t('event_edit.not_found'));
         navigate("/events");
         return;
       }
 
       if (event.draw_status === 'completed') {
-        toast.error("Non puoi modificare un evento dopo che il sorteggio è stato completato");
+        toast.error(t('event_edit.cannot_edit_after_draw'));
         navigate(`/events/${id}`);
         return;
       }
@@ -65,7 +67,7 @@ const EventEdit = () => {
       setCurrentCoverUrl(event.cover_image_url);
     } catch (error) {
       console.error("Error fetching event:", error);
-      toast.error("Errore nel caricamento dell'evento");
+      toast.error(t('event_edit.loading_error'));
       navigate("/events");
     } finally {
       setInitialLoading(false);
@@ -80,7 +82,6 @@ const EventEdit = () => {
     try {
       let coverImageUrl = currentCoverUrl;
 
-      // If a new cover image is selected, upload it
       if (coverFile) {
         try {
           setCoverUploading(true);
@@ -90,16 +91,15 @@ const EventEdit = () => {
             path: `${id}/cover.webp`,
             file: resized,
           });
-          toast.success("Immagine evento caricata");
+          toast.success(t('event_edit.image_uploaded'));
         } catch (e) {
           console.warn("Cover upload failed", e);
-          toast.error("Caricamento immagine evento fallito");
+          toast.error(t('event_edit.image_upload_failed'));
         } finally {
           setCoverUploading(false);
         }
       }
 
-      // Update the event
       const { error } = await supabase
         .from("events")
         .update({
@@ -114,12 +114,12 @@ const EventEdit = () => {
 
       if (error) throw error;
 
-      toast.success("Evento aggiornato con successo! 🎉");
+      toast.success(t('event_edit.updated_success'));
       navigate(`/events/${id}`);
     } catch (error: unknown) {
       console.error("Error updating event:", error);
       const description = error instanceof Error ? error.message : undefined;
-      toast.error("Errore nell'aggiornamento dell'evento", {
+      toast.error(t('event_edit.update_error'), {
         description
       });
     } finally {
@@ -150,7 +150,7 @@ const EventEdit = () => {
           className="text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Torna all'evento
+          {t('buttons.back_to_event')}
         </Button>
       </div>
 
@@ -161,12 +161,12 @@ const EventEdit = () => {
             <div className="mx-auto w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mb-4">
               <Gift className="w-8 h-8 text-white" />
             </div>
-            <CardTitle className="text-2xl font-bold">Modifica Evento</CardTitle>
+            <CardTitle className="text-2xl font-bold">{t('event_edit.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label>Immagine evento</Label>
+                <Label>{t('event_edit.cover_image')}</Label>
                 <div className="w-full">
                   <img
                     src={coverFile ? URL.createObjectURL(coverFile) : (currentCoverUrl || "/placeholder.svg")}
@@ -190,7 +190,7 @@ const EventEdit = () => {
                       title="Remove picture"
                     >
                       <Trash2 className="w-4 h-4" />
-                      <span className="hidden sm:inline">Rimuovi</span>
+                      <span className="hidden sm:inline">{t('event_edit.remove_image')}</span>
                     </Button>
                   )}
                 </div>
@@ -198,10 +198,10 @@ const EventEdit = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="name">Nome dell'evento</Label>
+                <Label htmlFor="name">{t('event_edit.event_name')}</Label>
                 <Input
                   id="name"
-                  placeholder="Natale in famiglia 2024"
+                  placeholder={t('event_edit.event_name_placeholder')}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -209,7 +209,7 @@ const EventEdit = () => {
               </div>
 
               <div className="space-y-3">
-                <Label>Budget suggerito</Label>
+                <Label>{t('event_edit.suggested_budget')}</Label>
                 <div className="grid grid-cols-4 gap-2">
                   {budgetPresets.map((preset) => (
                     <Button
@@ -227,7 +227,7 @@ const EventEdit = () => {
                 </div>
                 <Input
                   type="number"
-                  placeholder="Budget personalizzato"
+                  placeholder={t('event_edit.custom_budget')}
                   value={budget}
                   onChange={(e) => setBudget(e.target.value ? Number(e.target.value) : "")}
                   min="1"
@@ -236,7 +236,7 @@ const EventEdit = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date">Data dello scambio</Label>
+                <Label htmlFor="date">{t('event_edit.exchange_date')}</Label>
                 <Input
                   id="date"
                   type="date"
@@ -246,7 +246,7 @@ const EventEdit = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="drawDate">Data automatica del sorteggio</Label>
+                <Label htmlFor="drawDate">{t('event_edit.auto_draw_date')}</Label>
                 <Input
                   id="drawDate"
                   type="date"
@@ -261,11 +261,11 @@ const EventEdit = () => {
                 disabled={loading || coverUploading}
               >
                 {loading ? (
-                  "Aggiornamento..."
+                  t('event_edit.updating')
                 ) : (
                   <>
                     <Users className="w-4 h-4 mr-2" />
-                    Aggiorna Evento
+                    {t('event_edit.update_button')}
                   </>
                 )}
               </Button>

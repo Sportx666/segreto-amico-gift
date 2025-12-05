@@ -8,8 +8,10 @@ import { toast } from "sonner";
 import { Shield, Mail, Key, LogOut, User } from "lucide-react";
 import { usePasswordAuth } from "@/hooks/usePasswordAuth";
 import PasswordSetup from "./PasswordSetup";
+import { useI18n } from "@/i18n";
 
 const AccountSettings = () => {
+  const { t } = useI18n();
   const { user } = useAuth();
   const { hasPassword, loading: passwordLoading } = usePasswordAuth();
   const [showPasswordSetup, setShowPasswordSetup] = useState(false);
@@ -20,10 +22,10 @@ const AccountSettings = () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      toast.success("Disconnesso con successo");
+      toast.success(t('account.signout_success'));
     } catch (error: unknown) {
       const description = error instanceof Error ? error.message : undefined;
-      toast.error("Errore durante la disconnessione", { description });
+      toast.error(t('account.signout_error'), { description });
     } finally {
       setSigningOut(false);
     }
@@ -34,7 +36,7 @@ const AccountSettings = () => {
       <PasswordSetup 
         onComplete={() => {
           setShowPasswordSetup(false);
-          toast.success("Ora puoi accedere più velocemente!");
+          toast.success(t('account.setup_complete'));
         }}
         onSkip={() => setShowPasswordSetup(false)}
       />
@@ -49,10 +51,10 @@ const AccountSettings = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="w-5 h-5" />
-            Il Tuo Account
+            {t('account.title')}
           </CardTitle>
           <CardDescription>
-            Gestisci le impostazioni del tuo account e della sicurezza
+            {t('account.description')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -60,30 +62,30 @@ const AccountSettings = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm font-medium">Email</p>
+                <p className="text-sm font-medium">{t('account.email_label')}</p>
                 <p className="text-sm text-muted-foreground">{user.email}</p>
               </div>
               <Badge variant="outline">
                 <Mail className="w-3 h-3 mr-1" />
-                Verificata
+                {t('account.verified')}
               </Badge>
             </div>
 
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm font-medium">Metodo di Accesso</p>
+                <p className="text-sm font-medium">{t('account.login_method')}</p>
                 <div className="flex items-center gap-2">
                   {!passwordLoading && (
                     <Badge variant={hasPassword ? "default" : "secondary"}>
                       {hasPassword ? (
                         <>
                           <Key className="w-3 h-3 mr-1" />
-                          Password
+                          {t('account.password_method')}
                         </>
                       ) : (
                         <>
                           <Mail className="w-3 h-3 mr-1" />
-                          Link
+                          {t('account.link_method')}
                         </>
                       )}
                     </Badge>
@@ -98,7 +100,7 @@ const AccountSettings = () => {
 
           {/* Security Actions */}
           <div className="border-t pt-6">
-            <h4 className="text-sm font-medium mb-4">Sicurezza</h4>
+            <h4 className="text-sm font-medium mb-4">{t('account.security')}</h4>
             <div className="space-y-3">
               {hasPassword && (
                 <Button
@@ -108,12 +110,12 @@ const AccountSettings = () => {
                     supabase.auth.resetPasswordForEmail(user.email || '', {
                       redirectTo: `${window.location.origin}/auth`
                     });
-                    toast.success("Email di reset inviata!");
+                    toast.success(t('account.reset_email_sent'));
                   }}
                   className="w-full justify-start"
                 >
                   <Key className="w-4 h-4 mr-2" />
-                  Cambia Password
+                  {t('account.change_password')}
                 </Button>
               )}
               
@@ -125,7 +127,7 @@ const AccountSettings = () => {
                 className="w-full justify-start text-destructive hover:text-destructive/80 hover:bg-destructive/10"
               >
                 <LogOut className="w-4 h-4 mr-2" />
-                {signingOut ? "Disconnessione..." : "Disconnetti"}
+                {signingOut ? t('account.signing_out') : t('account.signout')}
               </Button>
             </div>
           </div>
@@ -140,16 +142,16 @@ const AccountSettings = () => {
                 <Shield className="w-5 h-5 text-primary" />
               </div>
               <div className="space-y-2 flex-1">
-                <h4 className="font-medium">Configura l'Accesso Veloce</h4>
+                <h4 className="font-medium">{t('account.fast_login_title')}</h4>
                 <p className="text-sm text-muted-foreground">
-                  Imposta una password per accedere senza dover controllare l'email ogni volta.
+                  {t('account.fast_login_desc')}
                 </p>
                 <Button
                   size="sm"
                   onClick={() => setShowPasswordSetup(true)}
                   className="bg-gradient-primary hover:bg-primary/90"
                 >
-                  Configura Ora
+                  {t('account.setup_now')}
                 </Button>
               </div>
             </div>

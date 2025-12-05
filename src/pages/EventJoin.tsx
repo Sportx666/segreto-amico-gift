@@ -4,8 +4,10 @@ import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/i18n";
 
 const EventJoin = () => {
+  const { t } = useI18n();
   const { token } = useParams<{ token: string }>();
   const { session, loading } = useAuth();
   const navigate = useNavigate();
@@ -43,13 +45,13 @@ const EventJoin = () => {
   const renderMessage = () => {
     switch (status) {
       case "invalid":
-        return "Link non valido";
+        return t('event_join.invalid_link');
       case "expired":
-        return "Link scaduto";
+        return t('event_join.expired_link');
       case "used":
-        return "Link già utilizzato";
+        return t('event_join.used_link');
       default:
-        return "Verifica del link in corso...";
+        return t('event_join.verifying');
     }
   };
 
@@ -61,7 +63,7 @@ const EventJoin = () => {
             <CardTitle>{renderMessage()}</CardTitle>
           </CardHeader>
           {(status === "invalid" || status === "expired" || status === "used") && (
-            <Button onClick={() => navigate("/")}>Torna alla home</Button>
+            <Button onClick={() => navigate("/")}>{t('event_join.back_home')}</Button>
           )}
         </CardContent>
       </Card>

@@ -6,12 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Mail, ArrowLeft, RotateCcw } from "lucide-react";
+import { useI18n } from "@/i18n";
 
 interface PasswordResetProps {
   onBack: () => void;
 }
 
 const PasswordReset = ({ onBack }: PasswordResetProps) => {
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -23,7 +25,6 @@ const PasswordReset = ({ onBack }: PasswordResetProps) => {
     setLoading(true);
     
     try {
-      // Use auth page for recovery flow - this triggers PASSWORD_RECOVERY event
       const redirectUrl = `${window.location.origin}/auth`;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl
@@ -31,13 +32,13 @@ const PasswordReset = ({ onBack }: PasswordResetProps) => {
 
       if (error) throw error;
 
-      toast.success("Email di reset inviata! 📧", {
-        description: "Controlla la tua email per reimpostare la password."
+      toast.success(t('password_reset.email_sent_success'), {
+        description: t('password_reset.email_sent_desc')
       });
       setSent(true);
     } catch (error: unknown) {
       const description = error instanceof Error ? error.message : undefined;
-      toast.error("Errore durante l'invio", {
+      toast.error(t('password_reset.send_error'), {
         description
       });
     } finally {
@@ -55,12 +56,12 @@ const PasswordReset = ({ onBack }: PasswordResetProps) => {
             </div>
             <div className="space-y-2">
               <CardTitle className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                {sent ? "Email Inviata!" : "Reset Password"}
+                {sent ? t('password_reset.title_sent') : t('password_reset.title')}
               </CardTitle>
               <CardDescription className="text-base">
                 {sent 
-                  ? "Controlla la tua email per completare il reset della password"
-                  : "Inserisci la tua email per ricevere il link di reset"
+                  ? t('password_reset.description_sent')
+                  : t('password_reset.description')
                 }
               </CardDescription>
             </div>
@@ -70,13 +71,13 @@ const PasswordReset = ({ onBack }: PasswordResetProps) => {
             {!sent ? (
               <form onSubmit={handleResetPassword} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="reset-email">Indirizzo Email</Label>
+                  <Label htmlFor="reset-email">{t('password_reset.email_address')}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
                     <Input
                       id="reset-email"
                       type="email"
-                      placeholder="la.tua@email.com"
+                      placeholder={t('auth.email_placeholder')}
                       className="pl-10 h-12"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -91,7 +92,7 @@ const PasswordReset = ({ onBack }: PasswordResetProps) => {
                   className="w-full bg-gradient-primary hover:bg-primary/90 transition-all duration-300 hover:shadow-glow"
                   disabled={loading}
                 >
-                  {loading ? "Invio..." : "Invia Link di Reset"}
+                  {loading ? t('password_reset.sending') : t('password_reset.send_reset_link')}
                 </Button>
               </form>
             ) : (
@@ -100,14 +101,14 @@ const PasswordReset = ({ onBack }: PasswordResetProps) => {
                   <Mail className="w-8 h-8 text-primary" />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Se l'email esiste nel nostro sistema, riceverai le istruzioni per reimpostare la password.
+                  {t('password_reset.check_email')}
                 </p>
                 <Button 
                   onClick={() => setSent(false)}
                   variant="outline"
                   className="w-full"
                 >
-                  Invia di nuovo
+                  {t('password_reset.send_again')}
                 </Button>
               </div>
             )}
@@ -118,7 +119,7 @@ const PasswordReset = ({ onBack }: PasswordResetProps) => {
               className="w-full text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Torna al login
+              {t('password_reset.back_to_login')}
             </Button>
           </CardContent>
         </Card>

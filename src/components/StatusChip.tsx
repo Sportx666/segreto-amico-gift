@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { useI18n } from "@/i18n";
 
 interface StatusChipProps {
   status: string;
@@ -12,7 +13,8 @@ const variants: Record<string, string> = {
 };
 
 export const StatusChip = ({ status }: StatusChipProps) => {
+  const { t } = useI18n();
   const className = variants[status] || "bg-muted text-muted-foreground";
-  const label = status ? status.charAt(0).toUpperCase() + status.slice(1) : "";
+  const label = status ? t(`status.${status}`) : "";
   return <Badge className={className}>{label}</Badge>;
 };

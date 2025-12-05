@@ -9,11 +9,12 @@ import { getOrCreateParticipantId } from "@/lib/participants";
 import { MemberCard } from "./members/MemberCard";
 import { AddMemberDialog } from "./members/AddMemberDialog";
 import { DebugPanel } from "./members/DebugPanel";
+import { useI18n } from "@/i18n";
 
 interface EventMembersProps {
   eventId: string;
   userRole: string;
-  eventStatus?: string; // draw_status from event (e.g., 'pending', 'completed')
+  eventStatus?: string;
 }
 
 interface DebugData {
@@ -21,6 +22,7 @@ interface DebugData {
 }
 
 export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersProps) => {
+  const { t } = useI18n();
   const { user } = useAuth();
   const { members, loading: isLoading } = useEventMembers(eventId);
   const { count: joinedCount } = useJoinedParticipantCount(eventId);
@@ -28,7 +30,6 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
   const [currentUserParticipantId, setCurrentUserParticipantId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Get current user's participant ID
     const getCurrentUserParticipant = async () => {
       if (user) {
         try {
@@ -51,12 +52,8 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
   }, [user]);
 
   const fetchMembers = async () => {
-    // This function is kept for backward compatibility with existing functionality
-    // but is no longer needed since we use the useEventMembers hook
-    // However, some debug and fallback logic still references it
     try {
       debugLog("EventMembers.fetch:start", { eventId, userId: user?.id });
-      // Ensure the viewer has a participant id (RLS-friendly path)
       if (user) {
         try {
           const pid = await getOrCreateParticipantId(user.id);
@@ -70,7 +67,6 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
 
       setDiag((d) => ({ ...d, membersCount: members?.length ?? 0 }));
 
-      // If blocked or empty, try to at least show current user's membership
       if (user && members.length === 0) {
         const pid = await getOrCreateParticipantId(user.id);
         const { data: selfRow } = await supabase
@@ -94,9 +90,8 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
   };
 
   const removeMember = async (memberId: string) => {
-    // Guard: allow deletion only for admins when draw is pending
     if (!(userRole === 'admin' && eventStatus === 'pending')) {
-      toast.error("Non puoi rimuovere partecipanti dopo il sorteggio");
+      toast.error(t('members.cannot_remove_after_draw'));
       return;
     }
     try {
@@ -107,17 +102,16 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
 
       if (error) throw error;
 
-      // Members will auto-update via the useEventMembers hook
-      toast.success("Partecipante rimosso");
+      toast.success(t('members.participant_removed'));
     } catch (error: unknown) {
       console.error('Error removing member:', error);
-      toast.error("Errore nella rimozione del partecipante");
+      toast.error(t('members.error_removing_participant'));
     }
   };
 
   const removeUnjoinedMember = async (participantId: string) => {
     if (userRole !== 'admin') {
-      toast.error("Solo gli amministratori possono rimuovere partecipanti");
+      toast.error(t('members.error_no_permission'));
       return;
     }
 
@@ -129,16 +123,15 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
 
       if (error) throw error;
 
-      // Members will auto-update via the useEventMembers hook
-      toast.success("Invito rimosso");
+      toast.success(t('members.invite_removed'));
       debugLog('EventMembers', `Removal result: ${JSON.stringify(data)}`);
     } catch (error: unknown) {
       console.error('Error removing unjoined member:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (errorMessage.includes('Cannot remove joined participant')) {
-        toast.error("Non puoi rimuovere un partecipante che ha già accettato l'invito");
+        toast.error(t('members.cannot_remove_joined'));
       } else {
-        toast.error("Errore nella rimozione dell'invito");
+        toast.error(t('members.error_removing_invite'));
       }
     }
   };
@@ -152,15 +145,14 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
 
       if (error) throw error;
 
-      toast.success("Ruolo admin trasferito con successo!");
+      toast.success(t('members.admin_transfer_success'));
       debugLog('EventMembers.transferAdmin', { result: data });
       
-      // Reload to refresh user role and UI
       window.location.reload();
     } catch (error: unknown) {
       console.error('Error transferring admin:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
-      toast.error(`Errore nel trasferimento: ${errorMessage}`);
+      toast.error(`${t('members.admin_transfer_error')}: ${errorMessage}`);
     }
   };
 
@@ -191,9 +183,9 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-semibold">Membri</h3>
+          <h3 className="text-lg font-semibold">{t('members.title')}</h3>
           <p className="text-sm text-muted-foreground">
-            {members.length} membri totali • {joinedCount} partecipanti attivi
+            {members.length} {t('members.total_members')} • {joinedCount} {t('members.active_participants')}
           </p>
         </div>
 

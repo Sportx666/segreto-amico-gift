@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { X, UserX } from "lucide-react";
 import { toast } from "sonner";
+import { useI18n } from "@/i18n";
 
 interface EventExclusionsProps {
   eventId: string;
@@ -30,6 +31,7 @@ interface Exclusion {
 }
 
 export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => {
+  const { t } = useI18n();
   const { user } = useAuth();
   const { participants, loading: participantsLoading } = useEventParticipants(eventId);
   const [exclusions, setExclusions] = useState<Exclusion[]>([]);
@@ -43,7 +45,6 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
 
   const fetchData = async () => {
     try {
-      // Get current user's participant ID
       const { data: participant } = await supabase
         .from('participants')
         .select('id')
@@ -54,7 +55,6 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
         setCurrentParticipantId(participant.id);
       }
 
-      // Fetch exclusions
       const { data: exclusionsData, error: exclusionsError } = await supabase
         .from('exclusions')
         .select('*')
@@ -65,28 +65,25 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
       setExclusions(exclusionsData || []);
     } catch (error: unknown) {
       console.error('Error fetching exclusions data:', error);
-      toast.error("Errore nel caricamento delle esclusioni");
+      toast.error(t('exclusions.loading_error'));
     }
   };
 
   const toggleExclusion = async (giverId: string, blockedId: string) => {
     try {
-      // Check if exclusion already exists
       const existingExclusion = exclusions.find(
         ex => ex.giver_id === giverId && ex.blocked_id === blockedId
       );
 
       if (existingExclusion) {
-        // Remove exclusion
         const { error } = await supabase
           .from('exclusions')
           .update({ active: false })
           .eq('id', existingExclusion.id);
 
         if (error) throw error;
-        toast.success("Esclusione rimossa");
+        toast.success(t('exclusions.exclusion_removed'));
       } else {
-        // Add exclusion
         const { error } = await supabase
           .from('exclusions')
           .insert({
@@ -98,13 +95,13 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
           });
 
         if (error) throw error;
-        toast.success("Esclusione aggiunta");
+        toast.success(t('exclusions.exclusion_added'));
       }
 
       await fetchData();
     } catch (error: unknown) {
       console.error('Error toggling exclusion:', error);
-      toast.error("Errore nel modificare l'esclusione");
+      toast.error(t('exclusions.exclusion_error'));
     }
   };
 
@@ -139,11 +136,11 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UserX className="w-5 h-5" />
-            Matrice Esclusioni
+            {t('exclusions.title')}
           </CardTitle>
           <CardDescription>
-            Configura chi non può regalare a chi. Ogni persona può impostare le proprie esclusioni
-            {userRole === 'admin' && ' e l\'amministratore può modificare tutto'}.
+            {t('exclusions.description')}
+            {userRole === 'admin' && t('exclusions.admin_note')}.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -155,12 +152,12 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-background">
               {/* Mobile scroll hint */}
               <div className="sm:hidden text-xs text-muted-foreground mb-2 flex items-center gap-1">
-                ← Scorri per vedere tutti i partecipanti →
+                ← {t('exclusions.scroll_hint')} →
               </div>
               <table className="w-full">
                 <thead>
                   <tr>
-                    <th className="text-left p-2 sm:p-3 font-medium sticky left-0 bg-background z-10 border-r">Regala a →</th>
+                    <th className="text-left p-2 sm:p-3 font-medium sticky left-0 bg-background z-10 border-r">{t('exclusions.gives_to')}</th>
                     {participants.map((member) => (
                       <th key={member.id} className="p-2 sm:p-3 text-center min-w-[100px] sm:min-w-[120px]">
                         <div className="text-xs sm:text-sm font-medium truncate">
@@ -177,7 +174,7 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
                         <div className="flex items-center gap-1 sm:gap-2">
                           <span className="text-xs sm:text-sm truncate">{getMemberName(giver)}</span>
                           {giver.role === 'admin' && (
-                            <Badge variant="secondary" className="text-xs hidden sm:inline-flex">Admin</Badge>
+                            <Badge variant="secondary" className="text-xs hidden sm:inline-flex">{t('common.admin')}</Badge>
                           )}
                         </div>
                       </td>
@@ -206,8 +203,8 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
             </div>
             
             <div className="mt-4 text-sm text-muted-foreground">
-              <p>✓ = Non può regalare a questa persona</p>
-              <p>Le celle grigie rappresentano se stessi (non possono regalare a se stessi)</p>
+              <p>{t('exclusions.check_hint')}</p>
+              <p>{t('exclusions.self_hint')}</p>
             </div>
           </CardContent>
         </Card>
@@ -215,9 +212,9 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
         <Card>
           <CardContent className="p-8 text-center">
             <UserX className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-semibold mb-2">Servono almeno 2 partecipanti</h3>
+            <h3 className="font-semibold mb-2">{t('exclusions.min_2_participants')}</h3>
             <p className="text-sm text-muted-foreground">
-              Aggiungi più partecipanti per configurare le esclusioni
+              {t('exclusions.add_more_participants')}
             </p>
           </CardContent>
         </Card>
@@ -227,9 +224,9 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
       {exclusions.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Esclusioni Attive</CardTitle>
+            <CardTitle className="text-lg">{t('exclusions.active_exclusions')}</CardTitle>
             <CardDescription>
-              Riepilogo delle esclusioni configurate
+              {t('exclusions.exclusions_summary')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -243,7 +240,7 @@ export const EventExclusions = ({ eventId, userRole }: EventExclusionsProps) => 
                 return (
                   <div key={exclusion.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <span className="text-sm">
-                      <strong>{getMemberName(giver)}</strong> non può regalare a <strong>{getMemberName(blocked)}</strong>
+                      <strong>{getMemberName(giver)}</strong> {t('exclusions.cannot_give_to').replace('{giver}', '').replace('{receiver}', '')} <strong>{getMemberName(blocked)}</strong>
                     </span>
                     {canEditExclusions(exclusion.giver_id) && (
                       <Button
