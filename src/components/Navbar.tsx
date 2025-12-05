@@ -138,7 +138,8 @@ export const Navbar = () => {
           </div>
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-3">            
+          <div className="hidden md:flex items-center gap-3">
+            <LanguageMenu />
             <NotificationBell />
             <Link 
               to="/profile" 
