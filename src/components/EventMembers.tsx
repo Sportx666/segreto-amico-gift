@@ -9,19 +9,22 @@ import { getOrCreateParticipantId } from "@/lib/participants";
 import { MemberCard } from "./members/MemberCard";
 import { AddMemberDialog } from "./members/AddMemberDialog";
 import { DebugPanel } from "./members/DebugPanel";
+import { EventShareLink } from "./EventShareLink";
 import { useI18n } from "@/i18n";
 
 interface EventMembersProps {
   eventId: string;
   userRole: string;
   eventStatus?: string;
+  joinCode?: string | null;
+  eventName?: string;
 }
 
 interface DebugData {
   [key: string]: unknown;
 }
 
-export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersProps) => {
+export const EventMembers = ({ eventId, userRole, eventStatus, joinCode, eventName }: EventMembersProps) => {
   const { t } = useI18n();
   const { user } = useAuth();
   const { members, loading: isLoading } = useEventMembers(eventId);
@@ -177,6 +180,15 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
           setDiag={setDiag}
           newMemberName=""
           newMemberEmail=""
+        />
+      )}
+
+      {/* Event Share Link - show for admins when event is pending */}
+      {userRole === 'admin' && eventStatus === 'pending' && joinCode && (
+        <EventShareLink 
+          eventId={eventId} 
+          joinCode={joinCode} 
+          eventName={eventName || ''} 
         />
       )}
       

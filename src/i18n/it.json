@@ -688,5 +688,28 @@
     "permission_denied": "Permesso negato",
     "not_found": "Non trovato",
     "validation_error": "Errore di validazione"
+  },
+  "event_share": {
+    "title": "Link Invito Evento",
+    "description": "Condividi questo link per far partecipare chiunque all'evento",
+    "link_copied": "Link copiato!",
+    "copy_failed": "Impossibile copiare il link",
+    "whatsapp_invite": "Sei invitato/a a partecipare a",
+    "click_to_join": "Clicca per partecipare",
+    "email_subject_prefix": "Invito a",
+    "email_body_intro": "Sei stato invitato/a a partecipare a un evento Amico Segreto!",
+    "share_title_prefix": "Partecipa a",
+    "share_text": "Partecipa al nostro scambio di regali Amico Segreto!"
+  },
+  "event_join": {
+    "invalid_link": "Link non valido",
+    "expired_link": "Link scaduto",
+    "used_link": "Link già utilizzato",
+    "verifying": "Verifica del link in corso...",
+    "back_home": "Torna alla home",
+    "invalid_code": "Codice evento non valido",
+    "event_closed": "Questo evento non accetta più nuovi partecipanti",
+    "join_error": "Errore nell'entrare nell'evento",
+    "joining": "Accesso all'evento in corso..."
   }
 }

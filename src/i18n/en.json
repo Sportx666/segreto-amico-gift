@@ -688,5 +688,28 @@
     "permission_denied": "Permission denied",
     "not_found": "Not found",
     "validation_error": "Validation error"
+  },
+  "event_share": {
+    "title": "Event Invite Link",
+    "description": "Share this link so anyone can join the event",
+    "link_copied": "Link copied!",
+    "copy_failed": "Failed to copy link",
+    "whatsapp_invite": "You're invited to join",
+    "click_to_join": "Click to join",
+    "email_subject_prefix": "Invitation to",
+    "email_body_intro": "You've been invited to join a Secret Santa event!",
+    "share_title_prefix": "Join",
+    "share_text": "Join our Secret Santa gift exchange!"
+  },
+  "event_join": {
+    "invalid_link": "Invalid link",
+    "expired_link": "Expired link",
+    "used_link": "Link already used",
+    "verifying": "Verifying link...",
+    "back_home": "Back to home",
+    "invalid_code": "Invalid event code",
+    "event_closed": "This event is closed to new participants",
+    "join_error": "Error joining event",
+    "joining": "Joining event..."
   }
 }
