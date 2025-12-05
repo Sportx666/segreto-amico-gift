@@ -163,6 +163,18 @@
     "invite_email_subject": "Invito a partecipare all'Amico Segreto",
     "invite_email_body": "Ciao!\\n\\nSei stato invitato a partecipare a un evento Amico Segreto. Clicca sul link qui sotto per unirti:\\n\\n{link}\\n\\nA presto!"
   },
+  "draw": {
+    "auto_draw": "Sorteggio Automatico",
+    "auto_draw_description": "Programma il sorteggio per essere eseguito automaticamente",
+    "enable_auto_draw": "Abilita sorteggio automatico",
+    "active": "Attivo",
+    "scheduled_for": "Programmato per",
+    "no_draw_date": "Data sorteggio non impostata",
+    "auto_draw_info": "Il sorteggio verrà eseguito automaticamente alle 9:00 del mattino della data del sorteggio. Tutti i partecipanti riceveranno una notifica.",
+    "auto_draw_scheduled": "Sorteggio automatico programmato!",
+    "auto_draw_disabled": "Sorteggio automatico disabilitato",
+    "auto_draw_error": "Errore nel configurare il sorteggio automatico"
+  },
   "chat": {
     "title": "Chat",
     "unavailable": "Chat non disponibile",
