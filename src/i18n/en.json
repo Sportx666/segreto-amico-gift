@@ -1,4 +1,10 @@
 {
+  "update": {
+    "new_version_available": "Update Available",
+    "new_version_description": "A new version of the app is ready. Update now for the latest features and fixes.",
+    "update_now": "Update Now",
+    "later": "Later"
+  },
   "navbar": {
     "events": "Events",
     "ideas": "Ideas",

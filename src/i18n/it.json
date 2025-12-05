@@ -1,4 +1,10 @@
 {
+  "update": {
+    "new_version_available": "Aggiornamento Disponibile",
+    "new_version_description": "Una nuova versione dell'app è pronta. Aggiorna ora per le ultime funzionalità e correzioni.",
+    "update_now": "Aggiorna Ora",
+    "later": "Più Tardi"
+  },
   "navbar": {
     "events": "Eventi",
     "ideas": "Idee",

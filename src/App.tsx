@@ -8,6 +8,7 @@ import { Navbar } from "@/components/Navbar";
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { AdSlot } from "@/components/AdSlot";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { UpdateNotification } from "@/components/UpdateNotification";
 import { useAdsConsent } from "@/hooks/useAdsConsent";
 import { getAdSlotsForRoute } from "@/lib/adsConfig";
 import { featureFlags } from "@/lib/featureFlags";
@@ -100,6 +101,7 @@ const App = () => (
         <ErrorBoundary>
           <Toaster />
           <Sonner />
+          <UpdateNotification />
           <BrowserRouter>
             <AuthProvider>
               <AppContent />
