@@ -66,7 +66,6 @@ const ensureProfile = async (user: User) => {
     }
 
     debugLog('AuthProvider', `✅ Profile created for new user: ${user.id}, ${displayName}`);
-    toast.success(`Welcome ${displayName}! Your profile has been created.`);
 
   } catch (error) {
     console.error('Error in ensureProfile:', error);

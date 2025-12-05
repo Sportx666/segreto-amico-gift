@@ -3,6 +3,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { getOrCreateParticipantId } from '@/lib/participants';
+import { useI18n } from '@/i18n';
 
 interface NicknameData {
   id: string;
@@ -12,6 +13,7 @@ interface NicknameData {
 
 export function useNickname(eventId?: string) {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [nickname, setNickname] = useState<NicknameData | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -34,7 +36,7 @@ export function useNickname(eventId?: string) {
       setNickname(data);
     } catch (error) {
       console.error('Error fetching nickname:', error);
-      toast.error('Errore nel caricamento del nickname');
+      toast.error(t('toasts.load_nickname_error'));
     } finally {
       setLoading(false);
     }
@@ -78,14 +80,14 @@ export function useNickname(eventId?: string) {
         setNickname(data);
       }
 
-      toast.success('Nickname aggiornato');
+      toast.success(t('toasts.nickname_updated'));
       return true;
     } catch (error: any) {
       console.error('Error updating nickname:', error);
       if (error.code === '23505') {
-        toast.error('Questo nickname è già in uso');
+        toast.error(t('toasts.nickname_in_use'));
       } else {
-        toast.error('Errore nel salvataggio del nickname');
+        toast.error(t('toasts.save_nickname_error'));
       }
       return false;
     } finally {
