@@ -300,6 +300,7 @@
     "new_chat": "New Chat",
     "general_chat": "General Chat",
     "anonymous_user": "Anonymous User",
+    "anonymous": "Anonymous",
     "close_chat_with": "Close chat with {name}",
     "no_messages": "No messages yet.",
     "start_conversation": "Start the conversation!",
@@ -309,7 +310,9 @@
     "placeholder": "Type a message...",
     "private_placeholder": "Private message as \"{nickname}\"...",
     "set_nickname": "set your nickname",
-    "set_nickname_error": "Set your anonymous nickname to send private messages"
+    "set_nickname_error": "Set your anonymous nickname to send private messages",
+    "start_private_chat": "Start a new private chat",
+    "send_message": "Send message"
   },
   "notifications": {
     "title": "Notifications",
@@ -318,13 +321,56 @@
     "event_message": "wrote in the event chat",
     "sent_message": "sent you a message",
     "mark_all_read": "Mark all as read",
-    "no_notifications": "No notifications"
+    "no_notifications": "No notifications",
+    "loading": "Loading...",
+    "read": "Read"
   },
   "toasts": {
     "logout_success": "Logout successful",
     "logout_error": "Error during logout",
     "link_copied": "Copied to clipboard!",
-    "copy_error": "Error copying"
+    "copy_error": "Error copying",
+    "invite_link_copied": "Invite link copied!",
+    "token_refreshed": "Token refreshed!",
+    "token_error": "Error refreshing token",
+    "email_saved": "Email saved!",
+    "email_error": "Error saving email",
+    "invalid_email": "Enter a valid email",
+    "token_unavailable": "Token unavailable"
+  },
+  "event_share": {
+    "title": "Share Event",
+    "description": "Invite friends and family to participate in your \"Secret Santa\" event",
+    "go_to_participants": "Go to Participants → Add to create a personal invite.",
+    "share_link": "Share the generated link directly with the participant.",
+    "email_hint": "If you enter an email, you avoid duplicates and automatically link the account if it exists.",
+    "how_it_works": "How It Works",
+    "step_1": "1. Generate and send personal invite links from the Participants section.",
+    "step_2": "2. Invitees open the link, authenticate, and join the event.",
+    "step_3": "3. When everyone has joined, configure exclusions and perform the draw.",
+    "step_4": "4. Each participant will receive their secret assignment."
+  },
+  "member_card": {
+    "participant": "Participant",
+    "copy": "Copy",
+    "refresh": "Refresh",
+    "expires": "Expires",
+    "used": "Used",
+    "add_email": "Add Email",
+    "add_email_desc": "Enter {name}'s email to send them the invite.",
+    "save_and_send": "Save and Send Invite",
+    "saving": "Saving...",
+    "transfer_admin": "Transfer Admin Role",
+    "transfer_admin_confirm": "Are you sure you want to transfer the administrator role to \"{name}\"?",
+    "transfer_admin_warning": "You will lose the ability to manage the event, members, and settings.",
+    "transfer": "Transfer",
+    "remove_invite": "Remove invite for {name}",
+    "remove_member": "Remove {name} from event",
+    "copy_invite_for": "Copy invite link for {name}",
+    "refresh_token_for": "Refresh token for {name}",
+    "send_email_invite": "Send invite via email",
+    "send_whatsapp_invite": "Send invite via WhatsApp",
+    "transfer_admin_to": "Transfer admin role to {name}"
   },
   "accessibility": {
     "skip_to_content": "Skip to main content",
