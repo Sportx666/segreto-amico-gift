@@ -35,6 +35,14 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Validate content length
+    if (content.trim().length > 2000) {
+      return new Response(
+        JSON.stringify({ error: 'Message too long (max 2000 characters)' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Get auth token from headers
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
@@ -150,6 +158,73 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({ error: 'Failed to send message' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Create notifications for chat messages
+    try {
+      if (channel === 'event') {
+        // Get all other joined participants in this event
+        const { data: otherMembers, error: membersError } = await supabase
+          .from('event_members')
+          .select(`
+            participant_id,
+            participants!inner(profile_id)
+          `)
+          .eq('event_id', eventId)
+          .eq('status', 'joined')
+          .neq('participant_id', participant.id);
+
+        if (!membersError && otherMembers) {
+          // Insert notifications for each participant
+          const notifications = otherMembers
+            .filter((m: any) => m.participants?.profile_id)
+            .map((m: any) => ({
+              profile_id: m.participants.profile_id,
+              type: 'chat',
+              title: 'Nuovo messaggio',
+              body: `${aliasSnapshot} ha scritto nella chat dell'evento`
+            }));
+
+          if (notifications.length > 0) {
+            const { error: notifError } = await supabase
+              .from('notifications')
+              .insert(notifications);
+            
+            if (notifError) {
+              console.error('Error creating event chat notifications:', notifError);
+            } else {
+              console.log(`Created ${notifications.length} notifications for event chat message`);
+            }
+          }
+        }
+      } else if (channel === 'pair' && recipientParticipantId) {
+        // Get recipient's profile_id
+        const { data: recipientData, error: recipientError } = await supabase
+          .from('participants')
+          .select('profile_id')
+          .eq('id', recipientParticipantId)
+          .single();
+
+        if (!recipientError && recipientData?.profile_id) {
+          const { error: notifError } = await supabase
+            .from('notifications')
+            .insert({
+              profile_id: recipientData.profile_id,
+              type: 'chat',
+              title: 'Nuovo messaggio privato',
+              body: `${aliasSnapshot} ti ha inviato un messaggio`
+            });
+
+          if (notifError) {
+            console.error('Error creating pair chat notification:', notifError);
+          } else {
+            console.log('Created notification for pair chat message');
+          }
+        }
+      }
+    } catch (notifErr) {
+      // Log but don't fail the request if notification creation fails
+      console.error('Error in notification creation:', notifErr);
     }
 
     return new Response(

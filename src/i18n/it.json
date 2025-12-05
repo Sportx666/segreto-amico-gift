@@ -10,19 +10,51 @@
     "login": "Accedi",
     "signup": "Registrati"
   },
+  "buttons": {
+    "home": "Home",
+    "back": "Indietro",
+    "create": "Crea",
+    "join": "Partecipa",
+    "view_all": "Vedi tutto",
+    "view_wishlist": "Vedi lista"
+  },
   "events": {
     "title": "I Tuoi Eventi",
     "create": "Crea Evento",
     "join": "Partecipa",
     "share": "Condividi",
     "members": "Membri",
-    "draw": "Sorteggio"
+    "draw": "Sorteggio",
+    "no_events": "Nessun evento ancora",
+    "no_events_desc": "Crea il tuo primo scambio di regali per iniziare!",
+    "create_first": "Crea il Primo Evento",
+    "my_events": "I Miei Eventi",
+    "manage_events": "Gestisci i tuoi scambi di regali",
+    "event_date": "Data Evento",
+    "draw_date": "Sorteggio",
+    "status_pending": "In Attesa",
+    "status_drawn": "Sorteggiato",
+    "status_completed": "Completato"
+  },
+  "event_detail": {
+    "participants_tab": "Partecipanti",
+    "exclusions_tab": "Esclusioni",
+    "draw_tab": "Sorteggio",
+    "chat_tab": "Chat",
+    "assignment_tab": "Il tuo abbinamento",
+    "delete_event": "Elimina Evento",
+    "delete_confirm": "Conferma Eliminazione",
+    "delete_warning": "Sei sicuro di voler eliminare questo evento? Questa azione non può essere annullata."
   },
   "ideas": {
     "title": "Idee Regalo",
     "description": "Trova il regalo perfetto cercando su Amazon",
     "start_search": "Inizia la ricerca",
-    "search_hint": "Usa le categorie sopra o cerca qualcosa di specifico per trovare idee regalo"
+    "search_hint": "Usa le categorie sopra o cerca qualcosa di specifico per trovare idee regalo",
+    "results_for": "Risultati per",
+    "products_found": "prodotti",
+    "sample_data": "dati di esempio",
+    "service_unavailable": "servizio temporaneamente non disponibile"
   },
   "wishlist": {
     "add": "Aggiungi alla Lista",
@@ -31,7 +63,21 @@
     "purchased": "Acquistato",
     "title": "Lista Desideri",
     "choose_list": "Scegli una lista",
-    "choose_list_desc": "Seleziona la lista desideri dove aggiungere il prodotto."
+    "choose_list_desc": "Seleziona la lista desideri dove aggiungere il prodotto.",
+    "my_wishlists": "Le mie liste dei desideri",
+    "manage_desc": "Gestisci i tuoi prodotti desiderati",
+    "new_list": "Nuova lista",
+    "active_list": "Lista attiva",
+    "select_list": "Seleziona una lista",
+    "no_title": "Lista senza titolo"
+  },
+  "wishlist_preview": {
+    "title": "Lista desideri",
+    "no_items": "Nessun articolo nella lista",
+    "create_wishlist": "Crea lista desideri",
+    "add_items": "Aggiungi articoli",
+    "view_full": "Vedi tutto",
+    "more_items": "altri"
   },
   "profile": {
     "title": "Profilo",
@@ -116,6 +162,22 @@
     "share_email": "Condividi via Email",
     "invite_email_subject": "Invito a partecipare all'Amico Segreto",
     "invite_email_body": "Ciao!\\n\\nSei stato invitato a partecipare a un evento Amico Segreto. Clicca sul link qui sotto per unirti:\\n\\n{link}\\n\\nA presto!"
+  },
+  "chat": {
+    "title": "Chat",
+    "unavailable": "Chat non disponibile",
+    "min_participants": "La chat sarà disponibile quando almeno 2 partecipanti si saranno uniti",
+    "type_message": "Scrivi un messaggio...",
+    "send": "Invia"
+  },
+  "notifications": {
+    "title": "Notifiche",
+    "new_message": "Nuovo messaggio",
+    "private_message": "Nuovo messaggio privato",
+    "event_message": "ha scritto nella chat dell'evento",
+    "sent_message": "ti ha inviato un messaggio",
+    "mark_all_read": "Segna tutto come letto",
+    "no_notifications": "Nessuna notifica"
   },
   "errors": {
     "unexpected_error": "Si è verificato un errore imprevisto. Ricarica la pagina per riprovare.",
