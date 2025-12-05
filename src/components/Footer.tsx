@@ -10,6 +10,9 @@ export const Footer = () => {
       <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
         <p className="order-2 md:order-1 font-medium">
           © {new Date().getFullYear()} Amico Segreto
+          <span className="ml-2 text-xs opacity-50" title="Build version">
+            v{import.meta.env.VITE_BUILD_TIME || 'dev'}
+          </span>
         </p>
         <nav className="order-1 md:order-2 flex items-center gap-4" role="navigation" aria-label="Link legali">
           <Link 
