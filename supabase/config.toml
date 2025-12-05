@@ -21,6 +21,9 @@ verify_jwt = true
 [functions.join-claim]
 verify_jwt = true
 
+[functions.join-event]
+verify_jwt = true
+
 [functions.mail-invite]
 verify_jwt = true
 
@@ -28,4 +31,10 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.debug-rls]
+verify_jwt = true
+
+[functions.chat-send]
+verify_jwt = true
+
+[functions.chat-list]
 verify_jwt = true

@@ -19,6 +19,7 @@ import EventNew from "./pages/EventNew";
 import EventEdit from "./pages/EventEdit";
 import EventDetail from "./pages/EventDetail";
 import EventJoin from "./pages/EventJoin";
+import EventJoinByCode from "./pages/EventJoinByCode";
 import NotFound from "./pages/NotFound";
 import Ideas from "./pages/Ideas";
 import Wishlist from "./pages/Wishlist";
@@ -63,6 +64,7 @@ const AppContent = () => {
             <Route path="/events/:id/edit" element={<EventEdit />} />
             <Route path="/events/:id" element={<EventDetail />} />
             <Route path="/join/:token" element={<EventJoin />} />
+            <Route path="/join/event/:code" element={<EventJoinByCode />} />
             <Route path="/ideas" element={<Ideas showMobileFeed={showMobileFeed} />} />
             <Route path="/wishlist" element={<Wishlist />} />
             <Route path="/profile" element={<Profile />} />

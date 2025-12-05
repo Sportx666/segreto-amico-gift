@@ -349,7 +349,13 @@ export default function EventDetailPage() {
         <div role="tabpanel" aria-live="polite">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsContent value="partecipanti">
-            <EventMembers eventId={event.id} userRole={userRole} eventStatus={event.draw_status} />
+            <EventMembers 
+              eventId={event.id} 
+              userRole={userRole} 
+              eventStatus={event.draw_status}
+              joinCode={event.join_code}
+              eventName={event.name}
+            />
           </TabsContent>
 
           {event.draw_status !== 'completed' && (
