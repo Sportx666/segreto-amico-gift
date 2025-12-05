@@ -712,6 +712,10 @@ export type Database = {
         Returns: Json
       }
       reset_event_draw: { Args: { _event_id: string }; Returns: undefined }
+      transfer_event_admin: {
+        Args: { _event_id: string; _new_admin_participant_id: string }
+        Returns: Json
+      }
       update_profile_display_name: {
         Args: { _name: string; _profile_id: string }
         Returns: undefined

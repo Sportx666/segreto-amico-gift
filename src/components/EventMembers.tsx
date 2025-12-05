@@ -143,6 +143,27 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
     }
   };
 
+  const transferAdmin = async (newAdminParticipantId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('transfer_event_admin', {
+        _event_id: eventId,
+        _new_admin_participant_id: newAdminParticipantId
+      });
+
+      if (error) throw error;
+
+      toast.success("Ruolo admin trasferito con successo!");
+      debugLog('EventMembers.transferAdmin', { result: data });
+      
+      // Reload to refresh user role and UI
+      window.location.reload();
+    } catch (error: unknown) {
+      console.error('Error transferring admin:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error(`Errore nel trasferimento: ${errorMessage}`);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -193,6 +214,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus }: EventMembersPro
             currentUserParticipantId={currentUserParticipantId}
             onRemoveMember={removeMember}
             onRemoveUnjoinedMember={removeUnjoinedMember}
+            onTransferAdmin={transferAdmin}
           />
         ))}
       </div>
