@@ -35,15 +35,15 @@ const AppContent = () => {
   const adSlots = getAdSlotsForRoute(location.pathname);
 
   const showEdgeAds = adSlots.includes("edge-left") || adSlots.includes("edge-right");
-  const showMobileFeed = adSlots.includes("mobile-feed");
+  const showMobileFeed = featureFlags.ads && adSlots.includes("mobile-feed");
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className={`flex ${showEdgeAds ? 'lg:gap-8' : ''}`}>
+      <div className={`flex ${featureFlags.ads && showEdgeAds ? 'lg:gap-8' : ''}`}>
         {/* Left Edge Ad */}
-        {adSlots.includes("edge-left") && (
+        {featureFlags.ads && adSlots.includes("edge-left") && (
           <div className="hidden lg:block w-40 xl:w-48 flex-shrink-0">
             <div className="sticky top-20 p-4">
               <AdSlot id="edge-left" />
@@ -73,7 +73,7 @@ const AppContent = () => {
         </div>
 
         {/* Right Edge Ad */}
-        {adSlots.includes("edge-right") && (
+        {featureFlags.ads && adSlots.includes("edge-right") && (
           <div className="hidden lg:block w-40 xl:w-48 flex-shrink-0">
             <div className="sticky top-20 p-4">
               <AdSlot id="edge-right" />
