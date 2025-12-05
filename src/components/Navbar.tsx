@@ -36,9 +36,9 @@ export const Navbar = () => {
     try {
       await supabase.auth.signOut();
       navigate("/auth");
-      toast.success("Logout effettuato con successo");
+      toast.success(t('toasts.logout_success'));
     } catch (error: unknown) {
-      toast.error("Errore durante il logout");
+      toast.error(t('toasts.logout_error'));
     }
   };
 
@@ -63,7 +63,7 @@ export const Navbar = () => {
           <Link 
             to="/" 
             className="flex items-center gap-2 group focus-ring rounded-lg p-1"
-            aria-label="Torna alla homepage"
+            aria-label={t('accessibility.back_to_home')}
           >
             <img src={logo} alt="Amico Segreto Logo" className="w-6 h-6 transition-transform group-hover:scale-110" />
             <span className="font-bold text-xl bg-gradient-primary bg-clip-text text-transparent">
@@ -105,7 +105,7 @@ export const Navbar = () => {
     <>
       {/* Skip to main content link for accessibility */}
       <a href="#main-content" className="skip-link">
-        Salta al contenuto principale
+        {t('accessibility.skip_to_content')}
       </a>
       
       <nav className="bg-background/95 backdrop-blur-sm border-b sticky top-0 z-50">
@@ -113,7 +113,7 @@ export const Navbar = () => {
           <Link 
             to="/" 
             className="flex items-center gap-2 group"
-            aria-label="Torna alla homepage"
+            aria-label={t('accessibility.back_to_home')}
           >
             <img src={logo} alt="Amico Segreto Logo" className="w-6 h-6 transition-transform group-hover:scale-110" />
             <span className="font-bold text-xl bg-gradient-primary bg-clip-text text-transparent">
@@ -144,10 +144,10 @@ export const Navbar = () => {
             <Link 
               to="/profile" 
               className="flex items-center gap-2 p-1 rounded-lg hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              aria-label="Vai al profilo"
+              aria-label={t('accessibility.go_to_profile')}
             >
               <Avatar className="w-8 h-8 border-2 border-transparent hover:border-primary/20 transition-colors">
-                <AvatarImage src={avatarUrl || undefined} alt="Avatar profilo" />
+                <AvatarImage src={avatarUrl || undefined} alt={t('accessibility.profile_avatar')} />
                 <AvatarFallback className="bg-gradient-primary text-primary-foreground">
                   <User className="w-4 h-4" />
                 </AvatarFallback>
@@ -158,7 +158,7 @@ export const Navbar = () => {
               size="sm" 
               onClick={handleLogout}
               className="text-muted-foreground hover:text-foreground"
-              aria-label="Esci dall'account"
+              aria-label={t('accessibility.logout')}
             >
               <LogOut className="w-4 h-4" />
               <span className="hidden lg:inline ml-2">{t('navbar.logout')}</span>
@@ -166,13 +166,15 @@ export const Navbar = () => {
           </div>
 
           {/* Mobile Actions */}
-          <div className="md:hidden items-center gap-3">
+          <div className="md:hidden flex items-center gap-2">
+            <LanguageMenu />
             <NotificationBell />            
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={handleLogout}
-              className="text-muted-foreground hover:text-foreground"              
+              className="text-muted-foreground hover:text-foreground"
+              aria-label={t('accessibility.logout')}
             >
               <LogOut className="w-4 h-4" />              
             </Button>
@@ -188,7 +190,7 @@ export const Navbar = () => {
             to="/events" 
             className={mobileLinkClass("/events")}
             aria-current={isActiveRoute("/events") ? "page" : undefined}
-            aria-label="Eventi"
+            aria-label={t('accessibility.events')}
           >
             <Calendar className="w-5 h-5" />
             <span className="text-xs font-medium">{t('navbar.events')}</span>
@@ -197,7 +199,7 @@ export const Navbar = () => {
             to="/ideas" 
             className={mobileLinkClass("/ideas")}
             aria-current={isActiveRoute("/ideas") ? "page" : undefined}
-            aria-label="Idee regalo"
+            aria-label={t('accessibility.gift_ideas')}
           >
             <Lightbulb className="w-5 h-5" />
             <span className="text-xs font-medium">{t('navbar.ideas')}</span>
@@ -206,7 +208,7 @@ export const Navbar = () => {
             to="/wishlist" 
             className={mobileLinkClass("/wishlist")}
             aria-current={isActiveRoute("/wishlist") ? "page" : undefined}
-            aria-label="Lista desideri"
+            aria-label={t('accessibility.wishlist')}
           >
             <Heart className="w-5 h-5" />
             <span className="text-xs font-medium">{t('navbar.wishlist')}</span>
@@ -215,10 +217,10 @@ export const Navbar = () => {
             to="/profile"
             className={cn(mobileLinkClass("/profile"), "relative")}
             aria-current={isActiveRoute("/profile") ? "page" : undefined}
-            aria-label="Profilo utente"
+            aria-label={t('accessibility.user_profile')}
           >
             <Avatar className="w-6 h-6 border border-border">
-              <AvatarImage src={avatarUrl || undefined} alt="Avatar profilo" />
+              <AvatarImage src={avatarUrl || undefined} alt={t('accessibility.profile_avatar')} />
               <AvatarFallback className="text-xs bg-gradient-primary text-primary-foreground">
                 <User className="w-3 h-3" />
               </AvatarFallback>

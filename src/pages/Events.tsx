@@ -88,7 +88,7 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
       debugLog("Events.fetchEvents:error", { error });
       setDiag((d: any) => ({ ...d, error }));
       const description = error instanceof Error ? error.message : undefined;
-      toast.error("Errore nel caricamento eventi", {
+      toast.error(t('events.loading_error'), {
         description
       });
     } finally {
@@ -132,7 +132,7 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
           <Link to="/events/new">
             <Button className="bg-gradient-primary hover:bg-primary-light shadow-card hover:shadow-elegant transition-all duration-300">
               <Plus className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Crea Evento</span>
+              <span className="hidden sm:inline">{t('events.create')}</span>
             </Button>
           </Link>
         </PageHeader>
@@ -140,13 +140,13 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
         {events.length === 0 ? (
           <EmptyState
             icon={<Calendar className="w-8 h-8 text-white" />}
-            title="Nessun evento ancora"
-            description="Crea il tuo primo scambio di regali per iniziare!"
+            title={t('events.no_events')}
+            description={t('events.no_events_desc')}
           >
             <Link to="/events/new">
               <Button className="bg-gradient-primary hover:bg-primary-light">
                 <Plus className="w-4 h-4 mr-2" />
-                Crea il Primo Evento
+                {t('events.create_first')}
               </Button>
             </Link>
           </EmptyState>
@@ -164,7 +164,7 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
                 <AdSlot 
                   id="events-mobile-feed" 
                   className="w-full"
-                  placeholder="Contenuti sponsorizzati"
+                  placeholder={t('home.sponsored_content')}
                 />
               </div>
             )}
@@ -196,7 +196,7 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
                               navigate(`/events/${event.id}/edit`);
                             }}
                             className="p-1.5 bg-white/90 hover:bg-white text-gray-700 rounded-full transition-colors"
-                            title="Modifica evento"
+                            title={t('events.edit_event')}
                           >
                             <Edit className="w-3 h-3" />
                           </button>
@@ -206,8 +206,8 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
                           event.draw_status === 'drawn' ? 'bg-primary/90 text-primary-foreground' :
                           'bg-secondary/90 text-secondary-foreground'
                         }`}>
-                          {event.draw_status === 'pending' ? 'In Attesa' : 
-                           event.draw_status === 'drawn' ? 'Sorteggiato' : 'Concluso'}
+                          {event.draw_status === 'pending' ? t('events.status_pending') : 
+                           event.draw_status === 'drawn' ? t('events.status_drawn') : t('events.status_completed')}
                         </span>
                       </div>
                     </div>
@@ -227,7 +227,7 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
                         {event.date && (
                           <div className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
-                            <span>Data Evento: {new Date(event.date).toLocaleDateString("it-IT", { 
+                            <span>{t('events.event_date')}: {new Date(event.date).toLocaleDateString("it-IT", { 
                               day: 'numeric', 
                               month: 'short' 
                             })}</span>
@@ -235,7 +235,7 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
                         )}                      
                         <div className="flex items-center gap-1">
                           <Shuffle className="w-3 h-3" />
-                          <span>Sorteggio: {event.draw_date && (new Date(event.draw_date).toLocaleDateString("it-IT", { 
+                          <span>{t('events.draw_date')}: {event.draw_date && (new Date(event.draw_date).toLocaleDateString("it-IT", { 
                               day: 'numeric', 
                               month: 'short' 
                             })) || ('--/--')}</span>

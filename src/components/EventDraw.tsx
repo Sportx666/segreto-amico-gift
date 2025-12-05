@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEventParticipants } from "@/hooks/useEventParticipants";
 import { useJoinedParticipantCount } from "@/hooks/useJoinedParticipantCount";
+import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -43,6 +44,7 @@ interface Exclusion {
 export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDrawProps) => {
   const { participants, loading: participantsLoading } = useEventParticipants(eventId);
   const { count: joinedCount, loading: countLoading } = useJoinedParticipantCount(eventId);
+  const { t } = useI18n();
   const [exclusions, setExclusions] = useState<Exclusion[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [canDraw, setCanDraw] = useState(false);
@@ -106,13 +108,13 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
 
     } catch (error: unknown) {
       console.error('Error fetching exclusions data:', error);
-      toast.error("Errore nel caricamento delle esclusioni");
+      toast.error(t('draw_section.exclusions_error'));
     }
   };
 
   const performDraw = async () => {
     if (joinedCount < 2) {
-      toast.error("Servono almeno 2 partecipanti attivi per il sorteggio");
+      toast.error(t('draw_section.min_2_required'));
       return;
     }
 
@@ -124,16 +126,16 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
       });
 
       if (error || !data?.assignedCount) {
-        throw new Error((error as any)?.message || (data as any)?.error || "Errore durante il sorteggio");
+        throw new Error((error as any)?.message || (data as any)?.error || t('draw_section.draw_error'));
       }
 
-      toast.success(`Sorteggio completato! ${data.assignedCount} assegnazioni create.`);
+      toast.success(t('draw_section.draw_complete').replace('{count}', data.assignedCount));
       await fetchData();
       onStatusChange();
 
     } catch (error: unknown) {
       console.error('Error performing draw:', error);
-      const message = error instanceof Error ? error.message : "Errore durante il sorteggio";
+      const message = error instanceof Error ? error.message : t('draw_section.draw_error');
       toast.error(message);
     } finally {
       setIsDrawing(false);
@@ -149,13 +151,13 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
 
       if (error) throw error;
 
-      toast.success("Sorteggio ripristinato");
+      toast.success(t('draw_section.draw_reset'));
       await fetchData();
       onStatusChange();
 
     } catch (error: unknown) {
       console.error('Error resetting draw:', error);
-      toast.error("Errore nel ripristinare il sorteggio");
+      toast.error(t('draw_section.reset_error'));
     }
   };
 
@@ -181,10 +183,10 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shuffle className="w-5 h-5" />
-            Sorteggio Regali
+            {t('draw_section.title')}
           </CardTitle>
           <CardDescription>
-            Stato del sorteggio per l'evento "{event.name}"
+            {t('draw_section.status_for').replace('{name}', event.name)}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -194,9 +196,9 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
                 <>
                   <CheckCircle className="w-8 h-8 text-green-500" />
                   <div>
-                    <p className="font-semibold text-green-700">Sorteggio Completato</p>
+                    <p className="font-semibold text-green-700">{t('draw_section.completed')}</p>
                     <p className="text-sm text-muted-foreground">
-                      Tutti i partecipanti hanno la loro assegnazione
+                      {t('draw_section.completed_desc')}
                     </p>
                   </div>
                 </>
@@ -204,11 +206,11 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
                 <>
                   <AlertTriangle className="w-8 h-8 text-orange-500" />
                   <div>
-                    <p className="font-semibold text-orange-700">In Attesa del Sorteggio</p>
+                    <p className="font-semibold text-orange-700">{t('draw_section.pending')}</p>
                     <p className="text-sm text-muted-foreground">
                       {event.draw_date
-                        ? `Il sorteggio avverrà tra ${timeLeft}`
-                        : "Il sorteggio non è ancora stato effettuato"}
+                        ? t('draw_section.draw_countdown').replace('{time}', timeLeft)
+                        : t('draw_section.not_yet')}
                     </p>
                   </div>
                 </>
@@ -217,7 +219,7 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
             
             {event.draw_status === 'completed' && (
               <Badge variant="default" className="bg-green-100 text-green-800">
-                Completato
+                {t('common.completed')}
               </Badge>
             )}
           </div>
@@ -228,7 +230,7 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
       {event.draw_status !== 'completed' && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Controlli Pre-Sorteggio</CardTitle>
+            <CardTitle className="text-lg">{t('draw_section.pre_draw_checks')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
@@ -238,7 +240,7 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
                 <AlertTriangle className="w-5 h-5 text-orange-500" />
               )}
               <span className={joinedCount >= 2 ? "text-green-700" : "text-orange-700"}>
-                Partecipanti attivi: {joinedCount} (minimo 2)
+                {t('draw_section.active_participants').replace('{count}', String(joinedCount))}
               </span>
             </div>
             
@@ -249,7 +251,7 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
                 <AlertTriangle className="w-5 h-5 text-orange-500" />
               )}
               <span className={userRole === 'admin' ? "text-green-700" : "text-orange-700"}>
-                Permessi amministratore
+                {t('draw_section.admin_permissions')}
               </span>
             </div>
 
@@ -257,7 +259,7 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  Ci sono {exclusions.length} esclusioni configurate. Il sorteggio ne terrà conto.
+                  {t('draw_section.exclusions_configured').replace('{count}', String(exclusions.length))}
                 </AlertDescription>
               </Alert>
             )}
@@ -269,9 +271,9 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
       {userRole === 'admin' && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Controlli Amministratore</CardTitle>
+            <CardTitle className="text-lg">{t('draw_section.admin_controls')}</CardTitle>
             <CardDescription>
-              Solo l'amministratore può gestire il sorteggio
+              {t('draw_section.admin_only')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -283,15 +285,15 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
                 className="w-full"
               >
                 <Shuffle className="w-5 h-5 mr-2" />
-                {isDrawing ? "Sorteggio in corso..." : "Esegui Sorteggio"}
+                {isDrawing ? t('draw_section.drawing') : t('draw_section.perform_draw')}
               </Button>
             ) : (
               <div className="space-y-3">
                 <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
                   <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                  <p className="font-semibold text-green-700">Sorteggio Completato</p>
+                  <p className="font-semibold text-green-700">{t('draw_section.completed')}</p>
                   <p className="text-sm text-green-600">
-                    Tutti i partecipanti hanno ricevuto la loro assegnazione
+                    {t('draw_section.all_assigned')}
                   </p>
                 </div>
                 
@@ -301,10 +303,10 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
                   size="lg"
                   className="w-full"
                 >
-                  Ripristina Sorteggio
+                  {t('draw_section.reset_draw')}
                 </Button>
                 <p className="text-sm text-muted-foreground text-center">
-                  Attenzione: ripristinando il sorteggio, tutte le assegnazioni verranno cancellate
+                  {t('draw_section.reset_warning')}
                 </p>
               </div>
             )}
@@ -326,10 +328,9 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
           <div className="flex items-start gap-3">
             <Gift className="w-5 h-5 text-amber-600 mt-0.5" />
             <div>
-              <h4 className="font-semibold text-amber-800 mb-1">Privacy del Sorteggio</h4>
+              <h4 className="font-semibold text-amber-800 mb-1">{t('draw_section.privacy_title')}</h4>
               <p className="text-sm text-amber-700">
-                Per mantenere la sorpresa, nessuno (nemmeno l'amministratore) può vedere tutte le assegnazioni. 
-                Ogni partecipante vedrà solo a chi deve fare il regalo.
+                {t('draw_section.privacy_desc')}
               </p>
             </div>
           </div>
@@ -340,7 +341,7 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Solo gli amministratori possono eseguire il sorteggio. Contatta l'organizzatore dell'evento.
+            {t('draw_section.contact_admin')}
           </AlertDescription>
         </Alert>
       )}

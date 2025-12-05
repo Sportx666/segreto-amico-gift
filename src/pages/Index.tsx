@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
+import { useI18n } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +15,7 @@ interface IndexProps {
 
 const Index = ({ showMobileFeed = false }: IndexProps) => {
   const { user, loading } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState<string | null>(null);
 
@@ -69,6 +71,8 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
     return null;
   }
 
+  const greeting = t('home.greeting').replace('{name}', displayName ?? "Amico");
+
   return (
     <div className="min-h-screen bg-gradient-hero">
       {/* Hero Section */}
@@ -80,10 +84,10 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
             </div>
             <div>
               <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
-                Ciao, {displayName ?? "Amico"}!
+                {greeting}
               </h1>
               <p className="text-xl text-white/90 mb-8">
-                Organizza il tuo scambio di regali perfetto
+                {t('home.subtitle')}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -93,7 +97,7 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
                 onClick={() => navigate("/events")}
               >
                 <Calendar className="w-5 h-5 mr-2" />
-                I Miei Eventi
+                {t('home.my_events')}
               </Button>
               <Button
                 size="lg"
@@ -102,7 +106,7 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
                 onClick={() => navigate("/ideas")}
               >
                 <Sparkles className="w-5 h-5 mr-2 animate-sparkle text-yellow-500" />
-                Scopri Idee Regalo
+                {t('home.discover_ideas')}
               </Button>
             </div>
           </div>
@@ -115,7 +119,7 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
           <AdSlot
             id="mobile-feed"
             className="w-full"
-            placeholder="Contenuti sponsorizzati"
+            placeholder={t('home.sponsored_content')}
           />
         </div>
       )}
@@ -123,7 +127,7 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
       {/* Features Section */}
       <div className="max-w-6xl mx-auto px-4 py-16">
         <h2 className="text-3xl font-bold text-center text-white mb-12">
-          Come Funziona
+          {t('home.how_it_works')}
         </h2>
         <div className="grid md:grid-cols-3 gap-8">
           <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white shadow-elegant">
@@ -131,11 +135,11 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
               <div className="mx-auto w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
                 <Users className="w-6 h-6" />
               </div>
-              <CardTitle>Crea Evento</CardTitle>
+              <CardTitle>{t('home.create_event_title')}</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-white/80 text-center">
-                Imposta nome, budget e data. Invita amici e familiari con un semplice link.
+                {t('home.create_event_desc')}
               </CardDescription>
             </CardContent>
           </Card>
@@ -145,11 +149,11 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
               <div className="mx-auto w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
                 <Gift className="w-6 h-6" />
               </div>
-              <CardTitle>Sorteggio</CardTitle>
+              <CardTitle>{t('home.draw_title')}</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-white/80 text-center">
-                Il sistema assegna automaticamente chi regala a chi, rispettando le tue esclusioni.
+                {t('home.draw_desc')}
               </CardDescription>
             </CardContent>
           </Card>
@@ -159,11 +163,11 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
               <div className="mx-auto w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
                 <Heart className="w-6 h-6" />
               </div>
-              <CardTitle>Lista Desideri</CardTitle>
+              <CardTitle>{t('home.wishlist_title')}</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-white/80 text-center">
-                Ognuno può condividere la propria lista desideri per rendere tutto più facile.
+                {t('home.wishlist_desc')}
               </CardDescription>
             </CardContent>
           </Card>

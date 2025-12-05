@@ -87,16 +87,16 @@ const Profile = () => {
         setAvatarUrl(data?.avatar_url ?? url);
         setFile(null);
         setPreviewUrl(null);
-        toast.success("Avatar aggiornato");
+        toast.success(t('profile.avatar_updated'));
       } catch (err) {
         console.error(err);
-        toast.error("Errore nel salvataggio dell'avatar");
+        toast.error(t('profile.avatar_error'));
       } finally {
         setUploadingAvatar(false);
       }
     };
     uploadAndSave();
-  }, [file, user]);
+  }, [file, user, t]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -143,10 +143,10 @@ const Profile = () => {
       if (error) throw error;
       setAvatarUrl(null);
       setFile(null);
-      toast.success("Avatar rimosso");
+      toast.success(t('profile.avatar_removed'));
     } catch (err) {
       console.error(err);
-      toast.error("Errore durante la rimozione");
+      toast.error(t('profile.avatar_remove_error'));
     }
   };
 
@@ -174,16 +174,16 @@ const Profile = () => {
           className="text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Torna indietro
+          {t('buttons.back_to')}
         </Button>
       </div>
 
       <div className="container max-w-4xl mx-auto pb-4 sm:pb-6 md:pb-8 px-3 sm:px-4 md:px-6">
         <div className="space-y-4 sm:space-y-6">
           <div className="px-1">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Profilo</h1>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">{t('profile.title')}</h1>
             <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
-              Gestisci le tue impostazioni e preferenze
+              {t('profile.settings_desc')}
             </p>
           </div>
         {/* Profile Form */}
@@ -288,7 +288,7 @@ const Profile = () => {
                   <Avatar className="w-24 h-24 md:w-32 md:h-32">
                     <AvatarImage 
                       src={previewUrl || avatarUrl || undefined}
-                      alt="Avatar profilo"
+                      alt={t('accessibility.profile_avatar')}
                     />
                     <AvatarFallback className="text-lg md:text-xl">
                       <User className="w-8 h-8 md:w-12 md:h-12" />
