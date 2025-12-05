@@ -241,6 +241,7 @@ export type Database = {
         Row: {
           admin_profile_id: string | null
           amazon_marketplace: string | null
+          auto_draw_enabled: boolean | null
           budget: number | null
           cover_image_url: string | null
           created_at: string | null
@@ -255,6 +256,7 @@ export type Database = {
         Insert: {
           admin_profile_id?: string | null
           amazon_marketplace?: string | null
+          auto_draw_enabled?: boolean | null
           budget?: number | null
           cover_image_url?: string | null
           created_at?: string | null
@@ -269,6 +271,7 @@ export type Database = {
         Update: {
           admin_profile_id?: string | null
           amazon_marketplace?: string | null
+          auto_draw_enabled?: boolean | null
           budget?: number | null
           cover_image_url?: string | null
           created_at?: string | null

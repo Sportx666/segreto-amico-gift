@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Calendar, Settings, CheckCircle, X } from "lucide-react";
+import { Clock, Calendar, Settings, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/i18n";
 
 interface AutoDrawToggleProps {
   eventId: string;
@@ -15,39 +15,82 @@ interface AutoDrawToggleProps {
 }
 
 export function AutoDrawToggle({ eventId, drawDate, drawStatus, isAdmin }: AutoDrawToggleProps) {
-  const [autoDrawEnabled, setAutoDrawEnabled] = useState(false);
+  const [autoDrawEnabled, setAutoDrawEnabled] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
+  const { t } = useI18n();
+
+  // Fetch current auto_draw_enabled value on mount
+  useEffect(() => {
+    const fetchAutoDrawStatus = async () => {
+      const { data, error } = await supabase
+        .from('events')
+        .select('auto_draw_enabled')
+        .eq('id', eventId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching auto draw status:', error);
+        setAutoDrawEnabled(false);
+      } else {
+        setAutoDrawEnabled(data?.auto_draw_enabled ?? false);
+      }
+    };
+
+    if (eventId) {
+      fetchAutoDrawStatus();
+    }
+  }, [eventId]);
 
   if (!isAdmin || drawStatus === 'completed') {
     return null;
   }
 
+  // Show loading state while fetching
+  if (autoDrawEnabled === null) {
+    return (
+      <Card className="border-amber-200 bg-amber-50/50 animate-pulse">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-amber-800">
+            <Clock className="w-5 h-5" />
+            {t('draw.auto_draw')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-8 bg-amber-100 rounded"></div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const handleToggleAutoDraw = async (enabled: boolean) => {
     setLoading(true);
     try {
+      const { error } = await supabase
+        .from('events')
+        .update({ auto_draw_enabled: enabled })
+        .eq('id', eventId);
+
+      if (error) {
+        throw error;
+      }
+
+      setAutoDrawEnabled(enabled);
+      
       if (enabled) {
-        // Enable auto-draw - create a scheduled job
-        const drawDateObj = drawDate ? new Date(drawDate) : new Date();
-        drawDateObj.setHours(9, 0, 0, 0); // Schedule for 9 AM on draw date
-        
-        // Store auto-draw preference (you'd typically store this in database)
-        toast.success("Sorteggio automatico programmato per le 9:00 del giorno dell'evento");
-        setAutoDrawEnabled(true);
+        toast.success(t('draw.auto_draw_scheduled'));
       } else {
-        // Disable auto-draw
-        toast.success("Sorteggio automatico disabilitato");
-        setAutoDrawEnabled(false);
+        toast.success(t('draw.auto_draw_disabled'));
       }
     } catch (error) {
       console.error('Error toggling auto-draw:', error);
-      toast.error("Errore nel configurare il sorteggio automatico");
+      toast.error(t('draw.auto_draw_error'));
     } finally {
       setLoading(false);
     }
   };
 
   const getScheduledTime = () => {
-    if (!drawDate) return "Data sorteggio non impostata";
+    if (!drawDate) return t('draw.no_draw_date');
     const date = new Date(drawDate);
     date.setHours(9, 0, 0, 0);
     return date.toLocaleDateString('it-IT', {
@@ -65,10 +108,10 @@ export function AutoDrawToggle({ eventId, drawDate, drawStatus, isAdmin }: AutoD
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-amber-800">
           <Clock className="w-5 h-5" />
-          Sorteggio Automatico
+          {t('draw.auto_draw')}
         </CardTitle>
         <CardDescription className="text-amber-700">
-          Programma il sorteggio per essere eseguito automaticamente
+          {t('draw.auto_draw_description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -81,14 +124,14 @@ export function AutoDrawToggle({ eventId, drawDate, drawStatus, isAdmin }: AutoD
               disabled={loading}
             />
             <label htmlFor="auto-draw" className="text-sm font-medium text-amber-800">
-              Abilita sorteggio automatico
+              {t('draw.enable_auto_draw')}
             </label>
           </div>
           
           {autoDrawEnabled && (
             <Badge variant="secondary" className="bg-green-100 text-green-800">
               <CheckCircle className="w-3 h-3 mr-1" />
-              Attivo
+              {t('draw.active')}
             </Badge>
           )}
         </div>
@@ -98,7 +141,7 @@ export function AutoDrawToggle({ eventId, drawDate, drawStatus, isAdmin }: AutoD
             <div className="flex items-start gap-2">
               <Calendar className="w-4 h-4 text-amber-600 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-amber-800">Programmato per:</p>
+                <p className="text-sm font-medium text-amber-800">{t('draw.scheduled_for')}:</p>
                 <p className="text-sm text-amber-700">{getScheduledTime()}</p>
               </div>
             </div>
@@ -107,8 +150,7 @@ export function AutoDrawToggle({ eventId, drawDate, drawStatus, isAdmin }: AutoD
 
         <div className="text-xs text-amber-700 bg-white/40 rounded p-2">
           <Settings className="w-3 h-3 inline mr-1" />
-          Il sorteggio verrà eseguito automaticamente alle 9:00 del mattino della data del sorteggio.
-          Tutti i partecipanti riceveranno una notifica.
+          {t('draw.auto_draw_info')}
         </div>
       </CardContent>
     </Card>

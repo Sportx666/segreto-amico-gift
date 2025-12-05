@@ -163,6 +163,18 @@
     "invite_email_subject": "Invitation to join Secret Santa",
     "invite_email_body": "Hello!\\n\\nYou've been invited to participate in a Secret Santa event. Click the link below to join:\\n\\n{link}\\n\\nSee you soon!"
   },
+  "draw": {
+    "auto_draw": "Automatic Draw",
+    "auto_draw_description": "Schedule the draw to be executed automatically",
+    "enable_auto_draw": "Enable automatic draw",
+    "active": "Active",
+    "scheduled_for": "Scheduled for",
+    "no_draw_date": "Draw date not set",
+    "auto_draw_info": "The draw will be automatically executed at 9:00 AM on the draw date. All participants will receive a notification.",
+    "auto_draw_scheduled": "Automatic draw scheduled!",
+    "auto_draw_disabled": "Automatic draw disabled",
+    "auto_draw_error": "Error configuring automatic draw"
+  },
   "chat": {
     "title": "Chat",
     "unavailable": "Chat unavailable",
