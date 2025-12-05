@@ -249,7 +249,6 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
             </div>
           </>
         )}
-        </div>
       </div>
     </div>
   );
