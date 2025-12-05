@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { EuroIcon, X, Filter } from "lucide-react";
+import { useI18n } from "@/i18n";
 
 interface PriceFilterProps {
   value?: { min?: number; max?: number };
@@ -13,6 +14,7 @@ interface PriceFilterProps {
 }
 
 export const PriceFilter = ({ value, onFilter, disabled = false }: PriceFilterProps) => {
+  const { t } = useI18n();
   const [minPrice, setMinPrice] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState<string>("");
   const [appliedFilter, setAppliedFilter] = useState<{min?: number, max?: number} | null>(null);
@@ -64,17 +66,17 @@ export const PriceFilter = ({ value, onFilter, disabled = false }: PriceFilterPr
             className="gap-2"
           >
             <Filter className="h-4 w-4" />
-            Prezzo
+            {t('price_filter.price')}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-80" align="start">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Filtra per prezzo</Label>
+              <Label className="text-sm font-medium">{t('price_filter.filter_by_price')}</Label>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label htmlFor="min-price" className="text-xs text-muted-foreground">
-                    Prezzo minimo
+                    {t('price_filter.min_price')}
                   </Label>
                   <div className="relative">
                     <EuroIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -92,7 +94,7 @@ export const PriceFilter = ({ value, onFilter, disabled = false }: PriceFilterPr
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="max-price" className="text-xs text-muted-foreground">
-                    Prezzo massimo
+                    {t('price_filter.max_price')}
                   </Label>
                   <div className="relative">
                     <EuroIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -117,14 +119,14 @@ export const PriceFilter = ({ value, onFilter, disabled = false }: PriceFilterPr
                 onClick={handleClearFilter}
                 className="flex-1"
               >
-                Cancella
+                {t('price_filter.clear')}
               </Button>
               <Button 
                 size="sm" 
                 onClick={handleApplyFilter}
                 className="flex-1"
               >
-                Applica
+                {t('price_filter.apply')}
               </Button>
             </div>
           </div>

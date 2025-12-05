@@ -190,13 +190,13 @@ export default function Wishlist() {
   ) => {
     const url = payload.url.trim();
     if (!url) {
-      toast.error("Inserisci un URL valido");
+      toast.error(t('wishlist.invalid_url'));
       return;
     }
 
     try {
       if (!user) {
-        toast.error("Devi essere autenticato");
+        toast.error(t('wishlist.not_authenticated'));
         return;
       }
 
@@ -206,7 +206,7 @@ export default function Wishlist() {
         .eq("profile_id", user.id)
         .single();
       if (!participant) {
-        toast.error("Profilo partecipante non trovato");
+        toast.error(t('wishlist.participant_not_found'));
         return;
       }
 
@@ -220,36 +220,36 @@ export default function Wishlist() {
         title:
           payload.title ||
           (url.includes("amazon.")
-            ? "Prodotto Amazon aggiunto manualmente"
-            : "Prodotto aggiunto manualmente"),
+            ? t('wishlist.manual_amazon_product')
+            : t('wishlist.manual_product')),
         raw_url: url,
         affiliate_url: withAffiliateTag(url),
       });
 
       if (error) throw error;
-      toast.success("Prodotto aggiunto alla lista!");
+      toast.success(t('wishlist.item_added'));
       queryClient.invalidateQueries({ queryKey: ["wishlist-items"] });
     } catch (error) {
       console.error("Error adding manual item:", error);
-      toast.error("Errore nell'aggiungere il prodotto");
+      toast.error(t('wishlist.item_add_error'));
     }
   };
 
   const handleEmptyManualSubmit = useCallback(async () => {
     if (!selectedWishlistId) {
-      toast.error("Seleziona o crea una lista");
+      toast.error(t('wishlist.select_valid_list'));
       return;
     }
 
     const raw = emptyManualUrl.trim();
     if (!raw) {
-      toast.error("Inserisci un URL valido");
+      toast.error(t('wishlist.invalid_url'));
       return;
     }
 
     try {
       if (!user) {
-        toast.error("Devi essere autenticato");
+        toast.error(t('wishlist.not_authenticated'));
         return;
       }
 
@@ -259,7 +259,7 @@ export default function Wishlist() {
         .eq("profile_id", user.id)
         .single();
       if (!participant) {
-        toast.error("Profilo partecipante non trovato");
+        toast.error(t('wishlist.participant_not_found'));
         return;
       }
 
@@ -268,7 +268,7 @@ export default function Wishlist() {
       const { error } = await supabase.from("wishlist_items").insert({
         owner_id: participant.id,
         wishlist_id: selectedWishlistId,
-        title: emptyManualTitle.trim() || (raw.includes("amazon.") ? "Prodotto Amazon aggiunto manualmente" : "Prodotto aggiunto manualmente"),
+        title: emptyManualTitle.trim() || (raw.includes("amazon.") ? t('wishlist.manual_amazon_product') : t('wishlist.manual_product')),
         raw_url: raw,
         affiliate_url: normalized,
       });
@@ -276,27 +276,27 @@ export default function Wishlist() {
       if (error) {
         // Handle unique violation (e.g. duplicate link)
         if ((error as any)?.code === "23505") {
-          toast.error("Questo articolo è già presente nella lista");
+          toast.error(t('wishlist.item_duplicate'));
           return;
         }
         throw error;
       }
 
-      toast.success("Prodotto aggiunto alla lista!");
+      toast.success(t('wishlist.item_added'));
       setEmptyManualTitle("");
       setEmptyManualUrl("");
       setEmptyManualOpen(false);
       queryClient.invalidateQueries({ queryKey: ["wishlist-items"] });
     } catch (e) {
       console.error("handleEmptyManualSubmit error", e);
-      toast.error("Errore nell'aggiungere il prodotto");
+      toast.error(t('wishlist.item_add_error'));
     }
-  }, [selectedWishlistId, emptyManualTitle, emptyManualUrl]);
+  }, [selectedWishlistId, emptyManualTitle, emptyManualUrl, t]);
 
   const handleAddFromSearch = async (product: Product) => {
     try {
       if (!user) {
-        toast.error("Devi essere autenticato");
+        toast.error(t('wishlist.not_authenticated'));
         return;
       }
 
@@ -307,12 +307,12 @@ export default function Wishlist() {
         .single();
 
       if (!participant) {
-        toast.error("Profilo partecipante non trovato");
+        toast.error(t('wishlist.participant_not_found'));
         return;
       }
 
       if (!selectedWishlistId && !targetWishlistIdForSearch) {
-        toast.error("Seleziona una lista valida");
+        toast.error(t('wishlist.select_valid_list'));
         return;
       }
       const targetWishlistId = targetWishlistIdForSearch ?? selectedWishlistId!;
@@ -325,7 +325,7 @@ export default function Wishlist() {
         .maybeSingle();
 
       if (existingItem) {
-        toast.error("Prodotto già presente nella lista");
+        toast.error(t('wishlist.item_exists'));
         return;
       }
 
@@ -341,11 +341,11 @@ export default function Wishlist() {
       });
 
       if (error) throw error;
-      toast.success("Prodotto aggiunto alla lista!");
+      toast.success(t('wishlist.item_added'));
       queryClient.invalidateQueries({ queryKey: ["wishlist-items"] });
     } catch (error: unknown) {
       console.error("Error adding to wishlist:", error);
-      toast.error("Errore nell'aggiungere il prodotto");
+      toast.error(t('wishlist.item_add_error'));
     }
   };
 
@@ -358,11 +358,11 @@ export default function Wishlist() {
 
       if (error) throw error;
 
-      toast.success("Prodotto rimosso dalla lista");
+      toast.success(t('wishlist.item_removed'));
       queryClient.invalidateQueries({ queryKey: ["wishlist-items"] });
     } catch (error: unknown) {
       console.error("Error deleting item:", error);
-      toast.error("Errore nella rimozione del prodotto");
+      toast.error(t('wishlist.item_remove_error'));
     }
   };
 
@@ -413,12 +413,12 @@ export default function Wishlist() {
       <div className="container max-w-4xl pb-6">
         {/* Clean Header - Only "Nuova lista" button */}
         <PageHeader
-          title={selectedWishlistTitle ?? "Le mie liste dei desideri"}
-          description="Gestisci i tuoi prodotti desiderati"
+          title={selectedWishlistTitle ?? t('wishlist.my_wishlists')}
+          description={t('wishlist.manage_desc')}
         >
           <Button onClick={() => setIsCreateDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
-            Nuova lista
+            {t('wishlist.new_list')}
           </Button>
         </PageHeader>
 
@@ -426,7 +426,7 @@ export default function Wishlist() {
         {hasWishlists && (
           <div className="mb-6">
             <Label htmlFor="wishlist-select" className="text-sm font-medium mb-2 block">
-              Lista attiva
+              {t('wishlist.active_list')}
             </Label>
 
             <div className="flex items-center gap-1 sm:gap-2 flex-nowrap overflow-x-auto sm:overflow-visible">
@@ -442,14 +442,14 @@ export default function Wishlist() {
                 }}
               >
                 <SelectTrigger id="wishlist-select" className="w-full sm:w-80">
-                  <SelectValue placeholder="Seleziona una lista" />
+                  <SelectValue placeholder={t('wishlist.select_list')} />
                 </SelectTrigger>
                 <SelectContent>
                   {wishlists?.map((wishlist) => {
                     const eventName = events?.find((e) => e.id === wishlist.event_id)?.name;
                     return (
                       <SelectItem key={wishlist.id} value={wishlist.id}>
-                        {wishlist.title || "Lista senza titolo"}
+                        {wishlist.title || t('wishlist.no_title')}
                         {eventName && (
                           <span className="text-muted-foreground ml-2">• {eventName}</span>
                         )}
@@ -475,7 +475,7 @@ export default function Wishlist() {
                     }}
                   >
                     <SquarePen className="w-4 h-4 mr-1" />
-                    <span className="hidden sm:inline">Cambia</span>
+                    <span className="hidden sm:inline">{t('wishlist.change')}</span>
                   </Button>
 
                   <AlertDialog>
@@ -486,19 +486,18 @@ export default function Wishlist() {
                         className="shrink-0 text-destructive hover:text-destructive"
                       >
                         <Trash2 className="w-4 h-4 mr-1" />
-                        <span className="hidden sm:inline">Rimuovi</span>
+                        <span className="hidden sm:inline">{t('wishlist.remove')}</span>
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
+                        <AlertDialogTitle>{t('wishlist.confirm_delete')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Sei sicuro di voler eliminare "{selectedWishlistTitle}" e tutti i suoi articoli? 
-                          Questa azione non può essere annullata.
+                          {t('wishlist.delete_warning').replace('{title}', selectedWishlistTitle || '')}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Annulla</AlertDialogCancel>
+                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                           onClick={async () => {
@@ -524,16 +523,16 @@ export default function Wishlist() {
                               setSelectedWishlistId(null);
                               setSelectedWishlistTitle(null);
 
-                              toast.success("Lista eliminata con successo");
+                              toast.success(t('wishlist.deleted_success'));
                               queryClient.invalidateQueries({ queryKey: ["wishlists"] });
                               queryClient.invalidateQueries({ queryKey: ["wishlist-items"] });
                             } catch (error) {
                               console.error("Error deleting wishlist:", error);
-                              toast.error("Errore nell'eliminare la lista");
+                              toast.error(t('wishlist.delete_error'));
                             }
                           }}
                         >
-                          Elimina
+                          {t('common.delete')}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -548,27 +547,27 @@ export default function Wishlist() {
         {/* Main Content */}
         {!hasWishlists ? (
           <EmptyState
-            title="Nessuna lista presente"
-            description="Crea una nuova lista per iniziare ad aggiungere i tuoi regali desiderati"
+            title={t('wishlist.no_lists')}
+            description={t('wishlist.no_lists_desc')}
 
           >
             <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
-              Crea la tua prima lista
+              {t('wishlist.create_first')}
             </Button>
           </EmptyState>
         ) : !selectedWishlistId ? (
           <EmptyState
-            title="Seleziona una lista"
-            description="Scegli una lista dalle opzioni sopra per visualizzare i prodotti"
+            title={t('wishlist.select_list_hint')}
+            description={t('wishlist.select_list_desc')}
           />
         ) : isLoading ? (
           <SkeletonGrid />
         ) : !wishlistItems?.length ? (
           <EmptyState
             icon={<Heart className="w-8 h-8 text-white" />}
-            title="Nessun prodotto nella lista"
-            description="Aggiungi prodotti alla tua lista desideri"
+            title={t('wishlist.no_products')}
+            description={t('wishlist.add_products_desc')}
           >
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
@@ -583,7 +582,7 @@ export default function Wishlist() {
                 }}
               >
                 <Search className="w-4 h-4 mr-2" />
-                Cerca su Amazon
+                {t('wishlist.search_amazon')}
               </Button>
               <Button
                 variant="outline"
@@ -595,7 +594,7 @@ export default function Wishlist() {
                 }}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Aggiungi manualmente
+                {t('wishlist.add_manually')}
               </Button>
             </div>
           </EmptyState>
@@ -606,21 +605,21 @@ export default function Wishlist() {
               <Card className="p-4 border-dashed border-2">
                 <div className="space-y-3">
                   <div>
-                    <Label htmlFor="manual-title">Titolo</Label>
+                    <Label htmlFor="manual-title">{t('wishlist.product_title')}</Label>
                     <Input
                       id="manual-title"
                       value={manualFormData.title}
                       onChange={(e) => setManualFormData(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Titolo del prodotto"
+                      placeholder={t('wishlist.product_title_placeholder')}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="manual-url">URL Amazon</Label>
+                    <Label htmlFor="manual-url">{t('wishlist.amazon_url')}</Label>
                     <Input
                       id="manual-url"
                       value={manualFormData.url}
                       onChange={(e) => setManualFormData(prev => ({ ...prev, url: e.target.value }))}
-                      placeholder="https://www.amazon.it/dp/..."
+                      placeholder={t('wishlist.amazon_url_placeholder')}
                     />
                   </div>
                   <div className="flex gap-2">
@@ -634,7 +633,7 @@ export default function Wishlist() {
                       }}
                       disabled={!manualFormData.url.trim()}
                     >
-                      Aggiungi alla lista
+                      {t('wishlist.add_to_list')}
                     </Button>
                     <Button
                       className="flex-1"
@@ -644,7 +643,7 @@ export default function Wishlist() {
                         setManualFormData({ title: '', url: '' });
                       }}
                     >
-                      Annulla
+                      {t('common.cancel')}
                     </Button>
                   </div>
                 </div>
@@ -697,7 +696,7 @@ export default function Wishlist() {
                               className="text-xs"
                             >
                               <ExternalLink className="w-4 h-4 mr-1" />
-                              <span className="hidden sm:inline">Vedi su Amazon</span>
+                              <span className="hidden sm:inline">{t('wishlist.view_amazon')}</span>
                             </a>
                           </Button>
                         )}
@@ -715,21 +714,21 @@ export default function Wishlist() {
                       {activeItemId === item.id && (
                         <div className="mt-4 p-3 bg-muted/50 rounded-lg space-y-3">
                           <div>
-                            <Label htmlFor={`manual-title-${item.id}`}>Titolo</Label>
+                            <Label htmlFor={`manual-title-${item.id}`}>{t('wishlist.product_title')}</Label>
                             <Input
                               id={`manual-title-${item.id}`}
                               value={manualFormData.title}
                               onChange={(e) => setManualFormData(prev => ({ ...prev, title: e.target.value }))}
-                              placeholder="Titolo del prodotto"
+                              placeholder={t('wishlist.product_title_placeholder')}
                             />
                           </div>
                           <div>
-                            <Label htmlFor={`manual-url-${item.id}`}>URL Amazon</Label>
+                            <Label htmlFor={`manual-url-${item.id}`}>{t('wishlist.amazon_url')}</Label>
                             <Input
                               id={`manual-url-${item.id}`}
                               value={manualFormData.url}
                               onChange={(e) => setManualFormData(prev => ({ ...prev, url: e.target.value }))}
-                              placeholder="https://www.amazon.it/dp/..."
+                              placeholder={t('wishlist.amazon_url_placeholder')}
                             />
                           </div>
                           <div className="flex gap-2">
@@ -742,7 +741,7 @@ export default function Wishlist() {
                               }}
                               disabled={!manualFormData.url.trim()}
                             >
-                              Aggiungi
+                              {t('common.add')}
                             </Button>
                             <Button
                               size="sm"
@@ -752,7 +751,7 @@ export default function Wishlist() {
                                 setManualFormData({ title: '', url: '' });
                               }}
                             >
-                              Annulla
+                              {t('common.cancel')}
                             </Button>
                           </div>
                         </div>
@@ -774,7 +773,7 @@ export default function Wishlist() {
                     }}
                   >
                     <Search className="w-4 h-4 mr-2" />
-                    Cerca su Amazon
+                    {t('wishlist.search_amazon')}
                   </Button>
                   <Button
                     variant="outline"
@@ -783,7 +782,7 @@ export default function Wishlist() {
                     }}
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Aggiungi manualmente
+                    {t('wishlist.add_manually')}
                   </Button>
                 </div>
               </div>
@@ -794,7 +793,7 @@ export default function Wishlist() {
         {/* Disclosure Footer */}
         <div className="mt-16 pt-8 border-t border-border/50 text-center">
           <p className="text-xs text-muted-foreground">
-            Come affiliato Amazon, guadagniamo da acquisti idonei.
+            {t('wishlist.affiliate_disclosure')}
           </p>
         </div>
       </div>
@@ -803,9 +802,9 @@ export default function Wishlist() {
       <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Cerca prodotti Amazon</DialogTitle>
+            <DialogTitle>{t('wishlist.search_dialog_title')}</DialogTitle>
             <DialogDescription>
-              Trova prodotti su Amazon e aggiungili alla tua lista desideri
+              {t('wishlist.search_dialog_desc')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -841,18 +840,18 @@ export default function Wishlist() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nuova lista</DialogTitle>
-            <DialogDescription>Imposta nome ed evento collegato</DialogDescription>
+            <DialogTitle>{t('wishlist.new_list_dialog')}</DialogTitle>
+            <DialogDescription>{t('wishlist.set_name_event')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label htmlFor="new-title">Nome</Label>
-              <Input id="new-title" value={newListTitle} onChange={(e) => setNewListTitle(e.target.value)} placeholder="Nome lista" />
+              <Label htmlFor="new-title">{t('wishlist.list_name')}</Label>
+              <Input id="new-title" value={newListTitle} onChange={(e) => setNewListTitle(e.target.value)} placeholder={t('wishlist.list_name_placeholder')} />
             </div>
             <div>
-              <Label htmlFor="new-event">Evento</Label>
+              <Label htmlFor="new-event">{t('wishlist.event_label')}</Label>
               <Select value={newListEventId ?? undefined} onValueChange={(v) => setNewListEventId(v)}>
-                <SelectTrigger id="new-event"><SelectValue placeholder="Seleziona evento" /></SelectTrigger>
+                <SelectTrigger id="new-event"><SelectValue placeholder={t('wishlist.select_event')} /></SelectTrigger>
                 <SelectContent>
                   {events?.map(ev => (
                     <SelectItem key={ev.id} value={ev.id}>{ev.name}</SelectItem>
@@ -862,12 +861,12 @@ export default function Wishlist() {
             </div>
             <div className="flex gap-2">
               <Button className="flex-1" onClick={async () => {
-                if (!newListTitle.trim() || !newListEventId) { toast.error('Compila nome ed evento'); return; }
+                if (!newListTitle.trim() || !newListEventId) { toast.error(t('wishlist.fill_name_event')); return; }
                 try {
                   const { data: { user } } = await supabase.auth.getUser();
-                  if (!user) { toast.error('Devi essere autenticato'); return; }
+                  if (!user) { toast.error(t('wishlist.not_authenticated')); return; }
                   const { data: participant } = await supabase.from('participants').select('id').eq('profile_id', user.id).single();
-                  if (!participant) { toast.error('Profilo partecipante non trovato'); return; }
+                  if (!participant) { toast.error(t('wishlist.participant_not_found')); return; }
                   const { data: inserted, error } = await supabase
                     .from('wishlists')
                     .insert({ owner_id: participant.id, title: newListTitle.trim(), event_id: newListEventId })
@@ -878,14 +877,14 @@ export default function Wishlist() {
                   setSelectedWishlistTitle(inserted.title ?? newListTitle.trim());
                   setIsCreateDialogOpen(false);
                   setNewListTitle(''); setNewListEventId(null);
-                  toast.success('Nuova lista creata');
+                  toast.success(t('wishlist.list_created'));
                   queryClient.invalidateQueries({ queryKey: ['wishlists'] });
                   queryClient.invalidateQueries({ queryKey: ['wishlist-items'] });
                 } catch (e) {
-                  console.error(e); toast.error('Errore nella creazione della lista');
+                  console.error(e); toast.error(t('wishlist.create_error'));
                 }
-              }}>Crea</Button>
-              <Button className="flex-1" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>Annulla</Button>
+              }}>{t('buttons.create')}</Button>
+              <Button className="flex-1" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>{t('common.cancel')}</Button>
             </div>
           </div>
         </DialogContent>
@@ -895,18 +894,18 @@ export default function Wishlist() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Modifica lista</DialogTitle>
-            <DialogDescription>Aggiorna nome ed evento; puoi anche eliminare la lista</DialogDescription>
+            <DialogTitle>{t('wishlist.edit_list')}</DialogTitle>
+            <DialogDescription>{t('wishlist.edit_list_desc')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label htmlFor="edit-title">Nome</Label>
-              <Input id="edit-title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Nome lista" />
+              <Label htmlFor="edit-title">{t('wishlist.list_name')}</Label>
+              <Input id="edit-title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder={t('wishlist.list_name_placeholder')} />
             </div>
             <div>
-              <Label htmlFor="edit-event">Evento</Label>
+              <Label htmlFor="edit-event">{t('wishlist.event_label')}</Label>
               <Select value={editEventId ?? undefined} onValueChange={(v) => setEditEventId(v)}>
-                <SelectTrigger id="edit-event"><SelectValue placeholder="Seleziona evento" /></SelectTrigger>
+                <SelectTrigger id="edit-event"><SelectValue placeholder={t('wishlist.select_event')} /></SelectTrigger>
                 <SelectContent>
                   {events?.map(ev => (
                     <SelectItem key={ev.id} value={ev.id}>{ev.name}</SelectItem>
@@ -917,7 +916,7 @@ export default function Wishlist() {
             <div className="flex gap-2 flex-wrap">
               <Button className="flex-1" onClick={async () => {
                 if (!selectedWishlistId) return;
-                if (!editTitle.trim()) { toast.error('Inserisci un nome'); return; }
+                if (!editTitle.trim()) { toast.error(t('wishlist.fill_name_event')); return; }
                 try {
                   const { error } = await supabase
                     .from('wishlists')
@@ -926,13 +925,13 @@ export default function Wishlist() {
                   if (error) throw error;
                   setSelectedWishlistTitle(editTitle.trim());
                   setIsEditDialogOpen(false);
-                  toast.success('Lista aggiornata');
+                  toast.success(t('wishlist.updated_success'));
                   queryClient.invalidateQueries({ queryKey: ['wishlists'] });
                 } catch (e) {
-                  console.error(e); toast.error('Errore nell\'aggiornare la lista');
+                  console.error(e); toast.error(t('wishlist.update_error'));
                 }
-              }}>Salva</Button>
-              <Button className="flex-1" variant="outline" onClick={() => setIsEditDialogOpen(false)}>Annulla</Button>
+              }}>{t('common.save')}</Button>
+              <Button className="flex-1" variant="outline" onClick={() => setIsEditDialogOpen(false)}>{t('common.cancel')}</Button>
             </div>
           </div>
         </DialogContent>
@@ -942,15 +941,15 @@ export default function Wishlist() {
       <Dialog open={isChooseWishlistOpen} onOpenChange={setIsChooseWishlistOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Scegli una lista</DialogTitle>
-            <DialogDescription>Seleziona la lista a cui aggiungere l'articolo</DialogDescription>
+            <DialogTitle>{t('wishlist.choose_list')}</DialogTitle>
+            <DialogDescription>{t('wishlist.choose_list_desc')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <Select value={selectedWishlistId ?? undefined} onValueChange={(v) => setSelectedWishlistId(v)}>
-              <SelectTrigger className="w-full"><SelectValue placeholder="Seleziona lista" /></SelectTrigger>
+              <SelectTrigger className="w-full"><SelectValue placeholder={t('wishlist.select_list')} /></SelectTrigger>
               <SelectContent>
                 {wishlists?.map((wl) => (
-                  <SelectItem key={wl.id} value={wl.id}>{wl.title ?? 'Senza titolo'}</SelectItem>
+                  <SelectItem key={wl.id} value={wl.id}>{wl.title ?? t('wishlist.no_title')}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -960,15 +959,15 @@ export default function Wishlist() {
                 const prod = pendingProduct; if (!prod) { setIsChooseWishlistOpen(false); return; }
                 try {
                   const { data: { user } } = await supabase.auth.getUser();
-                  if (!user) { toast.error('Devi essere autenticato'); return; }
+                  if (!user) { toast.error(t('wishlist.not_authenticated')); return; }
                   const { data: participant } = await supabase.from('participants').select('id').eq('profile_id', user.id).single();
-                  if (!participant) { toast.error('Profilo partecipante non trovato'); return; }
+                  if (!participant) { toast.error(t('wishlist.participant_not_found')); return; }
                   const { data: existingItem } = await supabase
                     .from('wishlist_items').select('id')
                     .eq('wishlist_id', selectedWishlistId)
                     .eq('asin', prod.asin)
                     .maybeSingle();
-                  if (existingItem) { toast.error('Prodotto già presente nella lista'); return; }
+                  if (existingItem) { toast.error(t('wishlist.item_exists')); return; }
                   const { error } = await supabase.from('wishlist_items').insert({
                     owner_id: participant.id,
                     wishlist_id: selectedWishlistId,
@@ -980,12 +979,12 @@ export default function Wishlist() {
                     raw_url: prod.url,
                   });
                   if (error) throw error;
-                  toast.success('Prodotto aggiunto alla lista!');
+                  toast.success(t('wishlist.item_added'));
                   queryClient.invalidateQueries({ queryKey: ['wishlist-items'] });
-                } catch (e) { console.error(e); toast.error("Errore nell'aggiungere il prodotto"); }
+                } catch (e) { console.error(e); toast.error(t('wishlist.item_add_error')); }
                 finally { setIsChooseWishlistOpen(false); setPendingProduct(null); }
-              })()}>Conferma</Button>
-              <Button className="flex-1" variant="outline" onClick={() => { setIsChooseWishlistOpen(false); setPendingProduct(null); }}>Annulla</Button>
+              })()}>{t('common.save')}</Button>
+              <Button className="flex-1" variant="outline" onClick={() => { setIsChooseWishlistOpen(false); setPendingProduct(null); }}>{t('common.cancel')}</Button>
             </div>
           </div>
         </DialogContent>
