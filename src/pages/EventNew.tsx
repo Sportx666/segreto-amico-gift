@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,9 +21,8 @@ const EventNew = () => {
   const [coverUploading, setCoverUploading] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useI18n();
   const today = new Date().toISOString().split("T")[0];
-
-
 
   const budgetPresets = [5, 10, 15, 20];
 
@@ -123,21 +123,21 @@ const EventNew = () => {
             .update({ cover_image_url: url })
             .eq("id", event.id);
           if (coverErr) throw coverErr;
-          toast.success("Immagine evento caricata");
+          toast.success(t('event_new.image_uploaded'));
         } catch (e) {
           console.warn("Cover upload failed", e);
-          toast.error("Caricamento immagine evento fallito");
+          toast.error(t('event_new.image_upload_failed'));
         } finally {
           setCoverUploading(false);
         }
       }
 
-      toast.success("Evento creato con successo! 🎉");
+      toast.success(t('event_new.event_created'));
       navigate(`/events/${event.id}`);
     } catch (error: unknown) {
       console.error("Error creating event:", error);
       const description = error instanceof Error ? error.message : undefined;
-      toast.error("Errore nella creazione dell'evento", {
+      toast.error(t('event_new.creation_error'), {
         description
       });
     } finally {
@@ -160,7 +160,7 @@ const EventNew = () => {
           className="text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Torna agli eventi
+          {t('buttons.back_to_events')}
         </Button>
       </div>
 
@@ -170,12 +170,12 @@ const EventNew = () => {
             <div className="mx-auto w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mb-4">
               <Gift className="w-8 h-8 text-white" />
             </div>
-            <CardTitle className="text-2xl font-bold">Crea Nuovo Evento</CardTitle>
+            <CardTitle className="text-2xl font-bold">{t('event_new.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label>Immagine evento</Label>
+                <Label>{t('event_new.cover_image')}</Label>
                 <div className="w-full">
                   <img
                     src={coverFile ? URL.createObjectURL(coverFile) : "/placeholder.svg"}
@@ -187,21 +187,21 @@ const EventNew = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="name">Nome dell'evento</Label>
+                <Label htmlFor="name">{t('event_new.event_name')}</Label>
                 <Input
                   id="name"
-                  placeholder="Natale in famiglia 2025"
+                  placeholder={t('event_new.event_name_placeholder')}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
                   onInvalid={(e) => {
-                    (e.target as HTMLInputElement).setCustomValidity("Per favore, inserisci un nome valido per lo scambio");
+                    (e.target as HTMLInputElement).setCustomValidity(t('event_new.event_name_validation'));
                   }}
                 />
               </div>
 
               <div className="space-y-3">
-                <Label>Budget suggerito</Label>
+                <Label>{t('event_new.suggested_budget')}</Label>
                 <div className="grid grid-cols-4 gap-2">
                   {budgetPresets.map((preset) => (
                     <Button
@@ -219,7 +219,7 @@ const EventNew = () => {
                 </div>
                 <Input
                   type="number"
-                  placeholder="Budget personalizzato"
+                  placeholder={t('event_new.custom_budget')}
                   value={budget}
                   onChange={(e) => setBudget(e.target.value ? Number(e.target.value) : "")}
                   min="1"
@@ -228,7 +228,7 @@ const EventNew = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date">Data dello scambio</Label>
+                <Label htmlFor="date">{t('event_new.exchange_date')}</Label>
                 <Input
                   id="date"
                   type="date"
@@ -237,14 +237,14 @@ const EventNew = () => {
                   onChange={(e) => setDate(e.target.value)}
                   required
                   onInvalid={(e) => {
-                    (e.target as HTMLInputElement).setCustomValidity("Per favore, inserisci una data valida per lo scambio");
+                    (e.target as HTMLInputElement).setCustomValidity(t('event_new.exchange_date_validation'));
                   }}
                 />
 
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="drawDate">Data automatica del sorteggio</Label>
+                <Label htmlFor="drawDate">{t('event_new.auto_draw_date')}</Label>
                 <Input
                   id="drawDate"
                   type="date"
@@ -260,11 +260,11 @@ const EventNew = () => {
                 disabled={loading || coverUploading}
               >
                 {loading ? (
-                  "Creazione..."
+                  t('event_new.creating')
                 ) : (
                   <>
                     <Users className="w-4 h-4 mr-2" />
-                    Crea Evento
+                    {t('event_new.create_button')}
                   </>
                 )}
               </Button>

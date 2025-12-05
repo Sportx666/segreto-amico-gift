@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { useI18n } from "@/i18n";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,7 @@ interface WishlistItem {
 
 export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssignmentProps) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -72,7 +74,7 @@ export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssign
       }
 
       // Get receiver's display info using secure function
-      let receiverName = 'Il tuo destinatario';
+      let receiverName = t('assignment.your_recipient');
       if (assignmentData.participants?.profile_id) {
         const { data: profileData } = await supabase
           .rpc('get_event_member_display_info' as any, { 
@@ -87,7 +89,7 @@ export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssign
       }
 
       // If no profile, check event_members for anonymous name
-      if (receiverName === 'Il tuo destinatario') {
+      if (receiverName === t('assignment.your_recipient')) {
         const { data: memberData } = await supabase
           .from('event_members')
           .select('anonymous_name')
@@ -122,7 +124,7 @@ export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssign
 
     } catch (error) {
       console.error('Error in fetchAssignment:', error);
-      toast.error("Errore nel caricamento dell'assegnazione");
+      toast.error(t('assignment.loading_error'));
     } finally {
       setIsLoading(false);
     }
@@ -146,9 +148,9 @@ export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssign
       <Card>
         <CardContent className="p-6 text-center">
           <Calendar className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">Il sorteggio non è ancora stato effettuato</h3>
+          <h3 className="text-lg font-semibold mb-2">{t('assignment.draw_not_done')}</h3>
           <p className="text-muted-foreground">
-            L'amministratore dell'evento deve ancora effettuare il sorteggio dei partecipanti.
+            {t('assignment.draw_not_done_desc')}
           </p>
         </CardContent>
       </Card>
@@ -160,9 +162,9 @@ export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssign
       <Card>
         <CardContent className="p-6 text-center">
           <Gift className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">Nessuna assegnazione trovata</h3>
+          <h3 className="text-lg font-semibold mb-2">{t('assignment.no_assignment')}</h3>
           <p className="text-muted-foreground">
-            Non è stata trovata un'assegnazione per te in questo evento.
+            {t('assignment.no_assignment_desc')}
           </p>
         </CardContent>
       </Card>
@@ -176,17 +178,17 @@ export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssign
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Gift className="w-5 h-5" />
-            Il tuo abbinamento
+            {t('assignment.title')}
           </CardTitle>
           <CardDescription>
-            Ecco a chi dovrai fare un regalo
+            {t('assignment.description')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center p-6 bg-gradient-primary/10 rounded-lg">
             <div className="text-center">
               <h3 className="text-2xl font-bold mb-2">{assignment.receiver_name}</h3>
-              <Badge variant="secondary">Il tuo destinatario</Badge>
+              <Badge variant="secondary">{t('assignment.your_recipient')}</Badge>
             </div>
           </div>
         </CardContent>
@@ -197,25 +199,25 @@ export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssign
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" />
-            Lista dei desideri
+            {t('assignment.wishlist')}
           </CardTitle>
           <CardDescription>
-            Ecco cosa desidera {assignment.receiver_name}
+            {t('assignment.wishlist_desc').replace('{name}', assignment.receiver_name)}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {wishlistItems.length === 0 ? (
             <div className="text-center py-8">
               <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-semibold mb-2">Nessun desiderio ancora</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('assignment.no_wishes')}</h3>
               <p className="text-muted-foreground mb-4">
-                {assignment.receiver_name} non ha ancora aggiunto nulla alla sua lista dei desideri.
+                {t('assignment.no_wishes_desc').replace('{name}', assignment.receiver_name)}
               </p>
               <Button
                 onClick={() => onStartChat?.(assignment.receiver_id, assignment.receiver_name)}
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
-                Scrivigli un messaggio!
+                {t('assignment.send_message')}
               </Button>
             </div>
           ) : (
@@ -251,11 +253,11 @@ export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssign
                         <div className="flex flex-col items-end gap-2">
                           {item.priority && (
                             <Badge variant="outline" className="text-xs">
-                              Priorità {item.priority}
+                              {t('assignment.priority')} {item.priority}
                             </Badge>
                           )}
                           {item.is_purchased && (
-                            <Badge variant="secondary">Acquistato</Badge>
+                            <Badge variant="secondary">{t('assignment.purchased')}</Badge>
                           )}
                         </div>
                       </div>
@@ -268,7 +270,7 @@ export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssign
                               rel="noopener noreferrer"
                             >
                               <ExternalLink className="w-4 h-4 mr-2" />
-                              Acquista
+                              {t('assignment.buy')}
                             </a>
                           </Button>
                         )}
@@ -280,7 +282,7 @@ export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssign
                               rel="noopener noreferrer"
                             >
                               <ExternalLink className="w-4 h-4 mr-2" />
-                              Vedi prodotto
+                              {t('assignment.view_product')}
                             </a>
                           </Button>
                         )}

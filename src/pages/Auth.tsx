@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Mail, Chrome, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { getOAuthRedirectUrl, getMagicLinkRedirectUrl } from "@/lib/auth-urls";
 import { Tabs as TabsComponent, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -25,6 +26,7 @@ const Auth = () => {
   const [showPasswordSetup, setShowPasswordSetup] = useState(false);
   const [activeTab, setActiveTab] = useState("magic");
   const navigate = useNavigate();
+  const { t } = useI18n();
   const params = new URLSearchParams(window.location.search);
   const nextParam = params.get("next");
   const next =
@@ -57,8 +59,8 @@ const Auth = () => {
 
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
-          toast.error("Credenziali non valide", {
-            description: "Email o password errati. Prova il reset password se necessario."
+          toast.error(t('auth.invalid_credentials'), {
+            description: t('auth.invalid_credentials_desc')
           });
         } else {
           throw error;
@@ -66,11 +68,11 @@ const Auth = () => {
         return;
       }
 
-      toast.success("Accesso effettuato! 🎉");
+      toast.success(t('auth.login_success'));
       navigate(next);
     } catch (error: unknown) {
       const description = error instanceof Error ? error.message : undefined;
-      toast.error("Errore durante l'accesso", {
+      toast.error(t('auth.login_error'), {
         description
       });
     } finally {
@@ -90,7 +92,7 @@ const Auth = () => {
       if (error) throw error;
     } catch (error: unknown) {
       const description = error instanceof Error ? error.message : undefined;
-      toast.error("Errore durante l'accesso con Google", {
+      toast.error(t('auth.google_login_error'), {
         description
       });
     }
@@ -113,12 +115,12 @@ const Auth = () => {
 
       if (error) throw error;
 
-      toast.success("Link magico inviato! 📧", {
-        description: "Controlla la tua email e clicca il link per accedere."
+      toast.success(t('auth.magic_link_sent'), {
+        description: t('auth.magic_link_desc')
       });
     } catch (error: unknown) {
       const description = error instanceof Error ? error.message : undefined;
-      toast.error("Errore durante l'invio", {
+      toast.error(t('auth.send_error'), {
         description
       });
     } finally {
@@ -188,7 +190,7 @@ const Auth = () => {
                 Amico Segreto
               </CardTitle>
               <CardDescription className="text-sm sm:text-base text-muted-foreground">
-                Entra per organizzare il tuo scambio di regali
+                {t('auth.enter_to_organize')}
               </CardDescription>
             </div>
           </CardHeader>
@@ -207,7 +209,7 @@ const Auth = () => {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-white px-3 text-muted-foreground font-medium">
-                  O continua con
+                  {t('auth.or_continue_with')}
                 </span>
               </div>
             </div>
@@ -216,12 +218,12 @@ const Auth = () => {
               <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6 h-11">
                 <TabsTrigger value="password" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                   <Lock className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="hidden xs:inline">Accesso Veloce</span>
-                  <span className="xs:hidden">Password</span>
+                  <span className="hidden xs:inline">{t('auth.fast_login')}</span>
+                  <span className="xs:hidden">{t('auth.password')}</span>
                 </TabsTrigger>
                 <TabsTrigger value="magic" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                   <Mail className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="hidden xs:inline">Link Magico</span>
+                  <span className="hidden xs:inline">{t('auth.magic_link')}</span>
                   <span className="xs:hidden">Link</span>
                 </TabsTrigger>
               </TabsList>
@@ -230,14 +232,14 @@ const Auth = () => {
                 <form onSubmit={handlePasswordLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email-password" className="text-sm font-medium">
-                      Email
+                      {t('auth.email')}
                     </Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
                       <Input
                         id="email-password"
                         type="email"
-                        placeholder="la.tua@email.com"
+                        placeholder={t('auth.email_placeholder')}
                         className="pl-10 h-12"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -248,14 +250,14 @@ const Auth = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="password" className="text-sm font-medium">
-                      Password
+                      {t('auth.password')}
                     </Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
                       <Input
                         id="password"
                         type={showPassword ? "text" : "password"}
-                        placeholder="La tua password"
+                        placeholder={t('auth.password_placeholder')}
                         className="pl-10 pr-10 h-12"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -285,7 +287,7 @@ const Auth = () => {
                         onCheckedChange={(checked) => setRememberMe(!!checked)}
                       />
                       <Label htmlFor="remember" className="text-sm text-muted-foreground">
-                        Ricordami
+                        {t('auth.remember_me')}
                       </Label>
                     </div>
                     <Button
@@ -294,7 +296,7 @@ const Auth = () => {
                       className="px-0 text-sm text-primary hover:text-primary/80"
                       onClick={() => setShowPasswordReset(true)}
                     >
-                      Password dimenticata?
+                      {t('auth.forgot_password')}
                     </Button>
                   </div>
 
@@ -304,7 +306,7 @@ const Auth = () => {
                     className="w-full bg-gradient-primary hover:bg-primary/90 transition-all duration-300 hover:shadow-glow font-medium"
                     disabled={loading}
                   >
-                    {loading ? "Accesso..." : "Accedi"}
+                    {loading ? t('auth.logging_in') : t('auth.login_button')}
                   </Button>
                 </form>
               </TabsContent>
@@ -313,14 +315,14 @@ const Auth = () => {
                 <form onSubmit={handleMagicLinkLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email-magic" className="text-sm font-medium">
-                      Indirizzo Email
+                      {t('auth.email_address')}
                     </Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
                       <Input
                         id="email-magic"
                         type="email"
-                        placeholder="la.tua@email.com"
+                        placeholder={t('auth.email_placeholder')}
                         className="pl-10 h-12 text-base focus-visible:ring-primary"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -335,13 +337,12 @@ const Auth = () => {
                     className="w-full bg-gradient-primary hover:bg-primary/90 transition-all duration-300 hover:shadow-glow font-medium"
                     disabled={loading}
                   >
-                    {loading ? "Invio in corso..." : "Invia Link Magico ✨"}
+                    {loading ? t('auth.sending') : t('auth.send_magic_link')}
                   </Button>
                 </form>
 
                 <p className="text-xs text-muted-foreground text-center mt-4 leading-relaxed">
-                  Ti invieremo un link sicuro per accedere senza password. 
-                  Controlla anche la cartella spam! 📧
+                  {t('auth.magic_link_info')}
                 </p>
               </TabsContent>
             </TabsComponent>
