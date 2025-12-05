@@ -26,6 +26,7 @@ import Cookies from "./pages/Cookies";
 import Terms from "./pages/Terms";
 import Profile from "./pages/Profile";
 import { Footer } from "@/components/Footer";
+import { I18nProvider } from "@/components/I18nProvider";
 
 const queryClient = new QueryClient();
 
@@ -94,17 +95,19 @@ const AppContent = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <ErrorBoundary>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <AppContent />
-          </AuthProvider>
-        </BrowserRouter>
-      </ErrorBoundary>
-    </TooltipProvider>
+    <I18nProvider>
+      <TooltipProvider>
+        <ErrorBoundary>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+              <AppContent />
+            </AuthProvider>
+          </BrowserRouter>
+        </ErrorBoundary>
+      </TooltipProvider>
+    </I18nProvider>
   </QueryClientProvider>
 );
 
