@@ -3,12 +3,27 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-scheduler-secret',
 }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
+  }
+
+  // Validate scheduler secret for cron job authentication
+  const schedulerSecret = Deno.env.get('SCHEDULER_SECRET')
+  const providedSecret = req.headers.get('x-scheduler-secret')
+  
+  if (!schedulerSecret || providedSecret !== schedulerSecret) {
+    console.error('Unauthorized scheduler access attempt')
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401 
+      }
+    )
   }
 
   try {
@@ -31,6 +46,8 @@ serve(async (req) => {
     if (eventsError) {
       throw eventsError
     }
+
+    console.log(`Found ${events?.length || 0} events scheduled for auto-draw today`)
 
     const results = []
 
@@ -102,6 +119,8 @@ serve(async (req) => {
         })
       }
     }
+
+    console.log(`Auto-draw completed. Processed ${results.length} events.`)
 
     return new Response(
       JSON.stringify({ 
