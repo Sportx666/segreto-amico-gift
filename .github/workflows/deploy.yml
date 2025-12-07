@@ -28,6 +28,13 @@ jobs:
       - name: Set build timestamp
         run: echo "BUILD_TIME=$(date -u +'%Y%m%d-%H%M')" >> $GITHUB_ENV
 
+      - name: Load .env file
+        run: |
+          # Load .env file into GitHub Actions environment
+          grep -v '^#' .env | grep -v '^$' | grep '^VITE_' | while read line; do
+            echo "$line" >> $GITHUB_ENV
+          done
+
       - name: Build application
         run: npm run build
         env:
@@ -37,12 +44,12 @@ jobs:
           VITE_SUPABASE_PROJECT_ID: eociecgrdwllggcohmko
           VITE_PUBLIC_BASE_URL: https://amicosegreto.fun
           VITE_AUTH_REDIRECT_OVERRIDE: https://amicosegreto.fun
-          VITE_ADS_ENABLED: true
+          VITE_ADS_ENABLED: ${{ env.VITE_ADS_ENABLED }}
           VITE_ADSENSE_EDGE_LEFT_SLOT: ${{ secrets.ADSENSE_EDGE_LEFT_SLOT }}
           VITE_ADSENSE_EDGE_RIGHT_SLOT: ${{ secrets.ADSENSE_EDGE_RIGHT_SLOT }}
           VITE_ADSENSE_MOBILE_FEED_SLOT: ${{ secrets.ADSENSE_MOBILE_FEED_SLOT }}
           VITE_AMAZON_PARTNER_TAG: sportyx06-20
-          VITE_I18N_ENABLED: false
+          VITE_I18N_ENABLED: ${{ env.VITE_I18N_ENABLED }}
 
       - name: Deploy to Hostinger via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5

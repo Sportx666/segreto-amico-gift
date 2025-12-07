@@ -229,27 +229,31 @@ export const MemberCard = ({
                   <div className="space-y-2">
                     {/* All action buttons in one aligned row */}
                     <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                      {/* Copy button - blue circular */}
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={() => copyJoinToken(member.token_data!.token)}
                         disabled={copyingToken}
-                        className="flex items-center gap-1 text-xs h-7 px-2 sm:h-8 sm:px-3 touch-target focus-ring"
+                        className="p-0 h-7 w-7 rounded-full hover:opacity-80 transition-opacity"
                         aria-label={t('member_card.copy_invite_for').replace('{name}', memberName)}
                       >
-                        <Copy className="w-3 h-3" />
-                        <span className="hidden xs:inline sm:inline">{t('member_card.copy')}</span>
+                        <div className="w-7 h-7 bg-[#3B82F6] rounded-full flex items-center justify-center">
+                          <Copy className="w-4 h-4 text-white" />
+                        </div>
                       </Button>
                       
+                      {/* Refresh button - amber circular */}
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={() => refreshToken(member.participant_id)}
-                        className="flex items-center gap-1 text-xs h-7 px-2 sm:h-8 sm:px-3 touch-target focus-ring"
+                        className="p-0 h-7 w-7 rounded-full hover:opacity-80 transition-opacity"
                         aria-label={t('member_card.refresh_token_for').replace('{name}', memberName)}
                       >
-                        <RefreshCw className="w-3 h-3" />
-                        <span className="hidden xs:inline sm:inline">{t('member_card.refresh')}</span>
+                        <div className="w-7 h-7 bg-[#F59E0B] rounded-full flex items-center justify-center">
+                          <RefreshCw className="w-4 h-4 text-white" />
+                        </div>
                       </Button>
                       
                       {/* Email button */}

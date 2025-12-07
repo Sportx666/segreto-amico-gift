@@ -10,7 +10,8 @@
     "ideas": "Idee",
     "wishlist": "Lista Desideri",
     "profile": "Profilo",
-    "logout": "Esci"
+    "logout": "Esci",
+    "refresh": "Aggiorna"
   },
   "auth": {
     "login": "Accedi",
@@ -488,7 +489,8 @@
     "name_update_error": "Errore nell'aggiornare il nome",
     "name_required": "Il nome è obbligatorio",
     "cannot_edit_others": "Non puoi modificare il nome di altri partecipanti",
-    "welcome_user": "Benvenuto {name}! Il tuo profilo è stato creato."
+    "welcome_user": "Benvenuto {name}! Il tuo profilo è stato creato.",
+    "refresh_clearing": "Cancellazione cache in corso..."
   },
   "member_name_editor": {
     "title": "Modifica il tuo nome per questo evento",
@@ -677,7 +679,8 @@
     "gift_ideas": "Idee regalo",
     "wishlist": "Lista desideri",
     "user_profile": "Profilo utente",
-    "profile_avatar": "Avatar profilo"
+    "profile_avatar": "Avatar profilo",
+    "refresh_app": "Aggiorna applicazione"
   },
   "errors": {
     "unexpected_error": "Si è verificato un errore imprevisto. Ricarica la pagina per riprovare.",

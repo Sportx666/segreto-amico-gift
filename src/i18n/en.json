@@ -10,7 +10,8 @@
     "ideas": "Ideas",
     "wishlist": "Wishlist",
     "profile": "Profile",
-    "logout": "Logout"
+    "logout": "Logout",
+    "refresh": "Refresh"
   },
   "auth": {
     "login": "Login",
@@ -488,7 +489,8 @@
     "name_update_error": "Error updating name",
     "name_required": "Name is required",
     "cannot_edit_others": "You cannot edit other participants' names",
-    "welcome_user": "Welcome {name}! Your profile has been created."
+    "welcome_user": "Welcome {name}! Your profile has been created.",
+    "refresh_clearing": "Clearing cache..."
   },
   "member_name_editor": {
     "title": "Edit your name for this event",
@@ -677,7 +679,8 @@
     "gift_ideas": "Gift ideas",
     "wishlist": "Wishlist",
     "user_profile": "User profile",
-    "profile_avatar": "Profile avatar"
+    "profile_avatar": "Profile avatar",
+    "refresh_app": "Refresh application"
   },
   "errors": {
     "unexpected_error": "An unexpected error occurred. Reload the page to try again.",
