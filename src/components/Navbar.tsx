@@ -18,14 +18,6 @@ export const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [updateAvailable, setUpdateAvailable] = useState(false);
-
-  // Listen for service worker update events
-  useEffect(() => {
-    const handleUpdateAvailable = () => setUpdateAvailable(true);
-    window.addEventListener('sw-update-available', handleUpdateAvailable);
-    return () => window.removeEventListener('sw-update-available', handleUpdateAvailable);
-  }, []);
 
   useEffect(() => {
     async function load() {
@@ -202,13 +194,10 @@ export const Navbar = () => {
               variant="ghost" 
               size="sm" 
               onClick={handleRefresh}
-              className="text-muted-foreground hover:text-foreground relative"
-              aria-label={updateAvailable ? t('accessibility.refresh_app_update') : t('accessibility.refresh_app')}
+              className="text-muted-foreground hover:text-foreground"
+              aria-label={t('accessibility.refresh_app')}
             >
               <RefreshCw className="w-4 h-4" />
-              {updateAvailable && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full animate-pulse" />
-              )}
             </Button>
             <Button 
               variant="ghost" 
