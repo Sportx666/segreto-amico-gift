@@ -1,29 +1,19 @@
 import { useEffect } from 'react'
 import { toast } from 'sonner'
-import { applyUpdate } from '@/lib/registerSW'
+import { wasJustUpdated } from '@/lib/registerSW'
 import { useI18n } from '@/i18n'
 
 export const UpdateNotification = () => {
   const { t } = useI18n()
 
   useEffect(() => {
-    const handleUpdate = () => {
-      toast(t('update.new_version_available'), {
-        description: t('update.new_version_description'),
-        duration: Infinity,
-        action: {
-          label: t('update.update_now'),
-          onClick: () => applyUpdate()
-        },
-        cancel: {
-          label: t('update.later'),
-          onClick: () => {}
-        }
+    // Check if app was just updated (after auto-reload)
+    if (wasJustUpdated()) {
+      toast.success(t('update.updated_successfully'), {
+        description: t('update.now_using_latest'),
+        duration: 4000,
       })
     }
-
-    window.addEventListener('sw-update-available', handleUpdate)
-    return () => window.removeEventListener('sw-update-available', handleUpdate)
   }, [t])
 
   return null

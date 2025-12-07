@@ -1,22 +1,17 @@
 import { registerSW } from 'virtual:pwa-register'
 
-// Store the update function globally so React can call it
-let pendingUpdate: (() => Promise<void>) | null = null
+const UPDATE_FLAG_KEY = 'app-just-updated'
 
 export const initServiceWorker = () => {
-  const updateSW = registerSW({
-    onNeedRefresh() {
-      console.log('New version available')
-      // Store the update function
-      pendingUpdate = () => updateSW(true)
-      // Dispatch custom event for React to handle
-      window.dispatchEvent(new CustomEvent('sw-update-available'))
-    },
+  // Register with autoUpdate - SW will activate immediately
+  registerSW({
+    immediate: true,
     onOfflineReady() {
       console.log('App ready to work offline')
     },
     onRegisteredSW(swUrl, registration) {
-      // Check for updates more frequently (1 min in dev, 2 min in prod)
+      console.log('Service worker registered:', swUrl)
+      // Check for updates periodically (1 min in dev, 2 min in prod)
       if (registration) {
         const interval = import.meta.env.DEV ? 60 * 1000 : 2 * 60 * 1000
         setInterval(() => {
@@ -25,12 +20,24 @@ export const initServiceWorker = () => {
       }
     },
   })
+
+  // Listen for when a new service worker takes control
+  // This happens after the new SW activates with skipWaiting + clientsClaim
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      // Set flag so we can show success toast after reload
+      sessionStorage.setItem(UPDATE_FLAG_KEY, 'true')
+      // Reload to use new version
+      window.location.reload()
+    })
+  }
 }
 
-// Export function to trigger update from React
-export const applyUpdate = async () => {
-  if (pendingUpdate) {
-    await pendingUpdate()
-    window.location.reload()
+// Check if app was just updated (called after reload)
+export const wasJustUpdated = (): boolean => {
+  const updated = sessionStorage.getItem(UPDATE_FLAG_KEY) === 'true'
+  if (updated) {
+    sessionStorage.removeItem(UPDATE_FLAG_KEY)
   }
+  return updated
 }
