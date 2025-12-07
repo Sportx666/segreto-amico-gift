@@ -7,7 +7,7 @@ import { useI18n } from "@/i18n";
 import { NotificationBell } from "./NotificationBell";
 import { LanguageMenu } from "./LanguageMenu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Calendar, Lightbulb, User, LogOut, Heart } from "lucide-react";
+import { Calendar, Lightbulb, User, LogOut, Heart, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
@@ -39,6 +39,27 @@ export const Navbar = () => {
       toast.success(t('toasts.logout_success'));
     } catch (error: unknown) {
       toast.error(t('toasts.logout_error'));
+    }
+  };
+
+  const handleRefresh = async () => {
+    toast.info(t('toasts.refresh_clearing'));
+    try {
+      // Unregister all service workers
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map(r => r.unregister()));
+      }
+      // Clear all caches
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      }
+      // Reload the page
+      window.location.reload();
+    } catch (error) {
+      console.error('Error refreshing:', error);
+      window.location.reload();
     }
   };
 
@@ -168,7 +189,16 @@ export const Navbar = () => {
           {/* Mobile Actions */}
           <div className="md:hidden flex items-center gap-2">
             <LanguageMenu />
-            <NotificationBell />            
+            <NotificationBell />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleRefresh}
+              className="text-muted-foreground hover:text-foreground"
+              aria-label={t('accessibility.refresh_app')}
+            >
+              <RefreshCw className="w-4 h-4" />              
+            </Button>
             <Button 
               variant="ghost" 
               size="sm" 
@@ -231,7 +261,7 @@ export const Navbar = () => {
       </div>
       
       {/* Spacer for mobile bottom navigation - reduced height for tighter gap */}
-      <div className="md:hidden h-10"></div>
+      <div className="md:hidden h-6"></div>
     </>
   );
 };
