@@ -680,7 +680,8 @@
     "wishlist": "Lista desideri",
     "user_profile": "Profilo utente",
     "profile_avatar": "Avatar profilo",
-    "refresh_app": "Aggiorna applicazione"
+    "refresh_app": "Aggiorna applicazione",
+    "refresh_app_update": "Aggiorna applicazione - aggiornamento disponibile"
   },
   "errors": {
     "unexpected_error": "Si è verificato un errore imprevisto. Ricarica la pagina per riprovare.",

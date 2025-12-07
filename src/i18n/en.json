@@ -680,7 +680,8 @@
     "wishlist": "Wishlist",
     "user_profile": "User profile",
     "profile_avatar": "Profile avatar",
-    "refresh_app": "Refresh application"
+    "refresh_app": "Refresh application",
+    "refresh_app_update": "Refresh application - update available"
   },
   "errors": {
     "unexpected_error": "An unexpected error occurred. Reload the page to try again.",
