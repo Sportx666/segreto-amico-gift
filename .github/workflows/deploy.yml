@@ -25,9 +25,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Set build timestamp
+        run: echo "BUILD_TIME=$(date -u +'%Y%m%d-%H%M')" >> $GITHUB_ENV
+
       - name: Build application
         run: npm run build
         env:
+          VITE_BUILD_TIME: ${{ env.BUILD_TIME }}
           VITE_SUPABASE_URL: https://eociecgrdwllggcohmko.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvY2llY2dyZHdsbGdnY29obWtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzODc5ODcsImV4cCI6MjA3MTk2Mzk4N30.frsU_PCHKJdz8lFv2IXqOiUVFwk28hXbZGWZAoYFfBY
           VITE_SUPABASE_PROJECT_ID: eociecgrdwllggcohmko
