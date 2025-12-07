@@ -302,6 +302,7 @@ export const MemberCard = ({
               eventId={eventId}
               isCurrentUser={currentUserParticipantId === member.participant_id}
               memberStatus={member.status}
+              memberName={getMemberName(member, t)}
             />
           </div>
 

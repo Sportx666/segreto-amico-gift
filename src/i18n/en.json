@@ -280,7 +280,9 @@
     "create_wishlist": "Create wishlist",
     "add_items": "Add items",
     "view_full": "View all",
-    "more_items": "more"
+    "more_items": "more",
+    "untitled_item": "Untitled item",
+    "view_product": "View product"
   },
   "profile": {
     "title": "Profile",
