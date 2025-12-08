@@ -66,9 +66,9 @@ export function MemberWishlistPreview({
     }
     return (
       <div className="mt-3 pt-3 border-t border-border/50">
-        <p className="text-xs text-muted-foreground flex items-center gap-1 break-words">
-          <Heart className="w-3 h-3 flex-shrink-0" />
-          <span className="break-words">{t('wishlist_preview.no_items')}</span>
+        <p className="text-xs text-muted-foreground flex items-start gap-1">
+          <Heart className="w-3 h-3 flex-shrink-0 mt-0.5" />
+          <span className="break-words whitespace-normal">{t('wishlist_preview.no_items')}</span>
         </p>
       </div>
     );
@@ -90,9 +90,9 @@ export function MemberWishlistPreview({
     }
     return (
       <div className="mt-3 pt-3 border-t border-border/50">
-        <p className="text-xs text-muted-foreground flex items-center gap-1 break-words">
-          <Heart className="w-3 h-3 flex-shrink-0" />
-          <span className="break-words">{t('wishlist_preview.no_items')}</span>
+        <p className="text-xs text-muted-foreground flex items-start gap-1">
+          <Heart className="w-3 h-3 flex-shrink-0 mt-0.5" />
+          <span className="break-words whitespace-normal">{t('wishlist_preview.no_items')}</span>
         </p>
       </div>
     );
