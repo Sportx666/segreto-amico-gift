@@ -12,6 +12,7 @@ import { UpdateNotification } from "@/components/UpdateNotification";
 import { useAdsConsent } from "@/hooks/useAdsConsent";
 import { getAdSlotsForRoute } from "@/lib/adsConfig";
 import { featureFlags } from "@/lib/featureFlags";
+import { useVersionCheck } from "@/hooks/useVersionCheck";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Events from "./pages/Events";
@@ -36,6 +37,9 @@ const AppContent = () => {
   const location = useLocation();
   const { hasConsent, showBanner, acceptConsent, rejectConsent } = useAdsConsent();
   const adSlots = getAdSlotsForRoute(location.pathname);
+  
+  // Check for app updates on route changes
+  useVersionCheck();
 
   const showEdgeAds = adSlots.includes("edge-left") || adSlots.includes("edge-right");
   const showMobileFeed = featureFlags.ads && adSlots.includes("mobile-feed");

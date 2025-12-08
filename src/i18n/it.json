@@ -272,7 +272,8 @@
     "select_valid_list": "Seleziona una lista valida",
     "manual_amazon_product": "Prodotto Amazon aggiunto manualmente",
     "manual_product": "Prodotto aggiunto manualmente",
-    "search_error": "Errore nella ricerca prodotti"
+    "search_error": "Errore nella ricerca prodotti",
+    "move_error": "Errore nello spostamento"
   },
   "wishlist_preview": {
     "title": "Lista desideri",
@@ -664,6 +665,18 @@
     "max_price": "Prezzo massimo",
     "clear": "Cancella",
     "apply": "Applica"
+  },
+  "wishlist_item": {
+    "view_amazon": "Vedi su Amazon",
+    "remove": "Rimuovi",
+    "title_label": "Titolo",
+    "url_label": "URL",
+    "add": "Aggiungi",
+    "price_updated": "Prezzo aggiornato",
+    "move_up": "Sposta su",
+    "move_down": "Sposta giù",
+    "confirm_delete_title": "Rimuovere articolo?",
+    "confirm_delete_desc": "Sei sicuro di voler rimuovere \"{title}\" dalla tua lista desideri?"
   },
   "footer": {
     "privacy": "Privacy",
