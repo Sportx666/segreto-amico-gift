@@ -272,7 +272,8 @@
     "select_valid_list": "Select a valid list",
     "manual_amazon_product": "Manually added Amazon product",
     "manual_product": "Manually added product",
-    "search_error": "Error searching products"
+    "search_error": "Error searching products",
+    "move_error": "Error moving item"
   },
   "wishlist_preview": {
     "title": "Wishlist",
@@ -664,6 +665,18 @@
     "max_price": "Maximum price",
     "clear": "Clear",
     "apply": "Apply"
+  },
+  "wishlist_item": {
+    "view_amazon": "View on Amazon",
+    "remove": "Remove",
+    "title_label": "Title",
+    "url_label": "URL",
+    "add": "Add",
+    "price_updated": "Price updated",
+    "move_up": "Move up",
+    "move_down": "Move down",
+    "confirm_delete_title": "Remove item?",
+    "confirm_delete_desc": "Are you sure you want to remove \"{title}\" from your wishlist?"
   },
   "footer": {
     "privacy": "Privacy",

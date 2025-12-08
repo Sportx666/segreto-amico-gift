@@ -1,13 +1,37 @@
-import { defineConfig } from "vite";
+import { defineConfig, Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import fs from "fs";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
 
+// Generate version.json at build time
+const generateVersionJson = (): Plugin => {
+  const buildTime = new Date().toISOString().slice(0, 16).replace('T', '-').replace(':', '');
+  
+  return {
+    name: 'generate-version-json',
+    writeBundle() {
+      const versionData = {
+        version: buildTime,
+        timestamp: Date.now()
+      };
+      
+      // Write to dist/version.json
+      const distPath = path.resolve(__dirname, 'dist', 'version.json');
+      fs.mkdirSync(path.dirname(distPath), { recursive: true });
+      fs.writeFileSync(distPath, JSON.stringify(versionData, null, 2));
+      console.log('[Build] Generated version.json:', versionData);
+    }
+  };
+};
+
 // https://vitejs.dev/config/
+const buildTime = new Date().toISOString().slice(0, 16).replace('T', '-').replace(':', '');
+
 export default defineConfig(({ mode }) => ({
   define: {
-    'import.meta.env.VITE_BUILD_TIME': JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ')),
+    'import.meta.env.VITE_BUILD_TIME': JSON.stringify(buildTime),
   },
   server: {
     host: "::",
@@ -15,8 +39,8 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    mode === 'development' && componentTagger(),
+    mode === 'production' && generateVersionJson(),
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {

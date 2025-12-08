@@ -16,7 +16,7 @@ import { ProductsGrid } from "@/components/ProductsGrid";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonGrid } from "@/components/ui/skeleton-grid";
-import { Home, Search, SquarePen, Trash2, Plus, ExternalLink, Heart } from "lucide-react";
+import { Home, Search, SquarePen, Trash2, Plus, ExternalLink, Heart, ChevronUp, ChevronDown } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { withAffiliateTag, productUrlFromASIN } from "@/lib/amazon";
 import { WishlistItem } from "@/components/WishlistItem";
@@ -43,6 +43,7 @@ interface WishlistItemRow {
   created_at: string;
   is_purchased: boolean;
   wishlist_id: string;
+  priority: number | null;
 }
 
 interface WishlistRow {
@@ -120,6 +121,7 @@ export default function Wishlist() {
         .from("wishlist_items")
         .select("*")
         .eq("owner_id", participant.id)
+        .order("priority", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false });
 
       if (selectedWishlistId) {
@@ -363,6 +365,60 @@ export default function Wishlist() {
     } catch (error: unknown) {
       console.error("Error deleting item:", error);
       toast.error(t('wishlist.item_remove_error'));
+    }
+  };
+
+  const handleMoveUp = async (itemId: string) => {
+    if (!wishlistItems) return;
+    
+    const items = [...wishlistItems];
+    const index = items.findIndex(item => item.id === itemId);
+    if (index <= 0) return; // Already at top
+    
+    try {
+      const currentItem = items[index];
+      const aboveItem = items[index - 1];
+      
+      // Swap priorities (use index as priority if null)
+      const currentPriority = currentItem.priority ?? index;
+      const abovePriority = aboveItem.priority ?? (index - 1);
+      
+      await Promise.all([
+        supabase.from("wishlist_items").update({ priority: abovePriority }).eq("id", currentItem.id),
+        supabase.from("wishlist_items").update({ priority: currentPriority }).eq("id", aboveItem.id)
+      ]);
+      
+      queryClient.invalidateQueries({ queryKey: ["wishlist-items"] });
+    } catch (error) {
+      console.error("Error moving item up:", error);
+      toast.error(t('wishlist.move_error'));
+    }
+  };
+
+  const handleMoveDown = async (itemId: string) => {
+    if (!wishlistItems) return;
+    
+    const items = [...wishlistItems];
+    const index = items.findIndex(item => item.id === itemId);
+    if (index < 0 || index >= items.length - 1) return; // Already at bottom
+    
+    try {
+      const currentItem = items[index];
+      const belowItem = items[index + 1];
+      
+      // Swap priorities (use index as priority if null)
+      const currentPriority = currentItem.priority ?? index;
+      const belowPriority = belowItem.priority ?? (index + 1);
+      
+      await Promise.all([
+        supabase.from("wishlist_items").update({ priority: belowPriority }).eq("id", currentItem.id),
+        supabase.from("wishlist_items").update({ priority: currentPriority }).eq("id", belowItem.id)
+      ]);
+      
+      queryClient.invalidateQueries({ queryKey: ["wishlist-items"] });
+    } catch (error) {
+      console.error("Error moving item down:", error);
+      toast.error(t('wishlist.move_error'));
     }
   };
 
@@ -703,7 +759,7 @@ export default function Wishlist() {
             )}
 
             {/* Wishlist Items with Per-Item Actions */}
-            {wishlistItems.map((item) => (
+            {wishlistItems.map((item, index) => (
               <Card key={item.id} className="overflow-hidden shadow-card border-0 bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-4">
                   <div className="flex gap-4">
@@ -753,13 +809,52 @@ export default function Wishlist() {
                           </Button>
                         )}
 
+                        {/* Priority buttons */}
                         <Button
                           size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeleteItem(item.id)}
+                          variant="ghost"
+                          onClick={() => handleMoveUp(item.id)}
+                          disabled={index === 0}
+                          aria-label={t('wishlist_item.move_up')}
+                          className="h-9 w-9 p-0"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <ChevronUp className="w-4 h-4" />
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleMoveDown(item.id)}
+                          disabled={index === wishlistItems.length - 1}
+                          aria-label={t('wishlist_item.move_down')}
+                          className="h-9 w-9 p-0"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </Button>
+
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{t('wishlist_item.confirm_delete_title')}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {t('wishlist_item.confirm_delete_desc').replace('{title}', item.title)}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteItem(item.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                {t('common.delete')}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
 
                       {/* Inline Manual Add Form */}
