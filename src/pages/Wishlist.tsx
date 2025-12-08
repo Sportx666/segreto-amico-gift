@@ -564,40 +564,92 @@ export default function Wishlist() {
         ) : isLoading ? (
           <SkeletonGrid />
         ) : !wishlistItems?.length ? (
-          <EmptyState
-            icon={<Heart className="w-8 h-8 text-white" />}
-            title={t('wishlist.no_products')}
-            description={t('wishlist.add_products_desc')}
-          >
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                onClick={() => {
-                  if (!selectedWishlistId && wishlists?.length) {
-                    setSelectedWishlistId(wishlists[0].id);
-                    setTargetWishlistIdForSearch(wishlists[0].id);
-                  } else {
-                    setTargetWishlistIdForSearch(selectedWishlistId);
-                  }
-                  setIsSearchDialogOpen(true);
-                }}
-              >
-                <Search className="w-4 h-4 mr-2" />
-                {t('wishlist.search_amazon')}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  if (!selectedWishlistId && wishlists?.length) {
-                    setSelectedWishlistId(wishlists[0].id);
-                  }
-                  setActiveItemId("manual-add");
-                }}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {t('wishlist.add_manually')}
-              </Button>
-            </div>
-          </EmptyState>
+          <div className="space-y-6">
+            {/* Manual add form for empty wishlist */}
+            {activeItemId === "manual-add" && (
+              <Card className="p-4 border-dashed border-2">
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="empty-manual-title">{t('wishlist.product_title')}</Label>
+                    <Input
+                      id="empty-manual-title"
+                      value={manualFormData.title}
+                      onChange={(e) => setManualFormData(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder={t('wishlist.product_title_placeholder')}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="empty-manual-url">{t('wishlist.amazon_url')}</Label>
+                    <Input
+                      id="empty-manual-url"
+                      value={manualFormData.url}
+                      onChange={(e) => setManualFormData(prev => ({ ...prev, url: e.target.value }))}
+                      placeholder={t('wishlist.amazon_url_placeholder')}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      className="flex-1"
+                      onClick={async () => {
+                        if (!selectedWishlistId) return;
+                        await addManualToWishlist(selectedWishlistId, manualFormData);
+                        setManualFormData({ title: '', url: '' });
+                        setActiveItemId(null);
+                      }}
+                      disabled={!manualFormData.url.trim()}
+                    >
+                      {t('wishlist.add_to_list')}
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      variant="outline"
+                      onClick={() => {
+                        setActiveItemId(null);
+                        setManualFormData({ title: '', url: '' });
+                      }}
+                    >
+                      {t('common.cancel')}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            )}
+            
+            <EmptyState
+              icon={<Heart className="w-8 h-8 text-white" />}
+              title={t('wishlist.no_products')}
+              description={t('wishlist.add_products_desc')}
+            >
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  onClick={() => {
+                    if (!selectedWishlistId && wishlists?.length) {
+                      setSelectedWishlistId(wishlists[0].id);
+                      setTargetWishlistIdForSearch(wishlists[0].id);
+                    } else {
+                      setTargetWishlistIdForSearch(selectedWishlistId);
+                    }
+                    setIsSearchDialogOpen(true);
+                  }}
+                >
+                  <Search className="w-4 h-4 mr-2" />
+                  {t('wishlist.search_amazon')}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (!selectedWishlistId && wishlists?.length) {
+                      setSelectedWishlistId(wishlists[0].id);
+                    }
+                    setActiveItemId("manual-add");
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {t('wishlist.add_manually')}
+                </Button>
+              </div>
+            </EmptyState>
+          </div>
         ) : (
           <div className="space-y-4">
             {/* Manual add form (when active) */}
