@@ -4,18 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { ExternalLink, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import { Search, Plus, ExternalLink, Trash2 } from "lucide-react";
 import { withAffiliateTag } from "@/lib/amazon";
 import { useI18n } from "@/i18n";
 
@@ -36,41 +25,16 @@ interface Props {
   onDelete(id: string): Promise<void> | void;
   onAddManual(payload: { title: string; url: string }): Promise<void> | void;
   onOpenSearch(initialQuery: string): void;
-  onMoveUp?: (id: string) => Promise<void> | void;
-  onMoveDown?: (id: string) => Promise<void> | void;
-  isFirst?: boolean;
-  isLast?: boolean;
   wishlistTitle?: string;
   eventTitle?: string;
 }
 
-export function WishlistItem({ 
-  item, 
-  onDelete, 
-  onAddManual, 
-  onOpenSearch, 
-  onMoveUp,
-  onMoveDown,
-  isFirst = false,
-  isLast = false,
-  wishlistTitle, 
-  eventTitle 
-}: Props) {
+export function WishlistItem({ item, onDelete, onAddManual, onOpenSearch, wishlistTitle, eventTitle }: Props) {
   const { t } = useI18n();
   const [manualOpen, setManualOpen] = useState(false);
   const [manualTitle, setManualTitle] = useState("");
   const [manualUrl, setManualUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-
-  const handleDelete = async () => {
-    setDeleting(true);
-    try {
-      await onDelete(item.id);
-    } finally {
-      setDeleting(false);
-    }
-  };
 
   const handleSubmitManual = async () => {
     if (!manualUrl.trim()) return;
@@ -131,72 +95,28 @@ export function WishlistItem({
             </div>
             <div className="flex flex-wrap gap-2 items-center mb-2 justify-between">
               <a
-                href={affiliateUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm underline text-primary focus:outline focus:ring-2 focus:ring-primary rounded px-1"
-                aria-label={t('wishlist_item.view_amazon')}
+              href={affiliateUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm underline text-primary focus:outline focus:ring-2 focus:ring-primary rounded px-1"
+              aria-label={t('wishlist_item.view_amazon')}
               >
-                <span className="inline-flex items-center gap-1">
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  {t('wishlist_item.view_amazon')}
-                </span>
+              <span className="inline-flex items-center gap-1">
+                <ExternalLink className="w-3.5 h-3.5" />
+                {t('wishlist_item.view_amazon')}
+              </span>
               </a>
-              <div className="ml-auto flex items-center gap-1">
-                {/* Priority buttons */}
-                {onMoveUp && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => onMoveUp(item.id)}
-                    disabled={isFirst}
-                    aria-label={t('wishlist_item.move_up')}
-                    className="h-9 w-9 p-0"
-                  >
-                    <ChevronUp className="w-4 h-4" />
-                  </Button>
-                )}
-                {onMoveDown && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => onMoveDown(item.id)}
-                    disabled={isLast}
-                    aria-label={t('wishlist_item.move_down')}
-                    className="h-9 w-9 p-0"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                )}
-                {/* Delete with confirmation */}
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      aria-label={t('wishlist_item.remove')}
-                      className="min-h-[44px]"
-                      disabled={deleting}
-                    >
-                      <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                      <span className="hidden sm:inline">{t('wishlist_item.remove')}</span>
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>{t('wishlist_item.confirm_delete_title')}</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {t('wishlist_item.confirm_delete_desc').replace('{title}', item.title)}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                        {t('common.delete')}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+              <div className="ml-auto">
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => onDelete(item.id)}
+                aria-label={t('wishlist_item.remove')}
+                className="min-h-[44px] text-red-90 hover:text-red-50"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                <span className="hidden sm:inline">{t('wishlist_item.remove')}</span>
+              </Button>
               </div>
             </div>
             {manualOpen && (
