@@ -36,12 +36,13 @@ serve(async (req) => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    // Find events scheduled for auto-draw today with draw_date set to today and not yet completed
+    // Find events scheduled for auto-draw today with draw_date set to today, auto_draw_enabled = true, and not yet completed
     const { data: events, error: eventsError } = await supabaseClient
       .from('events')
       .select('id, name, draw_status')
       .eq('draw_date', today.toISOString().split('T')[0])
       .eq('draw_status', 'pending')
+      .eq('auto_draw_enabled', true)
 
     if (eventsError) {
       throw eventsError

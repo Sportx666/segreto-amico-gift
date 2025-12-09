@@ -182,7 +182,8 @@ Deno.serve(async (req: Request) => {
               profile_id: m.participants.profile_id,
               type: 'chat',
               title: 'Nuovo messaggio',
-              body: `${aliasSnapshot} ha scritto nella chat dell'evento`
+              body: `${aliasSnapshot} ha scritto nella chat dell'evento`,
+              event_id: eventId
             }));
 
           if (notifications.length > 0) {
@@ -212,7 +213,9 @@ Deno.serve(async (req: Request) => {
               profile_id: recipientData.profile_id,
               type: 'chat',
               title: 'Nuovo messaggio privato',
-              body: `${aliasSnapshot} ti ha inviato un messaggio`
+              body: `${aliasSnapshot} ti ha inviato un messaggio`,
+              event_id: eventId,
+              recipient_participant_id: participant.id // sender's participant_id for opening chat
             });
 
           if (notifError) {

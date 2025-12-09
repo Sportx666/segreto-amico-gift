@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -25,6 +26,7 @@ const typeColors = {
 export function NotificationBell() {
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
   const { t, language } = useI18n();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   
   const dateLocale = language === 'it' ? it : enUS;
@@ -34,13 +36,27 @@ export function NotificationBell() {
       await markAsRead(notificationId);
     }
     
-    // Handle navigation based on notification type
-    if (notification.type === 'assignment' && notification.body.includes('evento')) {
-      window.location.href = '/events';
-    } else if (notification.type === 'event') {
-      window.location.href = '/events';
-    } else if (notification.type === 'chat') {
-      window.location.href = '/events';
+    // Navigate based on notification type and event_id
+    const eventId = notification.event_id;
+    
+    if (notification.type === 'assignment' && eventId) {
+      // Navigate to event's draw tab
+      navigate(`/events/${eventId}?tab=sorteggio`);
+    } else if (notification.type === 'chat' && eventId) {
+      // Navigate to event's chat tab
+      if (notification.recipient_participant_id) {
+        // DM notification - open specific DM conversation
+        navigate(`/events/${eventId}?tab=chat&dm=${notification.recipient_participant_id}`);
+      } else {
+        // Event chat notification
+        navigate(`/events/${eventId}?tab=chat`);
+      }
+    } else if (notification.type === 'event' && eventId) {
+      // Navigate to event page
+      navigate(`/events/${eventId}`);
+    } else {
+      // Fallback to events list
+      navigate('/events');
     }
     
     setOpen(false);
