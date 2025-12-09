@@ -92,7 +92,12 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
         return;
       }
 
-      setSearchParams({ dm: openChat.recipientId });
+      setSearchParams((current) => {
+        const params = new URLSearchParams(current);
+        params.set('dm', openChat.recipientId);
+        params.set('tab', 'chat');
+        return params;
+      });
       setActiveChats(prev => {
         if (prev.some(chat => chat.recipientId === openChat.recipientId)) {
           return prev;
@@ -147,7 +152,12 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
   );
 
   const handleChatStart = (recipientId: string, recipientName?: string) => {
-    setSearchParams({ dm: recipientId });
+    setSearchParams((current) => {
+      const params = new URLSearchParams(current);
+      params.set('dm', recipientId);
+      params.set('tab', 'chat');
+      return params;
+    });
     const existingChat = activeChats.find(chat => chat.recipientId === recipientId);
     if (!existingChat) {
       const newChat: ActiveChat = {
@@ -162,16 +172,29 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
     setActiveChats(prev => prev.filter(chat => chat.recipientId !== recipientId));
     // Switch to event channel if closing active chat
     if (dmParam === recipientId) {
-      setSearchParams({});
+      setSearchParams((current) => {
+        const params = new URLSearchParams(current);
+        params.delete('dm');
+        return params;
+      });
     }
   };
 
   const handleTabChange = (value: string) => {
     if (value === 'event') {
-      setSearchParams({});
+      setSearchParams((current) => {
+        const params = new URLSearchParams(current);
+        params.delete('dm');
+        return params;
+      });
     } else {
       const recipientId = value.replace('pair-', '');
-      setSearchParams({ dm: recipientId });
+      setSearchParams((current) => {
+        const params = new URLSearchParams(current);
+        params.set('dm', recipientId);
+        params.set('tab', 'chat');
+        return params;
+      });
     }
   };
 
