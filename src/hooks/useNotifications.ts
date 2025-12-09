@@ -11,6 +11,8 @@ interface Notification {
   body: string;
   read_at: string | null;
   created_at: string;
+  event_id?: string | null;
+  recipient_participant_id?: string | null;
 }
 
 interface NotificationSettings {

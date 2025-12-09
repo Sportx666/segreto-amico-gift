@@ -428,31 +428,52 @@ export type Database = {
         Row: {
           body: string
           created_at: string
+          event_id: string | null
           id: string
           profile_id: string
           read_at: string | null
+          recipient_participant_id: string | null
           title: string
           type: string
         }
         Insert: {
           body: string
           created_at?: string
+          event_id?: string | null
           id?: string
           profile_id: string
           read_at?: string | null
+          recipient_participant_id?: string | null
           title: string
           type: string
         }
         Update: {
           body?: string
           created_at?: string
+          event_id?: string | null
           id?: string
           profile_id?: string
           read_at?: string | null
+          recipient_participant_id?: string | null
           title?: string
           type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_recipient_participant_id_fkey"
+            columns: ["recipient_participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       participants: {
         Row: {

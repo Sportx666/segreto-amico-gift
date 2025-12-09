@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChat } from '@/hooks/useChat';
 import { useNickname } from '@/hooks/useNickname';
 import { useJoinedParticipantCount } from '@/hooks/useJoinedParticipantCount';
+import { useDMConversations } from '@/hooks/useDMConversations';
 import { useI18n } from '@/i18n';
 import { NicknameManager } from './NicknameManager';
 import { ChatRecipientSelector } from './ChatRecipientSelector';
@@ -50,9 +51,23 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
   const inputRef = useRef<HTMLInputElement>(null);
   const { nickname: nickData } = useNickname(eventId);
   const { count: joinedCount } = useJoinedParticipantCount(eventId);
+  const { contacts: dmContacts, loading: loadingDMs } = useDMConversations(eventId);
   
   // Get locale for date-fns
   const dateLocale = language === 'it' ? it : enUS;
+  
+  // Auto-populate activeChats from existing DM conversations
+  useEffect(() => {
+    if (!loadingDMs && dmContacts.length > 0) {
+      setActiveChats(prev => {
+        const existingIds = new Set(prev.map(c => c.recipientId));
+        const newChats = dmContacts
+          .filter(c => !existingIds.has(c.participantId))
+          .map(c => ({ recipientId: c.participantId, recipientName: c.displayName }));
+        return [...prev, ...newChats];
+      });
+    }
+  }, [dmContacts, loadingDMs]);
   
   // Determine which chat to use based on active channel
   const isEventChannel = activeChannel === 'event';
