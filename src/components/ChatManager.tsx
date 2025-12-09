@@ -54,6 +54,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
   ));
   
   const [messageText, setMessageText] = useState('');
+  const [privateMenuOpen, setPrivateMenuOpen] = useState(false);
   const [showRecipientSelector, setShowRecipientSelector] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -290,7 +291,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                 </TabsList>
 
                 {activeChats.length > 0 ? (
-                  <DropdownMenu>
+                  <DropdownMenu open={privateMenuOpen} onOpenChange={setPrivateMenuOpen}>
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="outline"
@@ -305,17 +306,17 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-64">
-                      <DropdownMenuLabel className="flex items-center gap-2">
+                      {/*<DropdownMenuLabel className="flex items-center gap-2">
                         <Glasses className="w-4 h-4" />
                         {t('chat.private_chats')}
                       </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
+                      <DropdownMenuSeparator />*/}
                       {activeChats.map(chat => (
                         <DropdownMenuItem
                           key={chat.recipientId}
-                          onSelect={(e) => {
-                            e.preventDefault();
+                          onSelect={() => {
                             setSearchParams({ dm: chat.recipientId });
+                            setPrivateMenuOpen(false);
                           }}
                           className="flex items-center gap-2"
                         >
@@ -329,6 +330,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                               e.preventDefault();
                               e.stopPropagation();
                               handleCloseChat(chat.recipientId);
+                              setPrivateMenuOpen(false);
                             }}
                             aria-label={t('chat.close_chat_with').replace('{name}', chat.recipientName)}
                           >
