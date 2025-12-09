@@ -339,11 +339,11 @@ export default function EventDetailPage() {
               </div>
               <div className="flex items-center gap-2">
                 {getStatusBadge(event.draw_status)}
-                {userRole === 'admin' && (
+                {/* {userRole === 'admin' && (
                   <Badge variant="outline" className="bg-white/10 border-white/20 text-white text-xs">
                     Admin
                   </Badge>
-                )}
+                )} */}
               </div>
             </div>
           </div>
