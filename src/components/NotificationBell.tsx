@@ -40,8 +40,8 @@ export function NotificationBell() {
     const eventId = notification.event_id;
     
     if (notification.type === 'assignment' && eventId) {
-      // Navigate to event's draw tab
-      navigate(`/events/${eventId}?tab=sorteggio`);
+      // Navigate to event's assignment tab
+      navigate(`/events/${eventId}?tab=assegnazione`);
     } else if (notification.type === 'chat' && eventId) {
       // Navigate to event's chat tab
       if (notification.recipient_participant_id) {
