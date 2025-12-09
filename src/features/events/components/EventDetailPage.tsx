@@ -2,7 +2,7 @@
  * Refactored EventDetail page with better separation of concerns
  */
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -34,9 +34,10 @@ import { useI18n } from "@/i18n";
 export default function EventDetailPage() {
   const { id } = useParams();
   const { t } = useI18n();
-  // Authentication guard - will redirect if not authenticated  
+  // Authentication guard - will redirect if not authenticated
   const { user, loading: authLoading, isAuthenticated } = useAuthGuard();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("partecipanti");
   const [uploadingCover, setUploadingCover] = useState(false);
   const [recipientName, setRecipientName] = useState<string>('');
@@ -122,14 +123,61 @@ export default function EventDetailPage() {
   const [openChat, setOpenChat] = useState<{ recipientId: string; recipientName?: string } | null>(null);
   const chatManagerRef = useRef<ChatManagerHandle>(null);
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setSearchParams((current) => {
+      const params = new URLSearchParams(current);
+      params.set('tab', value);
+
+      if (value !== 'chat') {
+        params.delete('dm');
+      }
+
+      return params;
+    });
+  };
+
   const handleStartChat = (recipientId: string, recipientName: string) => {
-    setActiveTab('chat');
     setOpenChat({ recipientId, recipientName });
+    setSearchParams((current) => {
+      const params = new URLSearchParams(current);
+      params.set('tab', 'chat');
+      params.set('dm', recipientId);
+      return params;
+    });
+    setActiveTab('chat');
   };
 
   const handleOpenChatConsumed = () => {
     setOpenChat(null);
   };
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    const dmParam = searchParams.get('dm');
+    const validTabs = ['partecipanti', 'esclusioni', 'sorteggio', 'chat', 'assegnazione'];
+
+    if (dmParam) {
+      if (activeTab !== 'chat') {
+        setActiveTab('chat');
+      }
+
+      setOpenChat((current) =>
+        current?.recipientId === dmParam ? current : { recipientId: dmParam }
+      );
+      return;
+    }
+
+    if (openChat) {
+      setOpenChat(null);
+    }
+
+    const nextTab = tabParam && validTabs.includes(tabParam) ? tabParam : 'partecipanti';
+
+    if (nextTab !== activeTab) {
+      setActiveTab(nextTab);
+    }
+  }, [searchParams, activeTab, openChat]);
 
   const handleDeleteEvent = async () => {
     if (!event) return;
@@ -310,7 +358,7 @@ export default function EventDetailPage() {
           role="navigation"
           aria-label={t('event_detail.participants_tab')}
         >
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList className={`grid w-full grid-cols-4 bg-white/80 backdrop-blur-sm shadow-card`}>
               <TabsTrigger value="partecipanti" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
@@ -347,7 +395,7 @@ export default function EventDetailPage() {
 
         {/* Tab Content */}
         <div role="tabpanel" aria-live="polite">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsContent value="partecipanti">
             <EventMembers 
               eventId={event.id} 
