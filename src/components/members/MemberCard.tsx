@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect} from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,7 @@ interface Member {
   anonymous_name: string | null;
   anonymous_email: string | null;
   status: string;
-  participant_id: string;
+  participant_id?: string;
   token_data?: {
     token: string;
     expires_at: string;
@@ -66,6 +66,26 @@ export const MemberCard = ({
   const [savingEmail, setSavingEmail] = useState(false);
 
   const memberName = getMemberName(member, t);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchAvatar() {
+      if (!member.participant_id) return;
+      const profile_id = await supabase
+        .from("participants")
+        .select("profile_id")
+        .eq("id", member.participant_id)
+        .single()
+        .then(res => res.data?.profile_id);
+      const { data } = await supabase
+        .from("profiles")
+        .select("avatar_url")
+        .eq("id", profile_id)
+        .single();
+      setAvatarUrl(data?.avatar_url ?? null);
+    }
+    fetchAvatar();
+  }, [member.participant_id]);
 
   const copyJoinToken = async (token: string) => {
     setCopyingToken(true);
@@ -182,8 +202,14 @@ export const MemberCard = ({
         <CardContent className="p-3 sm:p-4">
           <div className="flex items-start justify-between gap-2 sm:gap-3">
             <div className="flex items-start gap-2 sm:gap-3 min-w-0 flex-1">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                {member.role === 'admin' ? (
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={memberName}
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : member.role === 'admin' ? (
                   <Crown className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                 ) : (
                   <User className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
@@ -219,7 +245,8 @@ export const MemberCard = ({
                   <StatusChip status={member.status} />
                   {member.role === 'admin' && (
                     <Badge variant="secondary" className="text-xs">
-                      Admin
+                      <Crown className="w-3 h-3 sm:hidden" />
+                      <span className="hidden sm:inline">Admin</span>
                     </Badge>
                   )}
                 </div>
