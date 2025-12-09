@@ -136,10 +136,10 @@ export function MemberWishlistPreview({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <ShoppingBag className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                )}
+                      <div className="w-14 h-14 rounded-lg bg-muted flex-shrink-0 flex items-center justify-center text-center text-sm font-medium text-muted-foreground p-2">
+                        <span className="line-clamp-3">{item.title}</span>
+                      </div>
+                    )}
               </div>
               {item.is_purchased && (
                 <div className="absolute inset-0 bg-background/80 rounded-md flex items-center justify-center">

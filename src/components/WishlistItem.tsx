@@ -59,7 +59,7 @@ export function WishlistItem({ item, onDelete, onAddManual, onOpenSearch, wishli
     <Card>
       <CardContent className="p-4">
         <div className="flex gap-4 items-start">
-          {item.image && (
+          {item.image ? (
             <img
               src={item.image}
               alt={item.title}
@@ -69,6 +69,10 @@ export function WishlistItem({ item, onDelete, onAddManual, onOpenSearch, wishli
                 target.src = "/placeholder.svg";
               }}
             />
+          ) : (
+            <div className="w-20 h-20 rounded-lg bg-muted flex-shrink-0 flex items-center justify-center text-center text-sm font-medium text-muted-foreground p-2">
+              <span className="line-clamp-3">{item.title}</span>
+            </div>
           )}
           <div className="flex-1 min-w-0">
             <div className="mb-2">

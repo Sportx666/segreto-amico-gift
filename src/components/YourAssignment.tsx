@@ -5,7 +5,7 @@ import { useI18n } from "@/i18n";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Gift, ExternalLink, Calendar, ShoppingCart, MessageCircle } from "lucide-react";
+import { Gift, ExternalLink, Calendar, ShoppingCart, ShoppingBag, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { getOrCreateParticipantId } from "@/lib/participants";
 
@@ -228,12 +228,16 @@ export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssign
                   className={`border rounded-lg p-4 ${item.is_purchased ? 'opacity-60' : ''}`}
                 >
                   <div className="flex gap-4">
-                    {item.image_url && (
+                    {item.image_url ? (
                       <img
                         src={item.image_url}
                         alt={item.title}
                         className="w-16 h-16 object-cover rounded"
                       />
+                    ) : (
+                      <div className="w-16 h-16 flex items-center justify-center">
+                        <ShoppingBag className="w-6 h-6 text-muted-foreground" />
+                      </div>
                     )}
                     <div className="flex-1">
                       <div className="flex items-start justify-between">
