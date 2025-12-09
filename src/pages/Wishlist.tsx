@@ -19,7 +19,6 @@ import { SkeletonGrid } from "@/components/ui/skeleton-grid";
 import { Home, Search, SquarePen, Trash2, Plus, ExternalLink, Heart } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { withAffiliateTag, productUrlFromASIN } from "@/lib/amazon";
-import { WishlistItem } from "@/components/WishlistItem";
 
 type Product = {
   asin: string;
@@ -62,7 +61,7 @@ export default function Wishlist() {
   const [selectedWishlistTitle, setSelectedWishlistTitle] = useState<string | null>(null);
   const [targetWishlistIdForSearch, setTargetWishlistIdForSearch] = useState<string | null>(null);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
-  const [manualFormData, setManualFormData] = useState({ title: "", url: "" });
+  const [manualFormData, setManualFormData] = useState({ title: "", url: "", notes: "" });
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newListTitle, setNewListTitle] = useState("");
   const [newListEventId, setNewListEventId] = useState<string | null>(null);
@@ -186,7 +185,7 @@ export default function Wishlist() {
 
   const addManualToWishlist = async (
     wishlistId: string,
-    payload: { title: string; url: string }
+    payload: { title: string; url: string; notes: string }
   ) => {
     const url = payload.url.trim();
     if (!url) {
@@ -216,6 +215,7 @@ export default function Wishlist() {
       const { error } = await supabase.from("wishlist_items").insert({
         owner_id: participant.id,
         wishlist_id: wishlistId,
+        event_id: currentEventId,
         asin: asin || null,
         title:
           payload.title ||
@@ -224,6 +224,7 @@ export default function Wishlist() {
             : t('wishlist.manual_product')),
         raw_url: url,
         affiliate_url: withAffiliateTag(url),
+        notes: payload.notes || null,
       });
 
       if (error) throw error;
@@ -268,6 +269,7 @@ export default function Wishlist() {
       const { error } = await supabase.from("wishlist_items").insert({
         owner_id: participant.id,
         wishlist_id: selectedWishlistId,
+        event_id: currentEventId,
         title: emptyManualTitle.trim() || (raw.includes("amazon.") ? t('wishlist.manual_amazon_product') : t('wishlist.manual_product')),
         raw_url: raw,
         affiliate_url: normalized,
@@ -332,6 +334,7 @@ export default function Wishlist() {
       const { error } = await supabase.from("wishlist_items").insert({
         owner_id: participant.id,
         wishlist_id: targetWishlistId,
+        event_id: currentEventId,
         asin: product.asin,
         title: product.title,
         image_url: product.image,
@@ -587,13 +590,22 @@ export default function Wishlist() {
                       placeholder={t('wishlist.amazon_url_placeholder')}
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="empty-manual-notes">{t('wishlist.notes')}</Label>
+                    <Input
+                      id="empty-manual-notes"
+                      value={manualFormData.notes}
+                      onChange={(e) => setManualFormData(prev => ({ ...prev, notes: e.target.value }))}
+                      placeholder={t('wishlist.notes_placeholder')}
+                    />
+                  </div>
                   <div className="flex gap-2">
                     <Button
                       className="flex-1"
                       onClick={async () => {
                         if (!selectedWishlistId) return;
                         await addManualToWishlist(selectedWishlistId, manualFormData);
-                        setManualFormData({ title: '', url: '' });
+                        setManualFormData({ title: '', url: '', notes: '' });
                         setActiveItemId(null);
                       }}
                       disabled={!manualFormData.url.trim()}
@@ -605,7 +617,7 @@ export default function Wishlist() {
                       variant="outline"
                       onClick={() => {
                         setActiveItemId(null);
-                        setManualFormData({ title: '', url: '' });
+                        setManualFormData({ title: '', url: '', notes: '' });
                       }}
                     >
                       {t('common.cancel')}
@@ -674,13 +686,22 @@ export default function Wishlist() {
                       placeholder={t('wishlist.amazon_url_placeholder')}
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="manual-notes">{t('wishlist.notes')}</Label>
+                    <Input
+                      id="manual-notes"
+                      value={manualFormData.notes}
+                      onChange={(e) => setManualFormData(prev => ({ ...prev, notes: e.target.value }))}
+                      placeholder={t('wishlist.notes_placeholder')}
+                    />
+                  </div>
                   <div className="flex gap-2">
                     <Button
                       className="flex-1"
                       onClick={async () => {
                         if (!selectedWishlistId) return;
                         await addManualToWishlist(selectedWishlistId, manualFormData);
-                        setManualFormData({ title: '', url: '' });
+                        setManualFormData({ title: '', url: '', notes: '' });
                         setActiveItemId(null);
                       }}
                       disabled={!manualFormData.url.trim()}
@@ -692,7 +713,7 @@ export default function Wishlist() {
                       variant="outline"
                       onClick={() => {
                         setActiveItemId(null);
-                        setManualFormData({ title: '', url: '' });
+                        setManualFormData({ title: '', url: '', notes: '' });
                       }}
                     >
                       {t('common.cancel')}
@@ -727,6 +748,12 @@ export default function Wishlist() {
                     {/* Item Details */}
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium line-clamp-2 mb-2">{item.title}</h3>
+                      < Input 
+                        className="w-full mb-2"
+                        placeholder={t('wishlist.notes_placeholder')}
+                        readOnly
+                        value={item.notes || ''} 
+                      />
                       {item.price_snapshot && (
                         <p className="text-sm text-muted-foreground mb-3">
                           {item.price_snapshot}
@@ -783,12 +810,21 @@ export default function Wishlist() {
                               placeholder={t('wishlist.amazon_url_placeholder')}
                             />
                           </div>
+                          <div>
+                            <Label htmlFor={`manual-notes-${item.id}`}>{t('wishlist.notes')}</Label>
+                            <Input
+                              id={`manual-notes-${item.id}`}
+                              value={manualFormData.notes}
+                              onChange={(e) => setManualFormData(prev => ({ ...prev, notes: e.target.value }))}
+                              placeholder={t('wishlist.notes_placeholder')}
+                            />
+                          </div>
                           <div className="flex gap-2">
                             <Button
                               size="sm"
                               onClick={async () => {
                                 await addManualToWishlist(item.wishlist_id, manualFormData);
-                                setManualFormData({ title: '', url: '' });
+                                setManualFormData({ title: '', url: '', notes: '' });
                                 setActiveItemId(null);
                               }}
                               disabled={!manualFormData.url.trim()}
@@ -800,7 +836,7 @@ export default function Wishlist() {
                               variant="outline"
                               onClick={() => {
                                 setActiveItemId(null);
-                                setManualFormData({ title: '', url: '' });
+                                setManualFormData({ title: '', url: '', notes: '' });
                               }}
                             >
                               {t('common.cancel')}
@@ -1023,6 +1059,7 @@ export default function Wishlist() {
                   const { error } = await supabase.from('wishlist_items').insert({
                     owner_id: participant.id,
                     wishlist_id: selectedWishlistId,
+                    event_id: currentEventId,
                     asin: prod.asin,
                     title: prod.title,
                     image_url: prod.image,

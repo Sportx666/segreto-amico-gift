@@ -272,6 +272,8 @@
     "select_valid_list": "Seleziona una lista valida",
     "manual_amazon_product": "Prodotto Amazon aggiunto manualmente",
     "manual_product": "Prodotto aggiunto manualmente",
+    "notes": "Commento",
+    "notes_placeholder": "Aggiungi eventuali commenti su questo prodotto (opzionale)",
     "search_error": "Errore nella ricerca prodotti"
   },
   "wishlist_preview": {
