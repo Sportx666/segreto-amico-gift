@@ -405,6 +405,8 @@
     "start_conversation": "Start the conversation!",
     "no_private_messages": "No private messages yet.",
     "start_anonymous": "Start the anonymous conversation!",
+    "private_chats": "Private chats",
+    "no_active_private_chats": "No private chats",
     "load_previous": "Load previous messages",
     "placeholder": "Type a message...",
     "private_placeholder": "Private message as \"{nickname}\"...",

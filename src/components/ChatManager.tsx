@@ -5,6 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useChat } from '@/hooks/useChat';
 import { useNickname } from '@/hooks/useNickname';
 import { useJoinedParticipantCount } from '@/hooks/useJoinedParticipantCount';
@@ -49,6 +57,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
   const [showRecipientSelector, setShowRecipientSelector] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const handledOpenChatRef = useRef<string | null>(null);
   const { nickname: nickData } = useNickname(eventId);
   const { count: joinedCount } = useJoinedParticipantCount(eventId);
   const { contacts: dmContacts, loading: loadingDMs } = useDMConversations(eventId);
@@ -76,27 +85,51 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
   // Handle direct chat opening from external components (YourAssignment)
   useEffect(() => {
     if (openChat?.recipientId) {
-      setSearchParams({ dm: openChat.recipientId });
-      const existingChat = activeChats.find(chat => chat.recipientId === openChat.recipientId);
-      if (!existingChat) {
-        setActiveChats(prev => [...prev, {
-          recipientId: openChat.recipientId,
-          recipientName: openChat.recipientName || t('chat.anonymous_user')
-        }]);
+      if (
+        handledOpenChatRef.current === openChat.recipientId &&
+        activeChats.some(chat => chat.recipientId === openChat.recipientId)
+      ) {
+        return;
       }
+
+      setSearchParams({ dm: openChat.recipientId });
+      setActiveChats(prev => {
+        if (prev.some(chat => chat.recipientId === openChat.recipientId)) {
+          return prev;
+        }
+
+        return [
+          ...prev,
+          {
+            recipientId: openChat.recipientId,
+            recipientName: openChat.recipientName || t('chat.anonymous_user'),
+          },
+        ];
+      });
       onOpenChatConsumed?.();
+      handledOpenChatRef.current = openChat.recipientId;
     }
-  }, [openChat, setSearchParams, onOpenChatConsumed, t]);
-  
+  }, [activeChats, openChat, setSearchParams, onOpenChatConsumed, t]);
+
   // Sync activeChats when URL changes (for refresh/deep-link support)
   useEffect(() => {
-    if (dmParam && !activeChats.find(chat => chat.recipientId === dmParam)) {
-      setActiveChats(prev => [...prev, {
-        recipientId: dmParam,
-        recipientName: t('chat.anonymous_user')
-      }]);
-    }
-  }, [dmParam, t]);
+    if (!dmParam) return;
+    if (activeChats.some(chat => chat.recipientId === dmParam)) return;
+
+    setActiveChats(prev => {
+      if (prev.some(chat => chat.recipientId === dmParam)) {
+        return prev;
+      }
+
+      return [
+        ...prev,
+        {
+          recipientId: dmParam,
+          recipientName: t('chat.anonymous_user'),
+        },
+      ];
+    });
+  }, [activeChats, dmParam, t]);
   
   
   const {
@@ -225,34 +258,70 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
         <CardContent className="p-0">
           <Tabs value={activeChannel === 'event' ? 'event' : `pair-${dmParam}`} onValueChange={handleTabChange}>
             <div className="px-6 pb-4">
-              <TabsList className={`grid ${activeChats.length === 0 ? 'grid-cols-1' : `grid-cols-${Math.min(activeChats.length + 1, 4)}`}`}>
-                <TabsTrigger value="event" className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  {t('chat.general_chat')}
-                </TabsTrigger>
-                {activeChats.map(chat => (
-                  <TabsTrigger 
-                    key={chat.recipientId} 
-                    value={`pair-${chat.recipientId}`}
-                    className="flex items-center gap-2 relative"
-                  >
-                    <Glasses className="w-4 h-4" />
-                    <span className="truncate max-w-20">{chat.recipientName}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCloseChat(chat.recipientId);
-                      }}
-                      className="touch-target hover:bg-destructive hover:text-destructive-foreground focus-ring ml-1"
-                      aria-label={t('chat.close_chat_with').replace('{name}', chat.recipientName)}
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <TabsList className="grid grid-cols-1 sm:auto-cols-max sm:grid-flow-col">
+                  <TabsTrigger value="event" className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    {t('chat.general_chat')}
                   </TabsTrigger>
-                ))}
-              </TabsList>
+                </TabsList>
+
+                {activeChats.length > 0 ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2 touch-target focus-ring"
+                        aria-label={t('chat.private_chats')}
+                      >
+                        <Glasses className="w-4 h-4" />
+                        <span className="truncate max-w-[150px]">
+                          {dmParam ? activeChats.find(chat => chat.recipientId === dmParam)?.recipientName : t('chat.private_chats')}
+                        </span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-64">
+                      <DropdownMenuLabel className="flex items-center gap-2">
+                        <Glasses className="w-4 h-4" />
+                        {t('chat.private_chats')}
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {activeChats.map(chat => (
+                        <DropdownMenuItem
+                          key={chat.recipientId}
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            setSearchParams({ dm: chat.recipientId });
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Glasses className="w-4 h-4 text-muted-foreground" />
+                          <span className="truncate flex-1">{chat.recipientName}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="touch-target hover:bg-destructive/20 hover:text-destructive focus-ring"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleCloseChat(chat.recipientId);
+                            }}
+                            aria-label={t('chat.close_chat_with').replace('{name}', chat.recipientName)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Button variant="outline" size="sm" disabled className="flex items-center gap-2">
+                    <Glasses className="w-4 h-4" />
+                    {t('chat.no_active_private_chats')}
+                  </Button>
+                )}
+              </div>
             </div>
 
             <TabsContent value="event" className="mt-0">
