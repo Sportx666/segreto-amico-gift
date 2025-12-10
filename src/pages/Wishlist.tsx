@@ -250,6 +250,7 @@ export default function Wishlist() {
       const { error } = await supabase.from("wishlist_items").insert({
         owner_id: participant.id,
         wishlist_id: wishlistId,
+        event_id: currentEventId,
         asin: asin || null,
         title:
           payload.title ||
@@ -302,6 +303,7 @@ export default function Wishlist() {
       const { error } = await supabase.from("wishlist_items").insert({
         owner_id: participant.id,
         wishlist_id: selectedWishlistId,
+        event_id: currentEventId,
         title: emptyManualTitle.trim() || (raw.includes("amazon.") ? t('wishlist.manual_amazon_product') : t('wishlist.manual_product')),
         raw_url: raw,
         affiliate_url: normalized,
@@ -366,6 +368,7 @@ export default function Wishlist() {
       const { error } = await supabase.from("wishlist_items").insert({
         owner_id: participant.id,
         wishlist_id: targetWishlistId,
+        event_id: currentEventId,
         asin: product.asin,
         title: product.title,
         image_url: product.image,
