@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchBar } from "@/components/SearchBar";
+import { PriceFilter } from "@/components/PriceFilter";
 import { ProductsGrid } from "@/components/ProductsGrid";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -66,6 +67,7 @@ export default function Wishlist() {
   const [manualFormData, setManualFormData] = useState({ title: "", url: "" });
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newListTitle, setNewListTitle] = useState("");
+  const [priceFilter, setPriceFilter] = useState<{min?: number, max?: number}>({});
   const [newListEventId, setNewListEventId] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editTitle, setEditTitle] = useState<string>("");
@@ -165,7 +167,7 @@ export default function Wishlist() {
       if (!triggerSearch)
         return { items: [], page: 1, pageSize: 10, total: 0, mock: true };
 
-      const result = await CatalogService.searchProducts(triggerSearch);
+      const result = await CatalogService.searchProducts(triggerSearch,1 , priceFilter.min, priceFilter.max);
       // Convert CatalogItems to the expected format
       return {
         items: result.items.map(item => CatalogService.catalogItemToProduct(item)),
@@ -188,6 +190,10 @@ export default function Wishlist() {
     }, 400);
     setSearchDebounceTimer(timer);
   }, [searchDebounceTimer]);
+
+  const handlePriceFilter = (minPrice?: number, maxPrice?: number) => {
+    setPriceFilter({ min: minPrice, max: maxPrice });
+  };
 
   // Handle notes update
   const handleUpdateNotes = async (itemId: string, notes: string) => {
@@ -955,24 +961,22 @@ export default function Wishlist() {
               {t('wishlist.search_dialog_desc')}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <SearchBar
-              onSearch={(query) => {
-                setSearchQuery(query);
-                setTriggerSearch(query);
-              }}
-              value={searchQuery}
-              onChangeText={(value) => {
-                setSearchQuery(value);
-                // Only trigger search when user has typed at least 4 characters
-                if (value.length >= 4) {
-                  setTriggerSearch(value);
-                } else if (value.length === 0) {
-                  setTriggerSearch('');
-                }
-              }}
+          <div className="flex flex-col sm:flex-row gap-4 mb-8">
+            <div className="flex-1">
+              <SearchBar 
+                onSearch={(query) => {
+                  setSearchQuery(query);
+                  setTriggerSearch(query);
+                }}
+                disabled={isSearchLoading}
+            />
+            </div>
+            <PriceFilter 
+              value={priceFilter}
+              onFilter={handlePriceFilter}
               disabled={isSearchLoading}
             />
+          </div>
             {searchQuery && (
               <ProductsGrid
                 products={searchResults?.items || []}
@@ -980,7 +984,7 @@ export default function Wishlist() {
                 onAddToWishlist={handleAddFromSearch}
               />
             )}
-          </div>
+
         </DialogContent>
       </Dialog>
 
