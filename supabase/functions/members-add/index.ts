@@ -114,14 +114,15 @@ serve(async (req) => {
     step = 'resolve_or_insert_participant';
     let participantId: string | null = null;
     if (normalizedEmail) {
-      // Try to link to an existing user by email using listUsers filter
+      // Try to link to an existing user by email
       try {
         const { data: usersData } = await supabase.auth.admin.listUsers({
-          filter: `email.eq.${normalizedEmail}`,
           page: 1,
-          perPage: 1
+          perPage: 1000
         });
-        const existingUser = usersData?.users?.[0];
+        const existingUser = usersData?.users?.find(
+          u => u.email?.toLowerCase() === normalizedEmail
+        );
         const existingProfileId = existingUser?.id;
         if (existingProfileId) {
           // Find or create participants row for this profile

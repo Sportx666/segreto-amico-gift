@@ -16,10 +16,11 @@ import { ProductsGrid } from "@/components/ProductsGrid";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonGrid } from "@/components/ui/skeleton-grid";
-import { Home, Search, SquarePen, Trash2, Plus, ExternalLink, Heart } from "lucide-react";
+import { Home, Search, SquarePen, Trash2, Plus, ExternalLink, Heart, Pencil, Check } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { withAffiliateTag, productUrlFromASIN } from "@/lib/amazon";
 import { WishlistItem } from "@/components/WishlistItem";
+import { CatalogService } from "@/services/catalog";
 
 type Product = {
   asin: string;
@@ -135,25 +136,58 @@ export default function Wishlist() {
 
   const [isSearching, setIsSearching] = useState(false);
   const [triggerSearch, setTriggerSearch] = useState("");
+  const [searchDebounceTimer, setSearchDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+  const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
+  const [editingNotesValue, setEditingNotesValue] = useState("");
 
   const { data: searchResults, isLoading: isSearchLoading } = useQuery({
-    queryKey: ["amazon-search-wishlist", triggerSearch],
+    queryKey: ["catalog-search-wishlist", triggerSearch],
     queryFn: async () => {
       if (!triggerSearch)
         return { items: [], page: 1, pageSize: 10, total: 0, mock: true };
 
-      const { data, error } = await supabase.functions.invoke('amazon-search', {
-        body: { q: triggerSearch }
-      });
-
-      if (error) {
-        throw new Error("Errore nella ricerca prodotti");
-      }
-
-      return data;
+      const result = await CatalogService.searchProducts(triggerSearch);
+      // Convert CatalogItems to the expected format
+      return {
+        items: result.items.map(item => CatalogService.catalogItemToProduct(item)),
+        page: result.page,
+        pageSize: result.pageSize,
+        total: result.total,
+        mock: result.mock
+      };
     },
     enabled: !!triggerSearch && isSearchDialogOpen,
   });
+
+  // Debounced search handler
+  const handleDebouncedSearch = useCallback((query: string) => {
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+    }
+    const timer = setTimeout(() => {
+      setTriggerSearch(query);
+    }, 400);
+    setSearchDebounceTimer(timer);
+  }, [searchDebounceTimer]);
+
+  // Handle notes update
+  const handleUpdateNotes = async (itemId: string, notes: string) => {
+    try {
+      const { error } = await supabase
+        .from("wishlist_items")
+        .update({ notes: notes.trim() || null })
+        .eq("id", itemId);
+      
+      if (error) throw error;
+      
+      toast.success(t('wishlist.notes_saved'));
+      queryClient.invalidateQueries({ queryKey: ["wishlist-items"] });
+      setEditingNotesId(null);
+    } catch (error) {
+      console.error("Error updating notes:", error);
+      toast.error(t('wishlist.notes_error'));
+    }
+  };
 
   // Events available to the user (member of)
   interface EventRow { id: string; name: string }
@@ -726,7 +760,53 @@ export default function Wishlist() {
 
                     {/* Item Details */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium line-clamp-2 mb-2">{item.title}</h3>
+                      <h3 className="font-medium line-clamp-2 mb-1">{item.title}</h3>
+                      
+                      {/* Notes display/edit */}
+                      {editingNotesId === item.id ? (
+                        <div className="flex items-center gap-2 mb-2">
+                          <Input
+                            value={editingNotesValue}
+                            onChange={(e) => setEditingNotesValue(e.target.value)}
+                            placeholder={t('wishlist.notes_placeholder')}
+                            className="flex-1 h-8 text-sm"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleUpdateNotes(item.id, editingNotesValue);
+                              } else if (e.key === 'Escape') {
+                                setEditingNotesId(null);
+                              }
+                            }}
+                          />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleUpdateNotes(item.id, editingNotesValue)}
+                          >
+                            <Check className="w-4 h-4 text-green-600" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 mb-2 group">
+                          <p className="text-sm text-muted-foreground flex-1">
+                            {item.notes || <span className="italic">{t('wishlist.no_notes')}</span>}
+                          </p>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => {
+                              setEditingNotesId(item.id);
+                              setEditingNotesValue(item.notes || "");
+                            }}
+                          >
+                            <Pencil className="w-3 h-3 text-muted-foreground" />
+                          </Button>
+                        </div>
+                      )}
+                      
                       {item.price_snapshot && (
                         <p className="text-sm text-muted-foreground mb-3">
                           {item.price_snapshot}

@@ -272,7 +272,11 @@
     "select_valid_list": "Select a valid list",
     "manual_amazon_product": "Manually added Amazon product",
     "manual_product": "Manually added product",
-    "search_error": "Error searching products"
+    "search_error": "Error searching products",
+    "notes_placeholder": "Add a note...",
+    "no_notes": "No notes",
+    "notes_saved": "Notes saved",
+    "notes_error": "Error saving notes"
   },
   "wishlist_preview": {
     "title": "Wishlist",
