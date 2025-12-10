@@ -140,6 +140,25 @@ export default function Wishlist() {
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
   const [editingNotesValue, setEditingNotesValue] = useState("");
 
+  const selectWishlist = (
+    wishlistId: string | null,
+    options?: { title?: string | null; eventId?: string | null }
+  ) => {
+    setSelectedWishlistId(wishlistId);
+
+    if (wishlistId) {
+      const wishlist = wishlists?.find((w) => w.id === wishlistId);
+      const resolvedTitle = wishlist?.title ?? options?.title ?? null;
+      const resolvedEventId = wishlist?.event_id ?? options?.eventId ?? null;
+
+      setSelectedWishlistTitle(resolvedTitle);
+      setCurrentEventId(resolvedEventId);
+    } else {
+      setSelectedWishlistTitle(null);
+      setCurrentEventId(null);
+    }
+  };
+
   const { data: searchResults, isLoading: isSearchLoading } = useQuery({
     queryKey: ["catalog-search-wishlist", triggerSearch],
     queryFn: async () => {
@@ -470,12 +489,7 @@ export default function Wishlist() {
               <Select
                 value={selectedWishlistId || ""}
                 onValueChange={(value) => {
-                  setSelectedWishlistId(value);
-                  const wishlist = wishlists?.find((w) => w.id === value);
-                  setSelectedWishlistTitle(wishlist?.title || null);
-
-                  // Set current event for create-then-add flow
-                  setCurrentEventId(wishlist?.event_id || null);
+                  selectWishlist(value);
                 }}
               >
                 <SelectTrigger id="wishlist-select" className="w-full sm:w-80">
@@ -557,8 +571,7 @@ export default function Wishlist() {
                               if (wishlistError) throw wishlistError;
 
                               // Reset selection
-                              setSelectedWishlistId(null);
-                              setSelectedWishlistTitle(null);
+                              selectWishlist(null);
 
                               toast.success(t('wishlist.deleted_success'));
                               queryClient.invalidateQueries({ queryKey: ["wishlists"] });
@@ -661,7 +674,7 @@ export default function Wishlist() {
                 <Button
                   onClick={() => {
                     if (!selectedWishlistId && wishlists?.length) {
-                      setSelectedWishlistId(wishlists[0].id);
+                      selectWishlist(wishlists[0].id);
                       setTargetWishlistIdForSearch(wishlists[0].id);
                     } else {
                       setTargetWishlistIdForSearch(selectedWishlistId);
@@ -676,7 +689,7 @@ export default function Wishlist() {
                   variant="outline"
                   onClick={() => {
                     if (!selectedWishlistId && wishlists?.length) {
-                      setSelectedWishlistId(wishlists[0].id);
+                      selectWishlist(wishlists[0].id);
                     }
                     setActiveItemId("manual-add");
                   }}
@@ -1005,11 +1018,10 @@ export default function Wishlist() {
                   const { data: inserted, error } = await supabase
                     .from('wishlists')
                     .insert({ owner_id: participant.id, title: newListTitle.trim(), event_id: newListEventId })
-                    .select('id,title')
+                    .select('id,title,event_id')
                     .single();
                   if (error) throw error;
-                  setSelectedWishlistId(inserted.id);
-                  setSelectedWishlistTitle(inserted.title ?? newListTitle.trim());
+                  selectWishlist(inserted.id, { title: inserted.title ?? newListTitle.trim(), eventId: inserted.event_id ?? newListEventId });
                   setIsCreateDialogOpen(false);
                   setNewListTitle(''); setNewListEventId(null);
                   toast.success(t('wishlist.list_created'));
@@ -1080,7 +1092,7 @@ export default function Wishlist() {
             <DialogDescription>{t('wishlist.choose_list_desc')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <Select value={selectedWishlistId ?? undefined} onValueChange={(v) => setSelectedWishlistId(v)}>
+            <Select value={selectedWishlistId ?? undefined} onValueChange={(v) => selectWishlist(v)}>
               <SelectTrigger className="w-full"><SelectValue placeholder={t('wishlist.select_list')} /></SelectTrigger>
               <SelectContent>
                 {wishlists?.map((wl) => (
