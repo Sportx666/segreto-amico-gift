@@ -68,13 +68,13 @@ export class WishlistService {
   /**
    * Check if product already exists in wishlist
    */
-  static async checkProductExists(ownerId: string, wishlistId: string | null, asin: string): Promise<boolean> {
+  static async checkProductExists(ownerId: string, wishlistId: string | null, event_id:string|null, asin: string): Promise<boolean> {
     const query = supabase
       .from('wishlist_items')
       .select('id')
       .eq('owner_id', ownerId)
-      .eq('asin', asin);
-
+      .eq('asin', asin)
+      .eq('event_id', event_id);
     if (wishlistId) {
       query.eq('wishlist_id', wishlistId);
     }
@@ -99,10 +99,11 @@ export class WishlistService {
   static async addProductToWishlist(
     ownerId: string,
     wishlistId: string,
+    event_id: string | null,
     product: Product
   ): Promise<void> {
     // Check for duplicates
-    const exists = await this.checkProductExists(ownerId, wishlistId, product.asin);
+    const exists = await this.checkProductExists(ownerId, wishlistId, event_id, product.asin);
     if (exists) {
       throw new Error('Prodotto già presente in questa lista');
     }
@@ -115,6 +116,7 @@ export class WishlistService {
           .insert({
             owner_id: ownerId,
             wishlist_id: wishlistId,
+            event_id: event_id,
             asin: product.asin,
             title: product.title,
             image_url: product.image,
@@ -136,7 +138,7 @@ export class WishlistService {
     const participantId = await ParticipantService.getOrCreateParticipantId(userId);
     
     // Check if product already exists in any wishlist
-    const exists = await this.checkProductExists(participantId, null, product.asin);
+    const exists = await this.checkProductExists(participantId, null, null, product.asin);
     if (exists) {
       throw new Error('Prodotto già presente nella tua lista desideri');
     }
@@ -150,6 +152,6 @@ export class WishlistService {
     }
 
     // Add to first wishlist
-    await this.addProductToWishlist(participantId, wishlists[0].id, product);
+    await this.addProductToWishlist(participantId, wishlists[0].id, wishlists[0].event_id, product);
   }
 }
