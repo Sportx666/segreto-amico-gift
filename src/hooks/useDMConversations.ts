@@ -46,6 +46,25 @@ export function useDMConversations(eventId: string) {
         return;
       }
 
+      // Fetch private_chat_names for proper display names
+      const { data: chatNames } = await supabase
+        .from('private_chat_names')
+        .select('participant_a_id, participant_b_id, name_for_a, name_for_b')
+        .eq('event_id', eventId)
+        .or(`participant_a_id.eq.${myParticipant.id},participant_b_id.eq.${myParticipant.id}`);
+
+      // Create a map of participant ID -> display name for current user
+      const nameMap = new Map<string, string>();
+      for (const entry of chatNames || []) {
+        if (entry.participant_a_id === myParticipant.id) {
+          // I am participant A, I see name_for_a (which is B's name for me to see)
+          nameMap.set(entry.participant_b_id, entry.name_for_a);
+        } else {
+          // I am participant B, I see name_for_b (which is A's alias for me to see)
+          nameMap.set(entry.participant_a_id, entry.name_for_b);
+        }
+      }
+
       // Group by contact (the other participant)
       const contactMap = new Map<string, DMContact>();
       
@@ -57,34 +76,18 @@ export function useDMConversations(eventId: string) {
         if (!contactId) continue;
         
         if (!contactMap.has(contactId)) {
-          // Use alias_snapshot from the contact's messages as display name
-          const contactName = msg.author_participant_id === contactId 
+          // Use private_chat_names first, then fall back to alias_snapshot
+          const nameFromChatNames = nameMap.get(contactId);
+          const fallbackName = msg.author_participant_id === contactId 
             ? msg.alias_snapshot 
             : 'Anonimo';
           
           contactMap.set(contactId, {
             participantId: contactId,
-            displayName: contactName || 'Anonimo',
+            displayName: nameFromChatNames || fallbackName || 'Anonimo',
             lastMessageAt: msg.created_at,
             unreadCount: 0 // TODO: implement unread tracking
           });
-        }
-      }
-
-      // Also fetch display names from aliases for better accuracy
-      const contactIds = Array.from(contactMap.keys());
-      if (contactIds.length > 0) {
-        const { data: aliases } = await supabase
-          .from('anonymous_aliases')
-          .select('participant_id, nickname')
-          .eq('event_id', eventId)
-          .in('participant_id', contactIds);
-
-        for (const alias of aliases || []) {
-          const contact = contactMap.get(alias.participant_id);
-          if (contact && alias.nickname) {
-            contact.displayName = alias.nickname;
-          }
         }
       }
 

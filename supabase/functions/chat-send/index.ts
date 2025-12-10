@@ -112,11 +112,37 @@ Deno.serve(async (req: Request) => {
     // Resolve assignment_id and recipient_participant_id based on channel and recipientId
     let assignmentId = null;
     let recipientParticipantId = null;
+    let recipientRealName = null; // For private_chat_names
     
     if (channel === 'pair') {
       if (recipientId) {
         // Direct messaging - use recipientId
         recipientParticipantId = recipientId;
+        
+        // Get recipient's real name for private_chat_names
+        const { data: recipientProfile } = await supabase
+          .from('participants')
+          .select('profile_id')
+          .eq('id', recipientId)
+          .single();
+        
+        if (recipientProfile?.profile_id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('id', recipientProfile.profile_id)
+            .single();
+          recipientRealName = profile?.display_name || 'Anonimo';
+        } else {
+          // Check event_members for anonymous_name
+          const { data: eventMember } = await supabase
+            .from('event_members')
+            .select('anonymous_name, display_name')
+            .eq('event_id', eventId)
+            .eq('participant_id', recipientId)
+            .single();
+          recipientRealName = eventMember?.display_name || eventMember?.anonymous_name || 'Anonimo';
+        }
       } else {
         // Legacy assignment-based messaging
         const { data: assignment } = await supabase
@@ -158,6 +184,44 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({ error: 'Failed to send message' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Create private_chat_names entry on first message between two participants
+    if (channel === 'pair' && recipientParticipantId) {
+      try {
+        // Check if entry already exists (in either direction)
+        const { data: existingEntry } = await supabase
+          .from('private_chat_names')
+          .select('id')
+          .eq('event_id', eventId)
+          .or(`and(participant_a_id.eq.${participant.id},participant_b_id.eq.${recipientParticipantId}),and(participant_a_id.eq.${recipientParticipantId},participant_b_id.eq.${participant.id})`)
+          .maybeSingle();
+
+        if (!existingEntry) {
+          // Create new entry: initiator sees real name, receiver sees alias
+          const senderRealName = profile?.display_name || 'Anonimo';
+          
+          await supabase
+            .from('private_chat_names')
+            .insert({
+              event_id: eventId,
+              participant_a_id: participant.id, // initiator
+              participant_b_id: recipientParticipantId, // receiver
+              name_for_a: recipientRealName || 'Anonimo', // initiator sees receiver's real name
+              name_for_b: aliasSnapshot // receiver sees initiator's alias
+            });
+          
+          console.log('Created private_chat_names entry:', {
+            initiator: participant.id,
+            receiver: recipientParticipantId,
+            nameForInitiator: recipientRealName,
+            nameForReceiver: aliasSnapshot
+          });
+        }
+      } catch (chatNamesError) {
+        // Log but don't fail - the message was sent successfully
+        console.error('Error creating private_chat_names:', chatNamesError);
+      }
     }
 
     // Create notifications for chat messages
