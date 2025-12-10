@@ -162,7 +162,12 @@ export default function Wishlist() {
   };
 
   const { data: searchResults, isLoading: isSearchLoading } = useQuery({
-    queryKey: ["catalog-search-wishlist", triggerSearch],
+    queryKey: [
+      "catalog-search-wishlist",
+      triggerSearch,
+      priceFilter.min ?? null,
+      priceFilter.max ?? null,
+    ],
     queryFn: async () => {
       if (!triggerSearch)
         return { items: [], page: 1, pageSize: 10, total: 0, mock: true };

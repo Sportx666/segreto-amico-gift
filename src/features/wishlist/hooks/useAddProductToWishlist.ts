@@ -10,12 +10,13 @@ export function useAddProductToWishlist() {
   const { t } = useI18n();
 
   return useApiMutation(
-    async ({ ownerId, wishlistId, product }: { 
-      ownerId: string; 
-      wishlistId: string; 
-      product: Product; 
+    async ({ ownerId, wishlistId, eventId, product }: {
+      ownerId: string;
+      wishlistId: string;
+      eventId?: string | null;
+      product: Product;
     }) => {
-      return WishlistService.addProductToWishlist(ownerId, wishlistId, product);
+      return WishlistService.addProductToWishlist(ownerId, wishlistId, eventId ?? null, product);
     },
     {
       onSuccess: () => {
