@@ -12,26 +12,34 @@ interface ChatMessage {
   created_at: string;
   author_participant_id: string;
   channel: string;
-  assignment_id?: string;
-  recipient_participant_id?: string;
+  private_chat_id?: string;
 }
 
-export function useChat(eventId?: string, channel: 'event' | 'pair' = 'event', recipientId?: string) {
+interface UseChatOptions {
+  eventId?: string;
+  channel?: 'event' | 'pair';
+  privateChatId?: string;
+  recipientId?: string; // Only used when creating a new chat
+}
+
+export function useChat(options: UseChatOptions) {
+  const { eventId, channel = 'event', privateChatId, recipientId } = options;
   const { session } = useAuth();
   const { t } = useI18n();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [hasMore, setHasMore] = useState(false);
-const [offset, setOffset] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const [currentChatId, setCurrentChatId] = useState<string | undefined>(privateChatId);
 
-  // Track in-flight requests to avoid race conditions and stale updates
+  // Track in-flight requests to avoid race conditions
   const fetchIdRef = useRef(0);
   const controllerRef = useRef<AbortController | null>(null);
 
   const fetchMessages = useCallback(async (isLoadMore = false) => {
     if (!eventId || !session?.access_token) return;
-    if (channel === 'pair' && !recipientId) return; // don't fetch pair messages without a recipient
+    if (channel === 'pair' && !privateChatId) return;
 
     // Abort any in-flight request
     try { controllerRef.current?.abort(); } catch {}
@@ -40,7 +48,12 @@ const [offset, setOffset] = useState(0);
 
     const fetchId = ++fetchIdRef.current;
     const currentOffset = isLoadMore ? offset : 0;
-    const url = `https://eociecgrdwllggcohmko.supabase.co/functions/v1/chat-list?eventId=${eventId}&channel=${channel}&offset=${currentOffset}&limit=25${recipientId ? `&recipientId=${recipientId}` : ''}`;
+    
+    let url = `https://eociecgrdwllggcohmko.supabase.co/functions/v1/chat-list?eventId=${eventId}&channel=${channel}&offset=${currentOffset}&limit=25`;
+    
+    if (channel === 'pair' && privateChatId) {
+      url += `&privateChatId=${privateChatId}`;
+    }
 
     setLoading(true);
     try {
@@ -52,28 +65,8 @@ const [offset, setOffset] = useState(0);
       if (!response.ok) throw new Error('Failed to fetch messages');
       const data = await response.json();
 
-      // Critical: Ignore stale responses to prevent race conditions
-      if (fetchId !== fetchIdRef.current) {
-        console.log('Ignoring stale response for fetch ID', fetchId, 'current:', fetchIdRef.current);
-        return;
-      }
-
-      // Additional validation: ensure response matches current request parameters
-      const currentRecipient = channel === 'pair' ? recipientId : null;
-      const responseForCorrectChannel = data.messages.every((msg: ChatMessage) => {
-        if (channel === 'event') return msg.channel === 'event';
-        if (channel === 'pair') {
-          return msg.channel === 'pair' && 
-            currentRecipient && 
-            (msg.recipient_participant_id === currentRecipient || msg.author_participant_id === currentRecipient);
-        }
-        return true;
-      });
-
-      if (!responseForCorrectChannel) {
-        console.log('Ignoring response with mismatched channel data');
-        return;
-      }
+      // Ignore stale responses
+      if (fetchId !== fetchIdRef.current) return;
 
       if (isLoadMore) {
         setMessages(prev => [...prev, ...data.messages]);
@@ -83,50 +76,66 @@ const [offset, setOffset] = useState(0);
       setHasMore(data.hasMore);
       setOffset(currentOffset + data.messages.length);
     } catch (error: any) {
-      if (error?.name === 'AbortError') return; // ignore aborted
+      if (error?.name === 'AbortError') return;
       console.error('Error fetching messages:', error);
       toast.error(t('toasts.load_messages_error'));
     } finally {
       if (fetchId === fetchIdRef.current) setLoading(false);
     }
-  }, [eventId, channel, session, recipientId, offset, t]);
+  }, [eventId, channel, session, privateChatId, offset, t]);
 
-  const sendMessage = useCallback(async (content: string) => {
-    if (!eventId || !session?.access_token || !content.trim()) return false;
+  const sendMessage = useCallback(async (content: string): Promise<{ success: boolean; privateChatId?: string }> => {
+    if (!eventId || !session?.access_token || !content.trim()) {
+      return { success: false };
+    }
     
     setSending(true);
     try {
+      const body: any = {
+        eventId,
+        channel,
+        content: content.trim(),
+      };
+
+      // For pair channel, include privateChatId or recipientId
+      if (channel === 'pair') {
+        if (currentChatId || privateChatId) {
+          body.privateChatId = currentChatId || privateChatId;
+        } else if (recipientId) {
+          body.recipientId = recipientId;
+        }
+      }
+
       const response = await fetch('https://eociecgrdwllggcohmko.supabase.co/functions/v1/chat-send', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          eventId,
-          channel,
-          content: content.trim(),
-          recipientId,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) throw new Error('Failed to send message');
       
       const data = await response.json();
       
-      // Add new message to the end (newest)
+      // Add new message to the end
       setMessages(prev => [...prev, data.message]);
       
-      return true;
+      // If a new chat was created, update the current chat ID
+      if (data.privateChatId && !currentChatId) {
+        setCurrentChatId(data.privateChatId);
+      }
+      
+      return { success: true, privateChatId: data.privateChatId };
     } catch (error) {
       console.error('Error sending message:', error);
-      console.log('Send message payload:', { eventId, channel, content: content.trim(), recipientId });
       toast.error(t('toasts.send_message_error'));
-      return false;
+      return { success: false };
     } finally {
       setSending(false);
     }
-  }, [eventId, channel, session, recipientId, t]);
+  }, [eventId, channel, session, privateChatId, currentChatId, recipientId, t]);
 
   const loadMore = () => {
     if (!loading && hasMore) {
@@ -134,22 +143,26 @@ const [offset, setOffset] = useState(0);
     }
   };
 
+  // Reset and refetch when key parameters change
   useEffect(() => {
     if (eventId) {
       setMessages([]);
       setOffset(0);
+      setCurrentChatId(privateChatId);
       fetchMessages(false);
     }
-  }, [eventId, channel, recipientId]);
+  }, [eventId, channel, privateChatId]);
 
   // Set up real-time subscription
   useEffect(() => {
     if (!eventId) return;
 
-    const channel_name = recipientId ? `chat_messages_${eventId}_${channel}_${recipientId}` : `chat_messages_${eventId}_${channel}`;
+    const channelName = privateChatId 
+      ? `chat_messages_${eventId}_pair_${privateChatId}` 
+      : `chat_messages_${eventId}_${channel}`;
     
     const subscription = supabase
-      .channel(channel_name)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -160,13 +173,13 @@ const [offset, setOffset] = useState(0);
         },
         (payload) => {
           const newMessage = payload.new as ChatMessage;
-          if (newMessage.channel === channel) {
-            // For pair channel with recipient, only show messages involving the recipient
-            if (channel === 'pair' && recipientId) {
-              if (newMessage.recipient_participant_id === recipientId || newMessage.author_participant_id === recipientId) {
-                setMessages(prev => [...prev, newMessage]);
-              }
-            } else {
+          
+          if (channel === 'event' && newMessage.channel === 'event') {
+            setMessages(prev => [...prev, newMessage]);
+          } else if (channel === 'pair' && newMessage.channel === 'pair') {
+            // For pair channel, only show messages from the same private chat
+            const targetChatId = currentChatId || privateChatId;
+            if (newMessage.private_chat_id === targetChatId) {
               setMessages(prev => [...prev, newMessage]);
             }
           }
@@ -177,7 +190,7 @@ const [offset, setOffset] = useState(0);
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, [eventId, channel, recipientId]);
+  }, [eventId, channel, privateChatId, currentChatId]);
 
   return {
     messages,
@@ -186,6 +199,7 @@ const [offset, setOffset] = useState(0);
     hasMore,
     sendMessage,
     loadMore,
-    refetch: () => fetchMessages(false)
+    refetch: () => fetchMessages(false),
+    currentChatId: currentChatId || privateChatId,
   };
 }

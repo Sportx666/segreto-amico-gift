@@ -36,26 +36,20 @@ export function NotificationBell() {
       await markAsRead(notificationId);
     }
     
-    // Navigate based on notification type and event_id
     const eventId = notification.event_id;
     
     if (notification.type === 'assignment' && eventId) {
-      // Navigate to event's assignment tab
       navigate(`/events/${eventId}?tab=assegnazione`);
     } else if (notification.type === 'chat' && eventId) {
-      // Navigate to event's chat tab
-      if (notification.recipient_participant_id) {
-        // DM notification - open specific DM conversation
-        navigate(`/events/${eventId}?tab=chat&dm=${notification.recipient_participant_id}`);
+      if (notification.private_chat_id) {
+        // Use thread param for direct navigation to private chat
+        navigate(`/events/${eventId}?tab=chat&thread=${notification.private_chat_id}`);
       } else {
-        // Event chat notification
         navigate(`/events/${eventId}?tab=chat`);
       }
     } else if (notification.type === 'event' && eventId) {
-      // Navigate to event page
       navigate(`/events/${eventId}`);
     } else {
-      // Fallback to events list
       navigate('/events');
     }
     
@@ -114,7 +108,7 @@ export function NotificationBell() {
           ) : (
             <div className="divide-y">
               {notifications.map((notification) => {
-                const IconComponent = typeIcons[notification.type];
+                const IconComponent = typeIcons[notification.type as keyof typeof typeIcons] || Bell;
                 const isRead = !!notification.read_at;
                 
                 return (
@@ -127,7 +121,7 @@ export function NotificationBell() {
                     onClick={() => handleNotificationClick(notification.id, isRead, notification)}
                   >
                     <div className="flex gap-3">
-                      <div className={cn("mt-0.5", typeColors[notification.type])}>
+                      <div className={cn("mt-0.5", typeColors[notification.type as keyof typeof typeColors] || 'text-muted-foreground')}>
                         <IconComponent className="w-4 h-4" />
                       </div>
                       

@@ -1,4 +1,10 @@
 {
+  "chat": {
+    "you_are_anonymous": "Sei anonimo in questa chat",
+    "you_are_visible": "La tua identità è visibile in questa chat",
+    "visible": "visibile",
+    "anonymous": "anonimo"
+  },
   "update": {
     "updated_successfully": "App Aggiornata",
     "now_using_latest": "Stai utilizzando l'ultima versione"
