@@ -74,36 +74,86 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
         return;
       }
 
-      // Check if there's already a chat with this recipient where we're anonymous
-      const existingChat = privateChats.find(
-        c => c.otherParticipantId === openChat.recipientId && c.myRole === 'anonymous'
-      );
+      const initiateChatFromExternal = async () => {
+        // Check if there's already a chat with this recipient where we're anonymous
+        const existingChat = privateChats.find(
+          c => c.otherParticipantId === openChat.recipientId && c.myRole === 'anonymous'
+        );
 
-      if (existingChat) {
-        setSearchParams((current) => {
-          const params = new URLSearchParams(current);
-          params.set('thread', existingChat.id);
-          params.set('tab', 'chat');
-          return params;
-        });
-      } else {
-        // Set pending recipient - chat will be created on first message
-        setPendingRecipient({ 
-          id: openChat.recipientId, 
-          name: openChat.recipientName || t('chat.anonymous_user') 
-        });
-        setSearchParams((current) => {
-          const params = new URLSearchParams(current);
-          params.delete('thread');
-          params.set('tab', 'chat');
-          return params;
-        });
-      }
-      
+        if (existingChat) {
+          setSearchParams((current) => {
+            const params = new URLSearchParams(current);
+            params.set('thread', existingChat.id);
+            params.set('tab', 'chat');
+            return params;
+          });
+        } else {
+          // Create new private chat immediately (same as handleChatStart)
+          try {
+            const { data: myParticipant } = await supabase
+              .from('participants')
+              .select('id')
+              .eq('profile_id', user?.id)
+              .single();
+
+            if (!myParticipant) return;
+
+            const { data: alias } = await supabase
+              .from('anonymous_aliases')
+              .select('nickname')
+              .eq('event_id', eventId)
+              .eq('participant_id', myParticipant.id)
+              .single();
+
+            if (!alias?.nickname) return;
+
+            // Check if chat already exists (race condition protection)
+            const { data: existingChatCheck } = await supabase
+              .from('private_chats')
+              .select('id')
+              .eq('event_id', eventId)
+              .eq('anonymous_participant_id', myParticipant.id)
+              .eq('exposed_participant_id', openChat.recipientId)
+              .maybeSingle();
+
+            let chatId: string;
+
+            if (existingChatCheck) {
+              chatId = existingChatCheck.id;
+            } else {
+              const { data: newChat } = await supabase
+                .from('private_chats')
+                .insert({
+                  event_id: eventId,
+                  anonymous_participant_id: myParticipant.id,
+                  anonymous_alias: alias.nickname,
+                  exposed_participant_id: openChat.recipientId,
+                  exposed_name: openChat.recipientName || t('chat.anonymous_user'),
+                })
+                .select()
+                .single();
+
+              if (!newChat) return;
+              chatId = newChat.id;
+            }
+
+            setSearchParams((current) => {
+              const params = new URLSearchParams(current);
+              params.set('thread', chatId);
+              params.set('tab', 'chat');
+              return params;
+            });
+          } catch (error) {
+            console.error('Error in initiateChatFromExternal:', error);
+          }
+        }
+      };
+
+      initiateChatFromExternal();
       onOpenChatConsumed?.();
       handledOpenChatRef.current = openChat.recipientId;
     }
-  }, [openChat, privateChats, setSearchParams, onOpenChatConsumed, t]);
+  }, [openChat, privateChats, setSearchParams, onOpenChatConsumed, t, eventId, user]);
 
   // Determine chat options based on active state
   const chatOptions = activeChannel === 'event' 
