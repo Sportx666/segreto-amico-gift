@@ -161,7 +161,9 @@ export function useChat(options: UseChatOptions) {
     if (eventId) {
       setMessages([]);
       setOffset(0);
-      setCurrentChatId(privateChatId);
+      // When starting a new pending chat (recipientId without privateChatId), clear currentChatId
+      // Otherwise, use privateChatId (which might be undefined for event channel)
+      setCurrentChatId(recipientId && !privateChatId ? undefined : privateChatId);
       fetchMessages(false);
     }
   }, [eventId, channel, privateChatId, recipientId]);
