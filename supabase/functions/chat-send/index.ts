@@ -19,7 +19,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { eventId, channel, content, recipientId } = await req.json();
+    const { eventId, channel, content, privateChatId, recipientId } = await req.json();
 
     if (!eventId || !channel || !content?.trim()) {
       return new Response(
@@ -88,16 +88,18 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Get user's current alias for this event (or use display name as fallback)
+    // Get user's profile info
     const { data: profile } = await supabase
       .from('profiles')
       .select('display_name')
       .eq('id', user.id)
       .single();
 
-    let aliasSnapshot = profile?.display_name || 'Anonimo';
+    const senderRealName = profile?.display_name || 'Anonimo';
+
+    // Get user's current alias for this event
+    let aliasSnapshot = senderRealName;
     
-    // Use nickname only for pair channel (private chat)
     if (channel === 'pair') {
       const { data: alias } = await supabase
         .from('anonymous_aliases')
@@ -106,33 +108,40 @@ Deno.serve(async (req: Request) => {
         .eq('participant_id', participant.id)
         .single();
       
-      aliasSnapshot = alias?.nickname || profile?.display_name || 'Anonimo';
+      aliasSnapshot = alias?.nickname || senderRealName;
     }
 
-    // Resolve assignment_id and recipient_participant_id based on channel and recipientId
-    let assignmentId = null;
-    let recipientParticipantId = null;
-    let recipientRealName = null; // For private_chat_names
-    
+    let messagePrivateChatId = privateChatId;
+    let recipientProfileId: string | null = null;
+
+    // For pair channel, handle private chat creation or lookup
     if (channel === 'pair') {
-      if (recipientId) {
-        // Direct messaging - use recipientId
-        recipientParticipantId = recipientId;
+      if (!privateChatId && !recipientId) {
+        return new Response(
+          JSON.stringify({ error: 'Pair channel requires privateChatId or recipientId' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!privateChatId && recipientId) {
+        // Create new private chat - sender is anonymous, recipient is exposed
         
-        // Get recipient's real name for private_chat_names
-        const { data: recipientProfile } = await supabase
+        // Get recipient's real name
+        const { data: recipientParticipant } = await supabase
           .from('participants')
           .select('profile_id')
           .eq('id', recipientId)
           .single();
         
-        if (recipientProfile?.profile_id) {
-          const { data: profile } = await supabase
+        let recipientRealName = 'Anonimo';
+        if (recipientParticipant?.profile_id) {
+          const { data: recipientProfile } = await supabase
             .from('profiles')
             .select('display_name')
-            .eq('id', recipientProfile.profile_id)
+            .eq('id', recipientParticipant.profile_id)
             .single();
-          recipientRealName = profile?.display_name || 'Anonimo';
+          recipientRealName = recipientProfile?.display_name || 'Anonimo';
+          recipientProfileId = recipientParticipant.profile_id;
         } else {
           // Check event_members for anonymous_name
           const { data: eventMember } = await supabase
@@ -143,22 +152,68 @@ Deno.serve(async (req: Request) => {
             .single();
           recipientRealName = eventMember?.display_name || eventMember?.anonymous_name || 'Anonimo';
         }
-      } else {
-        // Legacy assignment-based messaging
-        const { data: assignment } = await supabase
-          .from('assignments')
+
+        // Check if this exact directional chat already exists
+        const { data: existingChat } = await supabase
+          .from('private_chats')
           .select('id')
           .eq('event_id', eventId)
-          .or(`giver_id.eq.${participant.id},receiver_id.eq.${participant.id}`)
+          .eq('anonymous_participant_id', participant.id)
+          .eq('exposed_participant_id', recipientId)
+          .maybeSingle();
+
+        if (existingChat) {
+          messagePrivateChatId = existingChat.id;
+        } else {
+          // Create new directional private chat
+          const { data: newChat, error: createError } = await supabase
+            .from('private_chats')
+            .insert({
+              event_id: eventId,
+              anonymous_participant_id: participant.id,
+              anonymous_alias: aliasSnapshot,
+              exposed_participant_id: recipientId,
+              exposed_name: recipientRealName,
+            })
+            .select()
+            .single();
+
+          if (createError) {
+            console.error('Error creating private chat:', createError);
+            return new Response(
+              JSON.stringify({ error: 'Failed to create private chat' }),
+              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+
+          messagePrivateChatId = newChat.id;
+          console.log('Created new private chat:', {
+            id: newChat.id,
+            anonymous: participant.id,
+            exposed: recipientId,
+          });
+        }
+      } else if (privateChatId) {
+        // Existing chat - get recipient's profile_id for notifications
+        const { data: privateChat } = await supabase
+          .from('private_chats')
+          .select('anonymous_participant_id, exposed_participant_id')
+          .eq('id', privateChatId)
           .single();
 
-        if (!assignment) {
-          return new Response(
-            JSON.stringify({ error: 'No assignment found for pair chat' }),
-            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+        if (privateChat) {
+          const otherParticipantId = privateChat.anonymous_participant_id === participant.id
+            ? privateChat.exposed_participant_id
+            : privateChat.anonymous_participant_id;
+
+          const { data: otherParticipant } = await supabase
+            .from('participants')
+            .select('profile_id')
+            .eq('id', otherParticipantId)
+            .single();
+
+          recipientProfileId = otherParticipant?.profile_id || null;
         }
-        assignmentId = assignment.id;
       }
     }
 
@@ -168,11 +223,10 @@ Deno.serve(async (req: Request) => {
       .insert({
         event_id: eventId,
         channel,
-        assignment_id: assignmentId,
-        recipient_participant_id: recipientParticipantId,
+        private_chat_id: channel === 'pair' ? messagePrivateChatId : null,
         author_participant_id: participant.id,
-        alias_snapshot: aliasSnapshot,
-        color_snapshot: '#6366f1', // Default color
+        alias_snapshot: channel === 'pair' ? aliasSnapshot : senderRealName,
+        color_snapshot: '#6366f1',
         content: content.trim(),
       })
       .select()
@@ -186,45 +240,15 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Create private_chat_names entry on first message between two participants
-    if (channel === 'pair' && recipientParticipantId) {
-      try {
-        // Check if entry already exists (in either direction)
-        const { data: existingEntry } = await supabase
-          .from('private_chat_names')
-          .select('id')
-          .eq('event_id', eventId)
-          .or(`and(participant_a_id.eq.${participant.id},participant_b_id.eq.${recipientParticipantId}),and(participant_a_id.eq.${recipientParticipantId},participant_b_id.eq.${participant.id})`)
-          .maybeSingle();
-
-        if (!existingEntry) {
-          // Create new entry: initiator sees real name, receiver sees alias
-          const senderRealName = profile?.display_name || 'Anonimo';
-          
-          await supabase
-            .from('private_chat_names')
-            .insert({
-              event_id: eventId,
-              participant_a_id: participant.id, // initiator
-              participant_b_id: recipientParticipantId, // receiver
-              name_for_a: recipientRealName || 'Anonimo', // initiator sees receiver's real name
-              name_for_b: aliasSnapshot // receiver sees initiator's alias
-            });
-          
-          console.log('Created private_chat_names entry:', {
-            initiator: participant.id,
-            receiver: recipientParticipantId,
-            nameForInitiator: recipientRealName,
-            nameForReceiver: aliasSnapshot
-          });
-        }
-      } catch (chatNamesError) {
-        // Log but don't fail - the message was sent successfully
-        console.error('Error creating private_chat_names:', chatNamesError);
-      }
+    // Update last_message_at on private_chat
+    if (channel === 'pair' && messagePrivateChatId) {
+      await supabase
+        .from('private_chats')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', messagePrivateChatId);
     }
 
-    // Create notifications for chat messages
+    // Create notifications
     try {
       if (channel === 'event') {
         // Get all other joined participants in this event
@@ -239,14 +263,13 @@ Deno.serve(async (req: Request) => {
           .neq('participant_id', participant.id);
 
         if (!membersError && otherMembers) {
-          // Insert notifications for each participant
           const notifications = otherMembers
             .filter((m: any) => m.participants?.profile_id)
             .map((m: any) => ({
               profile_id: m.participants.profile_id,
               type: 'chat',
               title: 'Nuovo messaggio',
-              body: `${aliasSnapshot} ha scritto nella chat dell'evento`,
+              body: `${senderRealName} ha scritto nella chat dell'evento`,
               event_id: eventId
             }));
 
@@ -262,40 +285,30 @@ Deno.serve(async (req: Request) => {
             }
           }
         }
-      } else if (channel === 'pair' && recipientParticipantId) {
-        // Get recipient's profile_id
-        const { data: recipientData, error: recipientError } = await supabase
-          .from('participants')
-          .select('profile_id')
-          .eq('id', recipientParticipantId)
-          .single();
+      } else if (channel === 'pair' && recipientProfileId && messagePrivateChatId) {
+        const { error: notifError } = await supabase
+          .from('notifications')
+          .insert({
+            profile_id: recipientProfileId,
+            type: 'chat',
+            title: 'Nuovo messaggio privato',
+            body: `${aliasSnapshot} ti ha inviato un messaggio`,
+            event_id: eventId,
+            private_chat_id: messagePrivateChatId,
+          });
 
-        if (!recipientError && recipientData?.profile_id) {
-          const { error: notifError } = await supabase
-            .from('notifications')
-            .insert({
-              profile_id: recipientData.profile_id,
-              type: 'chat',
-              title: 'Nuovo messaggio privato',
-              body: `${aliasSnapshot} ti ha inviato un messaggio`,
-              event_id: eventId,
-              recipient_participant_id: participant.id // sender's participant_id for opening chat
-            });
-
-          if (notifError) {
-            console.error('Error creating pair chat notification:', notifError);
-          } else {
-            console.log('Created notification for pair chat message');
-          }
+        if (notifError) {
+          console.error('Error creating pair chat notification:', notifError);
+        } else {
+          console.log('Created notification for pair chat message');
         }
       }
     } catch (notifErr) {
-      // Log but don't fail the request if notification creation fails
       console.error('Error in notification creation:', notifErr);
     }
 
     return new Response(
-      JSON.stringify({ message }),
+      JSON.stringify({ message, privateChatId: messagePrivateChatId }),
       { 
         status: 201, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

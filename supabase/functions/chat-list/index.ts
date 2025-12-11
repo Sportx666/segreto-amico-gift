@@ -22,7 +22,7 @@ Deno.serve(async (req: Request) => {
     const url = new URL(req.url);
     const eventId = url.searchParams.get('eventId');
     const channel = url.searchParams.get('channel');
-    const recipientId = url.searchParams.get('recipientId');
+    const privateChatId = url.searchParams.get('privateChatId');
     const offset = parseInt(url.searchParams.get('offset') || '0');
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100);
 
@@ -92,17 +92,43 @@ Deno.serve(async (req: Request) => {
         created_at,
         author_participant_id,
         channel,
-        assignment_id,
-        recipient_participant_id
+        private_chat_id
       `)
       .eq('event_id', eventId)
       .eq('channel', channel);
 
-    // For pair channel with recipient, filter messages between user and recipient
-    if (channel === 'pair' && recipientId) {
-      query = query.or(
-        `and(author_participant_id.eq.${userParticipant.id},recipient_participant_id.eq.${recipientId}),and(author_participant_id.eq.${recipientId},recipient_participant_id.eq.${userParticipant.id})`
-      );
+    // For pair channel, filter by private_chat_id
+    if (channel === 'pair') {
+      if (!privateChatId) {
+        return new Response(
+          JSON.stringify({ error: 'Pair channel requires privateChatId parameter' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Verify user is part of this private chat
+      const { data: privateChat, error: chatError } = await supabase
+        .from('private_chats')
+        .select('id, anonymous_participant_id, exposed_participant_id')
+        .eq('id', privateChatId)
+        .single();
+
+      if (chatError || !privateChat) {
+        return new Response(
+          JSON.stringify({ error: 'Private chat not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (privateChat.anonymous_participant_id !== userParticipant.id && 
+          privateChat.exposed_participant_id !== userParticipant.id) {
+        return new Response(
+          JSON.stringify({ error: 'Access denied to this private chat' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      query = query.eq('private_chat_id', privateChatId);
     }
 
     query = query

@@ -119,6 +119,7 @@ export type Database = {
           created_at: string | null
           event_id: string
           id: string
+          private_chat_id: string | null
           recipient_participant_id: string | null
         }
         Insert: {
@@ -131,6 +132,7 @@ export type Database = {
           created_at?: string | null
           event_id: string
           id?: string
+          private_chat_id?: string | null
           recipient_participant_id?: string | null
         }
         Update: {
@@ -143,6 +145,7 @@ export type Database = {
           created_at?: string | null
           event_id?: string
           id?: string
+          private_chat_id?: string | null
           recipient_participant_id?: string | null
         }
         Relationships: [
@@ -165,6 +168,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_private_chat_id_fkey"
+            columns: ["private_chat_id"]
+            isOneToOne: false
+            referencedRelation: "private_chats"
             referencedColumns: ["id"]
           },
           {
@@ -430,6 +440,7 @@ export type Database = {
           created_at: string
           event_id: string | null
           id: string
+          private_chat_id: string | null
           profile_id: string
           read_at: string | null
           recipient_participant_id: string | null
@@ -441,6 +452,7 @@ export type Database = {
           created_at?: string
           event_id?: string | null
           id?: string
+          private_chat_id?: string | null
           profile_id: string
           read_at?: string | null
           recipient_participant_id?: string | null
@@ -452,6 +464,7 @@ export type Database = {
           created_at?: string
           event_id?: string | null
           id?: string
+          private_chat_id?: string | null
           profile_id?: string
           read_at?: string | null
           recipient_participant_id?: string | null
@@ -464,6 +477,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_private_chat_id_fkey"
+            columns: ["private_chat_id"]
+            isOneToOne: false
+            referencedRelation: "private_chats"
             referencedColumns: ["id"]
           },
           {
@@ -547,6 +567,61 @@ export type Database = {
           {
             foreignKeyName: "private_chat_names_participant_b_id_fkey"
             columns: ["participant_b_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      private_chats: {
+        Row: {
+          anonymous_alias: string
+          anonymous_participant_id: string
+          created_at: string | null
+          event_id: string
+          exposed_name: string
+          exposed_participant_id: string
+          id: string
+          last_message_at: string | null
+        }
+        Insert: {
+          anonymous_alias: string
+          anonymous_participant_id: string
+          created_at?: string | null
+          event_id: string
+          exposed_name: string
+          exposed_participant_id: string
+          id?: string
+          last_message_at?: string | null
+        }
+        Update: {
+          anonymous_alias?: string
+          anonymous_participant_id?: string
+          created_at?: string | null
+          event_id?: string
+          exposed_name?: string
+          exposed_participant_id?: string
+          id?: string
+          last_message_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "private_chats_anonymous_participant_id_fkey"
+            columns: ["anonymous_participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "private_chats_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "private_chats_exposed_participant_id_fkey"
+            columns: ["exposed_participant_id"]
             isOneToOne: false
             referencedRelation: "participants"
             referencedColumns: ["id"]
