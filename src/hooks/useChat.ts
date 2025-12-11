@@ -39,7 +39,17 @@ export function useChat(options: UseChatOptions) {
 
   const fetchMessages = useCallback(async (isLoadMore = false) => {
     if (!eventId || !session?.access_token) return;
-    if (channel === 'pair' && !privateChatId) return;
+    // Allow pair channel to proceed even without privateChatId if recipientId is set (pending chat state)
+    if (channel === 'pair' && !privateChatId && !recipientId) return;
+
+    // For pending chat state (recipientId set but no privateChatId), initialize with empty messages
+    if (channel === 'pair' && recipientId && !privateChatId) {
+      setMessages([]);
+      setHasMore(false);
+      setOffset(0);
+      setLoading(false);
+      return;
+    }
 
     // Abort any in-flight request
     try { controllerRef.current?.abort(); } catch {}
@@ -82,7 +92,7 @@ export function useChat(options: UseChatOptions) {
     } finally {
       if (fetchId === fetchIdRef.current) setLoading(false);
     }
-  }, [eventId, channel, session, privateChatId, offset, t]);
+  }, [eventId, channel, session, privateChatId, recipientId, offset, t]);
 
   const sendMessage = useCallback(async (content: string): Promise<{ success: boolean; privateChatId?: string }> => {
     if (!eventId || !session?.access_token || !content.trim()) {
@@ -151,7 +161,7 @@ export function useChat(options: UseChatOptions) {
       setCurrentChatId(privateChatId);
       fetchMessages(false);
     }
-  }, [eventId, channel, privateChatId]);
+  }, [eventId, channel, privateChatId, recipientId]);
 
   // Set up real-time subscription
   useEffect(() => {
