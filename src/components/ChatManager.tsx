@@ -41,12 +41,14 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
   
   // URL params as source of truth
   const threadParam = searchParams.get('thread');
-  const activeChannel = threadParam ? 'pair' : 'event';
   
   const [messageText, setMessageText] = useState('');
   const [privateMenuOpen, setPrivateMenuOpen] = useState(false);
   const [showRecipientSelector, setShowRecipientSelector] = useState(false);
   const [pendingRecipient, setPendingRecipient] = useState<{ id: string; name: string } | null>(null);
+  
+  // Determine active channel based on thread param or pending recipient
+  const activeChannel = (threadParam || pendingRecipient) ? 'pair' : 'event';
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const handledOpenChatRef = useRef<string | null>(null);
