@@ -39,11 +39,14 @@ export function useChat(options: UseChatOptions) {
 
   const fetchMessages = useCallback(async (isLoadMore = false) => {
     if (!eventId || !session?.access_token) return;
-    // Allow pair channel to proceed even without privateChatId if recipientId is set (pending chat state)
-    if (channel === 'pair' && !privateChatId && !recipientId) return;
+    
+    // For pair channel, we need either a privateChatId (existing chat) or recipientId (pending new chat)
+    const isPairChannelWithoutChat = channel === 'pair' && !privateChatId && !recipientId;
+    if (isPairChannelWithoutChat) return;
 
     // For pending chat state (recipientId set but no privateChatId), initialize with empty messages
-    if (channel === 'pair' && recipientId && !privateChatId) {
+    const isPendingChat = channel === 'pair' && recipientId && !privateChatId;
+    if (isPendingChat) {
       setMessages([]);
       setHasMore(false);
       setOffset(0);
