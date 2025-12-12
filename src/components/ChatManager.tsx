@@ -11,14 +11,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useChat } from '@/hooks/useChat';
+import { useOptimisticChat } from '@/hooks/useOptimisticChat';
 import { useNickname } from '@/hooks/useNickname';
 import { useJoinedParticipantCount } from '@/hooks/useJoinedParticipantCount';
 import { usePrivateChats, PrivateChat } from '@/hooks/usePrivateChats';
 import { useI18n } from '@/i18n';
 import { NicknameManager } from './NicknameManager';
 import { ChatRecipientSelector } from './ChatRecipientSelector';
-import { MessageCircle, Users, Heart, Send, ChevronUp, Plus, X, Glasses } from 'lucide-react';
+import { MessageCircle, Users, Heart, Send, ChevronUp, Plus, X, Glasses, AlertCircle, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { it, enUS } from 'date-fns/locale';
 import { useSearchParams } from 'react-router-dom';
@@ -170,9 +170,10 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
     sending,
     hasMore,
     sendMessage,
+    retryMessage,
     loadMore,
     currentChatId,
-  } = useChat(chatOptions);
+  } = useOptimisticChat(chatOptions);
 
   // If a chat was created (from pending recipient), update URL
   useEffect(() => {
@@ -426,10 +427,10 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
             <Badge variant="outline" className="text-xs">{date}</Badge>
           </div>
           {dayMessages.map((message) => (
-            <div key={message.id} className="flex items-start gap-3 mb-4">
+            <div key={message.id} className={`flex items-start gap-3 mb-4 ${message.pending ? 'opacity-60' : ''}`}>
               <div 
                 className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white"
-                style={{ backgroundColor: message.color_snapshot }}
+                style={{ backgroundColor: message.color_snapshot || 'hsl(var(--primary))' }}
               >
                 {message.alias_snapshot?.charAt(0)?.toUpperCase() || '?'}
               </div>
@@ -439,12 +440,28 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                     {message.alias_snapshot || t('chat.anonymous')}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {formatMessageTime(message.created_at)}
+                    {message.pending ? t('chat.sending') : formatMessageTime(message.created_at)}
                   </span>
+                  {message.failed && (
+                    <Badge variant="destructive" className="text-xs px-1.5 py-0">
+                      {t('chat.failed')}
+                    </Badge>
+                  )}
                 </div>
-                <div className="text-sm bg-muted/50 rounded-lg px-3 py-2">
+                <div className={`text-sm rounded-lg px-3 py-2 ${message.failed ? 'bg-destructive/10 border border-destructive/20' : 'bg-muted/50'}`}>
                   {message.content}
                 </div>
+                {message.failed && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-1 h-7 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => retryMessage(message)}
+                  >
+                    <RotateCcw className="w-3 h-3 mr-1" />
+                    {t('chat.retry')}
+                  </Button>
+                )}
               </div>
             </div>
           ))}

@@ -421,7 +421,10 @@
     "set_nickname_error": "Set your anonymous nickname to send private messages",
     "start_private_chat": "Start a new private chat",
     "send_message": "Send message",
-    "error_creating_chat": "Error creating chat"
+    "error_creating_chat": "Error creating chat",
+    "sending": "Sending...",
+    "failed": "Failed",
+    "retry": "Retry"
   },
   "chat_selector": {
     "title": "New Private Chat",
@@ -725,5 +728,17 @@
     "event_closed": "This event is closed to new participants",
     "join_error": "Error joining event",
     "joining": "Joining event..."
+  },
+  "push_notifications": {
+    "title": "Push Notifications",
+    "description": "Receive notifications on your device",
+    "enable": "Enable Push Notifications",
+    "disable": "Disable Push Notifications",
+    "enabled": "Push notifications enabled",
+    "disabled": "Push notifications disabled",
+    "not_supported": "Push notifications are not supported on this device",
+    "enable_success": "Push notifications enabled successfully",
+    "enable_error": "Failed to enable push notifications",
+    "permission_denied": "Notification permission denied"
   }
 }

@@ -201,3 +201,71 @@ Add to `android/app/src/main/AndroidManifest.xml` inside `<activity>`:
   <data android:scheme="amicosegreto" />
 </intent-filter>
 ```
+
+## Push Notifications
+
+The app supports push notifications on iOS and Android using `@capacitor/push-notifications`.
+
+### iOS Setup
+
+1. **Enable Push Notifications capability** in Xcode:
+   - Open the project in Xcode
+   - Select your app target
+   - Go to "Signing & Capabilities"
+   - Click "+" and add "Push Notifications"
+
+2. **Create APNs Key** in Apple Developer Portal:
+   - Go to Certificates, Identifiers & Profiles
+   - Create a new APNs Key
+   - Download and save the .p8 file securely
+
+3. **Configure your push notification server** to use the APNs key to send notifications
+
+### Android Setup
+
+1. **Create Firebase Project**:
+   - Go to [Firebase Console](https://console.firebase.google.com/)
+   - Create a new project or use existing
+   - Add an Android app with your package name
+
+2. **Download `google-services.json`**:
+   - Place it in `android/app/google-services.json`
+
+3. **Update `android/build.gradle`**:
+   ```gradle
+   dependencies {
+     classpath 'com.google.gms:google-services:4.3.15'
+   }
+   ```
+
+4. **Update `android/app/build.gradle`**:
+   ```gradle
+   apply plugin: 'com.google.gms.google-services'
+   ```
+
+### Usage in the App
+
+Push notifications are automatically managed by the `usePushNotifications` hook. Users can enable/disable push notifications in their Profile settings.
+
+When a user enables push notifications:
+1. The app requests permission from the OS
+2. If granted, registers with APNs (iOS) or FCM (Android)
+3. Stores the device token locally
+4. The token can be sent to your server for targeted notifications
+
+### Server-Side Integration
+
+To send push notifications from your backend:
+
+**iOS (APNs)**:
+- Use the APNs HTTP/2 API with your .p8 key
+- Target the device token received during registration
+
+**Android (FCM)**:
+- Use Firebase Admin SDK or FCM HTTP API
+- Target the device token received during registration
+
+You can integrate this with Supabase Edge Functions to send notifications when:
+- New chat messages are received
+- Event assignments are made
+- Draw results are available

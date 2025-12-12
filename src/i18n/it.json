@@ -421,7 +421,10 @@
     "set_nickname_error": "Imposta il tuo nickname anonimo per inviare messaggi privati",
     "start_private_chat": "Inizia una nuova chat privata",
     "send_message": "Invia messaggio",
-    "error_creating_chat": "Errore nella creazione della chat"
+    "error_creating_chat": "Errore nella creazione della chat",
+    "sending": "Invio...",
+    "failed": "Fallito",
+    "retry": "Riprova"
   },
   "chat_selector": {
     "title": "Nuova Chat Privata",
@@ -725,5 +728,17 @@
     "event_closed": "Questo evento non accetta più nuovi partecipanti",
     "join_error": "Errore nell'entrare nell'evento",
     "joining": "Accesso all'evento in corso..."
+  },
+  "push_notifications": {
+    "title": "Notifiche Push",
+    "description": "Ricevi notifiche sul tuo dispositivo",
+    "enable": "Attiva Notifiche Push",
+    "disable": "Disattiva Notifiche Push",
+    "enabled": "Notifiche push attivate",
+    "disabled": "Notifiche push disattivate",
+    "not_supported": "Le notifiche push non sono supportate su questo dispositivo",
+    "enable_success": "Notifiche push attivate con successo",
+    "enable_error": "Impossibile attivare le notifiche push",
+    "permission_denied": "Permesso notifiche negato"
   }
 }

@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Trash2, Upload, User } from "lucide-react";
 import AccountSettings from "@/components/AccountSettings";
 import { NotificationSettings } from '@/components/NotificationSettings';
+import { PushNotificationSettings } from '@/components/PushNotificationSettings';
 
 const Profile = () => {
   // Authentication guard - will redirect if not authenticated
@@ -340,6 +341,9 @@ const Profile = () => {
 
         {/* Notification Settings */}
         <NotificationSettings />
+
+        {/* Push Notification Settings - Only shown on mobile */}
+        <PushNotificationSettings />
 
         {/* Account Settings */}
         <AccountSettings />
