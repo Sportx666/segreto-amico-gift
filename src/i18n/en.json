@@ -1,10 +1,4 @@
 {
-  "chat": {
-    "you_are_anonymous": "You are anonymous in this chat",
-    "you_are_visible": "Your identity is visible in this chat",
-    "visible": "visible",
-    "anonymous": "anonymous"
-  },
   "update": {
     "updated_successfully": "App Updated",
     "now_using_latest": "You're now using the latest version"
@@ -410,6 +404,9 @@
     "general_chat": "General Chat",
     "anonymous_user": "Anonymous User",
     "anonymous": "Anonymous",
+    "visible": "visible",
+    "you_are_anonymous": "You are anonymous in this chat",
+    "you_are_visible": "Your identity is visible in this chat",
     "close_chat_with": "Close chat with {name}",
     "no_messages": "No messages yet.",
     "start_conversation": "Start the conversation!",
@@ -423,7 +420,8 @@
     "set_nickname": "set your nickname",
     "set_nickname_error": "Set your anonymous nickname to send private messages",
     "start_private_chat": "Start a new private chat",
-    "send_message": "Send message"
+    "send_message": "Send message",
+    "error_creating_chat": "Error creating chat"
   },
   "chat_selector": {
     "title": "New Private Chat",
