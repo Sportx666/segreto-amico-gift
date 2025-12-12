@@ -27,9 +27,6 @@ verify_jwt = true
 [functions.mail-invite]
 verify_jwt = true
 
-[functions.amazon-search]
-verify_jwt = false
-
 [functions.debug-rls]
 verify_jwt = true
 
@@ -37,4 +34,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.chat-list]
+verify_jwt = true
+
+[functions.mail-merge-notice]
 verify_jwt = true

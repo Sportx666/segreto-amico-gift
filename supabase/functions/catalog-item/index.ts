@@ -6,43 +6,46 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-/**
- * Server-side Amazon affiliate tag utilities
- * Gets tags from Supabase secrets (AMZ_ASSOC_TAG or RAINFOREST_ASSOC_TAG)
- */
-function getAffiliateTag(): string {
-  // Check for Rainforest-specific tag first, then fallback to main Amazon tag
-  const rainforestTag = Deno.env.get("RAINFOREST_ASSOC_TAG");
-  const mainTag = Deno.env.get("AMZ_ASSOC_TAG");
-  const fallbackTag = "yourtag-21";
-  
-  const tag = rainforestTag || mainTag || fallbackTag;
-  
-  // Warn in production if using fallback
-  if (tag === fallbackTag) {
-    console.warn("⚠️ Amazon affiliate tag not configured, using fallback");
-  }
-  
-  return tag;
+// ============================================================
+// UNIFIED CATALOG PROVIDER CONFIGURATION
+// ============================================================
+// Switch providers by setting ONE secret: CATALOG_PROVIDER
+//   - "rainforest" = Use Rainforest API (recommended)
+//   - "mock" = Return mock data for testing
+//
+// Switch marketplaces by setting: AMAZON_MARKETPLACE
+//   - "IT", "US", "UK", "DE", "FR", "ES"
+//
+// Required secrets for each provider:
+//   rainforest: RAINFOREST_API_KEY
+//   all: AMZ_ASSOC_TAG (affiliate tag)
+// ============================================================
+
+const MARKETPLACE_CONFIG: Record<string, { domain: string; currency: string }> = {
+  IT: { domain: 'amazon.it', currency: 'EUR' },
+  US: { domain: 'amazon.com', currency: 'USD' },
+  UK: { domain: 'amazon.co.uk', currency: 'GBP' },
+  DE: { domain: 'amazon.de', currency: 'EUR' },
+  FR: { domain: 'amazon.fr', currency: 'EUR' },
+  ES: { domain: 'amazon.es', currency: 'EUR' },
+};
+
+function getMarketplaceConfig() {
+  const marketplace = Deno.env.get('AMAZON_MARKETPLACE') || 'IT';
+  return MARKETPLACE_CONFIG[marketplace] || MARKETPLACE_CONFIG.IT;
 }
 
-/**
- * Adds Amazon affiliate tag to URLs
- */
+function getAffiliateTag(): string {
+  return Deno.env.get("AMZ_ASSOC_TAG") || Deno.env.get("RAINFOREST_ASSOC_TAG") || "yourtag-21";
+}
+
 function withAffiliateTag(url: string): string {
   try {
     const amazonUrl = new URL(url);
-    
-    // Only process Amazon URLs
-    if (!amazonUrl.hostname.includes('amazon.')) {
-      return url;
-    }
-    
-    // Add affiliate tag
+    if (!amazonUrl.hostname.includes('amazon.')) return url;
     amazonUrl.searchParams.set('tag', getAffiliateTag());
     return amazonUrl.toString();
-  } catch (error) {
-    console.warn('Invalid URL provided to withAffiliateTag:', url);
+  } catch {
     return url;
   }
 }
@@ -63,35 +66,18 @@ interface CacheEntry {
 
 const cache = new Map<string, CacheEntry>();
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-const REQUEST_TIMEOUT = 10000; // 10 seconds
-
-// Marketplace configuration - switch by changing AMAZON_MARKETPLACE secret
-const MARKETPLACE_CONFIG: Record<string, { domain: string; currency: string }> = {
-  IT: { domain: 'amazon.it', currency: 'EUR' },
-  US: { domain: 'amazon.com', currency: 'USD' },
-  UK: { domain: 'amazon.co.uk', currency: 'GBP' },
-  DE: { domain: 'amazon.de', currency: 'EUR' },
-  FR: { domain: 'amazon.fr', currency: 'EUR' },
-  ES: { domain: 'amazon.es', currency: 'EUR' },
-};
-
-function getMarketplaceConfig() {
-  const marketplace = Deno.env.get('AMAZON_MARKETPLACE') || 'IT';
-  return MARKETPLACE_CONFIG[marketplace] || MARKETPLACE_CONFIG.IT;
-}
+const REQUEST_TIMEOUT = 10000;
 
 class RainforestClient {
   private apiKey: string;
   private domain: string;
 
-  constructor(apiKey: string, domain?: string) {
+  constructor(apiKey: string) {
     this.apiKey = apiKey;
-    // Use AMAZON_MARKETPLACE first, then RAINFOREST_DOMAIN, then default
-    this.domain = domain || getMarketplaceConfig().domain;
+    this.domain = getMarketplaceConfig().domain;
   }
 
   async getProduct(asin: string): Promise<CatalogItem> {
-    const url = "https://api.rainforestapi.com/request";
     const params = new URLSearchParams({
       api_key: this.apiKey,
       type: "product",
@@ -103,11 +89,10 @@ class RainforestClient {
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
     try {
-      const response = await fetch(`${url}?${params}`, {
+      const response = await fetch(`https://api.rainforestapi.com/request?${params}`, {
         signal: controller.signal,
         headers: { "User-Agent": "AmiciSegreto/1.0" },
       });
-
       clearTimeout(timeoutId);
 
       if (!response.ok) {
@@ -127,8 +112,8 @@ class RainforestClient {
         asin: product.asin,
         url: withAffiliateTag(`https://www.${this.domain}/dp/${product.asin}`),
         price: product.buybox_winner?.price?.value ? String(product.buybox_winner.price.value) : undefined,
-        currency: product.buybox_winner?.price?.currency || "EUR",
-      } as CatalogItem;
+        currency: product.buybox_winner?.price?.currency || getMarketplaceConfig().currency,
+      };
     } catch (error) {
       clearTimeout(timeoutId);
       if ((error as any).name === "AbortError") throw new Error("Request timeout");
@@ -138,13 +123,14 @@ class RainforestClient {
 }
 
 function getMockProduct(asin: string): CatalogItem {
+  const config = getMarketplaceConfig();
   return {
-    title: `Prodotto ${asin}`,
+    title: `Prodotto Mock ${asin}`,
     imageUrl: `https://via.placeholder.com/400?text=${asin}`,
     asin: asin,
-    url: withAffiliateTag(`https://www.amazon.it/dp/${asin}`),
+    url: withAffiliateTag(`https://www.${config.domain}/dp/${asin}`),
     price: "29.99",
-    currency: "EUR",
+    currency: config.currency,
   };
 }
 
@@ -152,8 +138,7 @@ serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
-      status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
@@ -163,72 +148,77 @@ serve(async (req: Request) => {
 
     if (!asin || typeof asin !== "string" || !/^[A-Z0-9]{10}$/i.test(asin)) {
       return new Response(JSON.stringify({ error: "Valid ASIN required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // Check cache
     const cacheKey = `item:${asin}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       return new Response(JSON.stringify({ item: cached.item, cached: true }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const provider = Deno.env.get("CATALOG_PROVIDER");
+    console.log(`CATALOG_PROVIDER: ${provider}, AMAZON_MARKETPLACE: ${Deno.env.get('AMAZON_MARKETPLACE') || 'IT'}`);
 
+    // Provider: mock
+    if (provider === "mock") {
+      const item = getMockProduct(asin);
+      cache.set(cacheKey, { item, timestamp: Date.now() });
+      return new Response(JSON.stringify({ item, provider: "mock", mock: true }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Provider: rainforest
     if (provider === "rainforest") {
       const apiKey = Deno.env.get("RAINFOREST_API_KEY");
-      const domain = Deno.env.get("RAINFOREST_DOMAIN") || "amazon.it";
-
       if (!apiKey) {
-        console.warn("RAINFOREST_API_KEY not configured, falling back to mock data");
-        const mockItem = getMockProduct(asin);
-        cache.set(cacheKey, { item: mockItem, timestamp: Date.now() });
-        return new Response(JSON.stringify({ item: mockItem, mock: true }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        console.warn("RAINFOREST_API_KEY not configured, using mock");
+        const item = getMockProduct(asin);
+        cache.set(cacheKey, { item, timestamp: Date.now() });
+        return new Response(JSON.stringify({ item, mock: true }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
       try {
-        const client = new RainforestClient(apiKey, domain);
+        const client = new RainforestClient(apiKey);
         const item = await client.getProduct(asin);
         cache.set(cacheKey, { item, timestamp: Date.now() });
         return new Response(JSON.stringify({ item, provider: "rainforest" }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch (error: any) {
-        console.error("Rainforest API error:", error?.message || error);
+        console.error("Rainforest error:", error?.message);
         if (error?.message === "API_RATE_LIMIT") {
           return new Response(
-            JSON.stringify({ error: "Limite di richieste raggiunto. Riprova tra qualche minuto.", fallback: true }),
+            JSON.stringify({ error: "Limite richieste raggiunto. Riprova tra qualche minuto." }),
             { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
           );
         }
-        console.warn("Falling back to mock data due to API error");
-        const mockItem = getMockProduct(asin);
-        cache.set(cacheKey, { item: mockItem, timestamp: Date.now() });
-        return new Response(JSON.stringify({ item: mockItem, mock: true, fallback: true }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        // Fallback to mock on error
+        const item = getMockProduct(asin);
+        cache.set(cacheKey, { item, timestamp: Date.now() });
+        return new Response(JSON.stringify({ item, mock: true, fallback: true }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
     }
 
-    const mockItem = getMockProduct(asin);
-    cache.set(cacheKey, { item: mockItem, timestamp: Date.now() });
-    return new Response(JSON.stringify({ item: mockItem, mock: true }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // No provider or unknown - return mock
+    const item = getMockProduct(asin);
+    cache.set(cacheKey, { item, timestamp: Date.now() });
+    return new Response(JSON.stringify({ item, mock: true }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("Catalog item error:", error);
     return new Response(
-      JSON.stringify({ error: "Si è verificato un errore durante il caricamento del prodotto. Riprova tra qualche minuto." }),
+      JSON.stringify({ error: "Errore durante il caricamento del prodotto." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }

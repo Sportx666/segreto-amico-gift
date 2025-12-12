@@ -6,43 +6,52 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-/**
- * Server-side Amazon affiliate tag utilities
- * Gets tags from Supabase secrets (AMZ_ASSOC_TAG or RAINFOREST_ASSOC_TAG)
- */
+// ============================================================
+// UNIFIED CATALOG PROVIDER CONFIGURATION
+// ============================================================
+// Switch providers by setting ONE secret: CATALOG_PROVIDER
+//   - "rainforest" = Use Rainforest API (recommended)
+//   - "mock" = Return mock data for testing
+//
+// Switch marketplaces by setting: AMAZON_MARKETPLACE
+//   - "IT", "US", "UK", "DE", "FR", "ES"
+//
+// Required secrets for each provider:
+//   rainforest: RAINFOREST_API_KEY
+//   all: AMZ_ASSOC_TAG (affiliate tag)
+// ============================================================
+
+const MARKETPLACE_CONFIG: Record<string, { domain: string; currency: string }> = {
+  IT: { domain: 'amazon.it', currency: 'EUR' },
+  US: { domain: 'amazon.com', currency: 'USD' },
+  UK: { domain: 'amazon.co.uk', currency: 'GBP' },
+  DE: { domain: 'amazon.de', currency: 'EUR' },
+  FR: { domain: 'amazon.fr', currency: 'EUR' },
+  ES: { domain: 'amazon.es', currency: 'EUR' },
+};
+
+function getMarketplaceConfig() {
+  const marketplace = Deno.env.get('AMAZON_MARKETPLACE') || 'IT';
+  const config = MARKETPLACE_CONFIG[marketplace] || MARKETPLACE_CONFIG.IT;
+  console.log(`Using marketplace: ${marketplace} -> ${config.domain}`);
+  return config;
+}
+
 function getAffiliateTag(): string {
-  // Check for Rainforest-specific tag first, then fallback to main Amazon tag
-  const rainforestTag = Deno.env.get("RAINFOREST_ASSOC_TAG");
-  const mainTag = Deno.env.get("AMZ_ASSOC_TAG");
-  const fallbackTag = "yourtag-21";
-  
-  const tag = rainforestTag || mainTag || fallbackTag;
-  
-  // Warn in production if using fallback
-  if (tag === fallbackTag) {
+  const tag = Deno.env.get("AMZ_ASSOC_TAG") || Deno.env.get("RAINFOREST_ASSOC_TAG") || "yourtag-21";
+  if (tag === "yourtag-21") {
     console.warn("⚠️ Amazon affiliate tag not configured, using fallback");
   }
-  
   return tag;
 }
 
-/**
- * Adds Amazon affiliate tag to URLs
- */
 function withAffiliateTag(url: string): string {
   try {
     const amazonUrl = new URL(url);
-    
-    // Only process Amazon URLs
-    if (!amazonUrl.hostname.includes('amazon.')) {
-      return url;
-    }
-    
-    // Add affiliate tag
+    if (!amazonUrl.hostname.includes('amazon.')) return url;
     amazonUrl.searchParams.set('tag', getAffiliateTag());
     return amazonUrl.toString();
-  } catch (error) {
-    console.warn('Invalid URL provided to withAffiliateTag:', url);
+  } catch {
     return url;
   }
 }
@@ -64,67 +73,37 @@ interface CacheEntry {
 
 const cache = new Map<string, CacheEntry>();
 const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
-const REQUEST_TIMEOUT = Number(Deno.env.get('RAINFOREST_TIMEOUT_MS') || 25000); // configurable timeout
+const REQUEST_TIMEOUT = Number(Deno.env.get('RAINFOREST_TIMEOUT_MS') || 25000);
 
 async function withRetry<T>(fn: () => Promise<T>, maxAttempts: number = 3): Promise<T> {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const startTime = Date.now();
     try {
-      const result = await fn();
-      const elapsed = Date.now() - startTime;
-      console.log(`Attempt ${attempt} succeeded in ${elapsed}ms`);
-      return result;
+      return await fn();
     } catch (error: any) {
-      const elapsed = Date.now() - startTime;
-      console.log(`Attempt ${attempt} failed after ${elapsed}ms:`, error?.message || error);
-      
+      console.log(`Attempt ${attempt} failed:`, error?.message);
       if (attempt === maxAttempts) throw error;
-      
-      // Retry on timeout, network errors, or 5xx responses
       const shouldRetry = error?.name === 'AbortError' || 
                          error?.message?.includes('timeout') ||
                          error?.message?.includes('network') ||
-                         (error?.message?.includes('Rainforest API error') && error?.message?.match(/5\d\d/));
-      
+                         error?.message?.match(/5\d\d/);
       if (!shouldRetry) throw error;
-      
-      // Exponential backoff: 800ms, 1600ms
-      const delay = 800 * attempt;
-      console.log(`Retrying in ${delay}ms...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise(resolve => setTimeout(resolve, 800 * attempt));
     }
   }
   throw new Error('Max attempts reached');
-}
-
-// Marketplace configuration - switch by changing AMAZON_MARKETPLACE secret
-const MARKETPLACE_CONFIG: Record<string, { domain: string; currency: string }> = {
-  IT: { domain: 'amazon.it', currency: 'EUR' },
-  US: { domain: 'amazon.com', currency: 'USD' },
-  UK: { domain: 'amazon.co.uk', currency: 'GBP' },
-  DE: { domain: 'amazon.de', currency: 'EUR' },
-  FR: { domain: 'amazon.fr', currency: 'EUR' },
-  ES: { domain: 'amazon.es', currency: 'EUR' },
-};
-
-function getMarketplaceConfig() {
-  const marketplace = Deno.env.get('AMAZON_MARKETPLACE') || 'IT';
-  return MARKETPLACE_CONFIG[marketplace] || MARKETPLACE_CONFIG.IT;
 }
 
 class RainforestClient {
   private apiKey: string;
   private domain: string;
 
-  constructor(apiKey: string, domain?: string) {
+  constructor(apiKey: string) {
     this.apiKey = apiKey;
-    // Use AMAZON_MARKETPLACE first, then RAINFOREST_DOMAIN, then default
-    this.domain = domain || getMarketplaceConfig().domain;
+    this.domain = getMarketplaceConfig().domain;
   }
 
   async search(query: string, page: number = 1, minPrice?: number, maxPrice?: number): Promise<{ items: CatalogItem[]; total: number }> {
     return withRetry(async () => {
-      const url = "https://api.rainforestapi.com/request";
       const params = new URLSearchParams({
         api_key: this.apiKey,
         type: "search",
@@ -140,12 +119,9 @@ class RainforestClient {
       const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
       try {
-        const response = await fetch(`${url}?${params}`, {
+        const response = await fetch(`https://api.rainforestapi.com/request?${params}`, {
           signal: controller.signal,
-          headers: { 
-            "User-Agent": "AmiciSegreto/1.0",
-            "Accept": "application/json"
-          },
+          headers: { "User-Agent": "AmiciSegreto/1.0", "Accept": "application/json" },
         });
         clearTimeout(timeoutId);
 
@@ -157,7 +133,7 @@ class RainforestClient {
         const data = await response.json();
         if ((data as any).error) throw new Error((data as any).error);
 
-        let items: CatalogItem[] = ((data as any).search_results || []).map((item: any) => {
+        const items: CatalogItem[] = ((data as any).search_results || []).map((item: any) => {
           const asin = item.asin || extractAsinFromUrl(item.link);
           const baseUrl = asin ? `https://www.${this.domain}/dp/${asin}` : item.link;
           return {
@@ -166,18 +142,11 @@ class RainforestClient {
             asin,
             url: withAffiliateTag(baseUrl),
             price: item.price?.value ? String(item.price.value) : undefined,
-            currency: item.price?.currency || "EUR",
-          } as CatalogItem;
+            currency: item.price?.currency || getMarketplaceConfig().currency,
+          };
         });
 
-        if (minPrice !== undefined || maxPrice !== undefined) {
-          items = sortItemsByPrice(items, true);
-        }
-
-        return {
-          items,
-          total: (data as any).pagination?.total_results || items.length,
-        };
+        return { items, total: (data as any).pagination?.total_results || items.length };
       } catch (error) {
         clearTimeout(timeoutId);
         if ((error as any).name === "AbortError") throw new Error("Request timeout");
@@ -193,40 +162,39 @@ function extractAsinFromUrl(url?: string): string | undefined {
   return match?.[1];
 }
 
-function sortItemsByPrice(items: CatalogItem[], ascending: boolean = true): CatalogItem[] {
-  return items.sort((a, b) => {
-    const priceA = parseFloat(a.price || "0");
-    const priceB = parseFloat(b.price || "0");
-    return ascending ? priceA - priceB : priceB - priceA;
-  });
+function getMockResults(query: string, page: number): { items: CatalogItem[]; total: number } {
+  const config = getMarketplaceConfig();
+  const items: CatalogItem[] = Array.from({ length: 10 }, (_, i) => ({
+    title: `${query} - Prodotto Mock ${(page - 1) * 10 + i + 1}`,
+    imageUrl: `https://via.placeholder.com/300?text=${encodeURIComponent(query)}`,
+    asin: `MOCK${String(i).padStart(6, '0')}`,
+    url: withAffiliateTag(`https://www.${config.domain}/dp/MOCK${String(i).padStart(6, '0')}`),
+    price: String((Math.random() * 100 + 10).toFixed(2)),
+    currency: config.currency,
+  }));
+  return { items, total: 50 };
 }
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
-      status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { q = "", page = 1, minPrice, maxPrice } = body as {
-      q?: string;
-      page?: number;
-      minPrice?: number;
-      maxPrice?: number;
-    };
-
+    const { q = "", page = 1, minPrice, maxPrice } = body;
     const query = String(q || "").trim();
+
     if (!query) {
       return new Response(JSON.stringify({ error: "Missing search query" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // Check cache
     const cacheKey = `search:${query}:${page}:${minPrice || ""}:${maxPrice || ""}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -237,56 +205,61 @@ serve(async (req: Request) => {
     }
 
     const provider = Deno.env.get("CATALOG_PROVIDER");
-    console.log("CATALOG_PROVIDER:", provider);
-    console.log("Available env vars:", Object.keys(Deno.env.toObject()).filter(key => key.includes('CATALOG') || key.includes('RAINFOREST')));
-    console.log("REQUEST_TIMEOUT:", REQUEST_TIMEOUT + "ms");
-    
+    console.log(`CATALOG_PROVIDER: ${provider}, AMAZON_MARKETPLACE: ${Deno.env.get('AMAZON_MARKETPLACE') || 'IT'}`);
+
+    // Provider: mock
+    if (provider === "mock") {
+      const result = getMockResults(query, Number(page));
+      cache.set(cacheKey, { ...result, timestamp: Date.now() });
+      return new Response(
+        JSON.stringify({ ...result, page: Number(page), pageSize: 10, provider: "mock", mock: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Provider: rainforest
     if (provider === "rainforest") {
       const apiKey = Deno.env.get("RAINFOREST_API_KEY");
-      const domain = Deno.env.get("RAINFOREST_DOMAIN") || "amazon.it";
-      console.log("RAINFOREST_API_KEY present:", !!apiKey);
-      console.log("RAINFOREST_DOMAIN:", domain);
-
       if (!apiKey) {
-        console.warn("RAINFOREST_API_KEY not found in environment");
+        console.error("RAINFOREST_API_KEY not configured");
         return new Response(
-          JSON.stringify({ error: "Servizio di ricerca temporaneamente non disponibile. Riprova più tardi." }),
+          JSON.stringify({ error: "Servizio di ricerca temporaneamente non disponibile." }),
           { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
 
       try {
-        const client = new RainforestClient(apiKey, domain);
+        const client = new RainforestClient(apiKey);
         const result = await client.search(query, Number(page), minPrice, maxPrice);
         cache.set(cacheKey, { ...result, timestamp: Date.now() });
-
         return new Response(
-          JSON.stringify({ items: result.items, total: result.total, page: Number(page), pageSize: 10, provider: "rainforest" }),
+          JSON.stringify({ ...result, page: Number(page), pageSize: 10, provider: "rainforest" }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       } catch (error: any) {
-        console.error("Rainforest API error:", error?.message || error);
+        console.error("Rainforest error:", error?.message);
         if (error?.message === "API_RATE_LIMIT") {
-          return new Response(JSON.stringify({ error: "Limite di ricerche raggiunto. Riprova tra qualche minuto." }), {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({ error: "Limite di ricerche raggiunto. Riprova tra qualche minuto." }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
         }
         return new Response(
-          JSON.stringify({ error: "Servizio di ricerca temporaneamente non disponibile. Riprova più tardi." }),
+          JSON.stringify({ error: "Servizio di ricerca temporaneamente non disponibile." }),
           { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
     }
 
+    // No provider configured
     return new Response(
-      JSON.stringify({ error: "Servizio di ricerca non configurato. Contatta il supporto." }),
+      JSON.stringify({ error: "Servizio di ricerca non configurato. Imposta CATALOG_PROVIDER." }),
       { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
     console.error("Catalog search error:", error);
     return new Response(
-      JSON.stringify({ error: "Si è verificato un errore durante la ricerca. Riprova tra qualche minuto." }),
+      JSON.stringify({ error: "Errore durante la ricerca. Riprova più tardi." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
