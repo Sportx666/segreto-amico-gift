@@ -194,10 +194,10 @@ Deno.serve(async (req: Request) => {
           });
         }
       } else if (privateChatId) {
-        // Existing chat - get recipient's profile_id for notifications
+        // Existing chat - get recipient's profile_id for notifications and correct alias
         const { data: privateChat } = await supabase
           .from('private_chats')
-          .select('anonymous_participant_id, exposed_participant_id')
+          .select('anonymous_participant_id, exposed_participant_id, anonymous_alias, exposed_name')
           .eq('id', privateChatId)
           .single();
 
@@ -205,6 +205,15 @@ Deno.serve(async (req: Request) => {
           const otherParticipantId = privateChat.anonymous_participant_id === participant.id
             ? privateChat.exposed_participant_id
             : privateChat.anonymous_participant_id;
+
+          // Determine correct alias based on sender's role in this chat
+          // If sender is anonymous party → use their alias
+          // If sender is exposed party → use their real name
+          if (privateChat.anonymous_participant_id === participant.id) {
+            aliasSnapshot = privateChat.anonymous_alias;
+          } else {
+            aliasSnapshot = privateChat.exposed_name;
+          }
 
           const { data: otherParticipant } = await supabase
             .from('participants')

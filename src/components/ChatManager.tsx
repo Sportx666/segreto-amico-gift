@@ -58,7 +58,7 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
   
   const { nickname: nickData } = useNickname(eventId);
   const { count: joinedCount } = useJoinedParticipantCount(eventId);
-  const { chats: privateChats, loading: loadingChats } = usePrivateChats(eventId);
+  const { chats: privateChats, loading: loadingChats, markAsRead } = usePrivateChats(eventId);
   
   const dateLocale = language === 'it' ? it : enUS;
 
@@ -186,6 +186,13 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
       setPendingRecipient(null);
     }
   }, [currentChatId, pendingRecipient, threadParam, setSearchParams]);
+
+  // Mark chat as read when viewing a thread
+  useEffect(() => {
+    if (threadParam && activePrivateChat?.unreadCount && activePrivateChat.unreadCount > 0) {
+      markAsRead(threadParam);
+    }
+  }, [threadParam, activePrivateChat, markAsRead]);
 
   const handleChatStart = async (recipientId: string, recipientName?: string) => {
     // Check if a chat already exists with this recipient where we're anonymous
@@ -472,10 +479,18 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
     
     return (
       <div className="border-t bg-background/50 p-4">
-        {isPairMode && (
+        {isPairMode && activePrivateChat && (
           <div className="mb-2 text-xs text-muted-foreground flex items-center gap-2">
             <Glasses className="w-3 h-3" />
-            {getCurrentRoleLabel()}
+            {activePrivateChat.myRole === 'anonymous' 
+              ? t('chat.you_are_anonymous')
+              : t('chat.you_are_visible')}
+          </div>
+        )}
+        {isPairMode && pendingRecipient && !activePrivateChat && (
+          <div className="mb-2 text-xs text-muted-foreground flex items-center gap-2">
+            <Glasses className="w-3 h-3" />
+            {t('chat.you_are_anonymous')}
           </div>
         )}
         <form onSubmit={handleSendMessage} className="flex gap-2">
@@ -584,17 +599,33 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                               // Already in pending state
                             } else {
                               setSearchParams({ thread: chat.id, tab: 'chat' });
+                              // Mark as read when opening
+                              if ('unreadCount' in chat && chat.unreadCount > 0) {
+                                markAsRead(chat.id);
+                              }
                             }
                             setPrivateMenuOpen(false);
                           }}
                           className="flex items-center gap-2"
                         >
-                          <Glasses className="w-4 h-4 text-muted-foreground" />
+                          <div className="relative">
+                            <Glasses className="w-4 h-4 text-muted-foreground" />
+                            {'unreadCount' in chat && chat.unreadCount > 0 && (
+                              <span className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full" />
+                            )}
+                          </div>
                           <div className="flex-1 truncate">
-                            <span>{chat.displayName}</span>
+                            <span className={'unreadCount' in chat && chat.unreadCount > 0 ? 'font-semibold' : ''}>
+                              {chat.displayName}
+                            </span>
                             <span className="text-xs text-muted-foreground ml-2">
                               {chat.myRole === 'anonymous' ? `(${t('chat.anonymous')})` : `(${t('chat.visible')})`}
                             </span>
+                            {'unreadCount' in chat && chat.unreadCount > 0 && (
+                              <Badge variant="destructive" className="ml-2 h-5 px-1.5 text-xs">
+                                {chat.unreadCount}
+                              </Badge>
+                            )}
                           </div>
                           <Button
                             variant="ghost"

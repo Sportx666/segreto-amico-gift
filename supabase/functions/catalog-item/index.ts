@@ -65,13 +65,29 @@ const cache = new Map<string, CacheEntry>();
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 const REQUEST_TIMEOUT = 10000; // 10 seconds
 
+// Marketplace configuration - switch by changing AMAZON_MARKETPLACE secret
+const MARKETPLACE_CONFIG: Record<string, { domain: string; currency: string }> = {
+  IT: { domain: 'amazon.it', currency: 'EUR' },
+  US: { domain: 'amazon.com', currency: 'USD' },
+  UK: { domain: 'amazon.co.uk', currency: 'GBP' },
+  DE: { domain: 'amazon.de', currency: 'EUR' },
+  FR: { domain: 'amazon.fr', currency: 'EUR' },
+  ES: { domain: 'amazon.es', currency: 'EUR' },
+};
+
+function getMarketplaceConfig() {
+  const marketplace = Deno.env.get('AMAZON_MARKETPLACE') || 'IT';
+  return MARKETPLACE_CONFIG[marketplace] || MARKETPLACE_CONFIG.IT;
+}
+
 class RainforestClient {
   private apiKey: string;
   private domain: string;
 
-  constructor(apiKey: string, domain: string = "amazon.it") {
+  constructor(apiKey: string, domain?: string) {
     this.apiKey = apiKey;
-    this.domain = domain;
+    // Use AMAZON_MARKETPLACE first, then RAINFOREST_DOMAIN, then default
+    this.domain = domain || getMarketplaceConfig().domain;
   }
 
   async getProduct(asin: string): Promise<CatalogItem> {
