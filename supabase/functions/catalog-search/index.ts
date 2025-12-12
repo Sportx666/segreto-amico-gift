@@ -438,7 +438,7 @@ class AmazonPAAPIClient {
   private async hmacSha256(key: Uint8Array, message: string): Promise<Uint8Array> {
     const cryptoKey = await crypto.subtle.importKey(
       "raw",
-      key,
+      key.buffer as ArrayBuffer,
       { name: "HMAC", hash: "SHA-256" },
       false,
       ["sign"]
