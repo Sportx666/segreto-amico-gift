@@ -841,6 +841,10 @@ export type Database = {
       }
       get_user_email: { Args: never; Returns: string }
       is_event_admin: { Args: { eid: string; uid: string }; Returns: boolean }
+      is_event_co_member: {
+        Args: { _participant_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_event_member: { Args: { eid: string; uid: string }; Returns: boolean }
       is_event_participant: {
         Args: { _event_id: string; _user_id: string }
@@ -848,6 +852,10 @@ export type Database = {
       }
       is_message_participant: {
         Args: { _author_id: string; _recipient_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_profile_co_member: {
+        Args: { _profile_id: string; _user_id: string }
         Returns: boolean
       }
       list_event_members: {
