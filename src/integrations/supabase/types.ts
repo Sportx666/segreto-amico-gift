@@ -839,6 +839,17 @@ export type Database = {
           postal_code: string
         }[]
       }
+      get_private_chat_unread_counts: {
+        Args: {
+          _event_id: string
+          _last_read_timestamps: Json
+          _participant_id: string
+        }
+        Returns: {
+          chat_id: string
+          unread_count: number
+        }[]
+      }
       get_user_email: { Args: never; Returns: string }
       is_event_admin: { Args: { eid: string; uid: string }; Returns: boolean }
       is_event_co_member: {
