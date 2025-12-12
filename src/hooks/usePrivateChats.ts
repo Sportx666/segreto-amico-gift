@@ -14,9 +14,31 @@ export interface PrivateChat {
   // What the current user sees as the display name for the other participant
   displayName: string;
   
+  // Unread message count
+  unreadCount: number;
+  
   lastMessageAt: string;
   createdAt: string;
 }
+
+// Track last read timestamps in localStorage
+const getLastReadKey = (chatId: string) => `chat_last_read_${chatId}`;
+
+const getLastReadTimestamp = (chatId: string): string | null => {
+  try {
+    return localStorage.getItem(getLastReadKey(chatId));
+  } catch {
+    return null;
+  }
+};
+
+const setLastReadTimestamp = (chatId: string) => {
+  try {
+    localStorage.setItem(getLastReadKey(chatId), new Date().toISOString());
+  } catch {
+    // Ignore localStorage errors
+  }
+};
 
 export function usePrivateChats(eventId: string) {
   const { user } = useAuth();
@@ -54,22 +76,48 @@ export function usePrivateChats(eventId: string) {
         return;
       }
 
-      // Transform to PrivateChat format
-      const formattedChats: PrivateChat[] = (privateChats || []).map((chat: any) => {
-        const isAnonymous = chat.anonymous_participant_id === myParticipant.id;
-        
-        return {
-          id: chat.id,
-          eventId: chat.event_id,
-          myRole: isAnonymous ? 'anonymous' : 'exposed',
-          myParticipantId: myParticipant.id,
-          otherParticipantId: isAnonymous ? chat.exposed_participant_id : chat.anonymous_participant_id,
-          // What I see: if I'm anonymous, I see the exposed person's real name; if I'm exposed, I see their alias
-          displayName: isAnonymous ? chat.exposed_name : chat.anonymous_alias,
-          lastMessageAt: chat.last_message_at,
-          createdAt: chat.created_at,
-        };
-      });
+      // Fetch unread counts for each chat
+      const formattedChats: PrivateChat[] = await Promise.all(
+        (privateChats || []).map(async (chat: any) => {
+          const isAnonymous = chat.anonymous_participant_id === myParticipant.id;
+          const lastRead = getLastReadTimestamp(chat.id);
+          
+          // Count unread messages (messages after last read)
+          let unreadCount = 0;
+          if (lastRead) {
+            const { count } = await supabase
+              .from('chat_messages')
+              .select('*', { count: 'exact', head: true })
+              .eq('private_chat_id', chat.id)
+              .neq('author_participant_id', myParticipant.id)
+              .gt('created_at', lastRead);
+            
+            unreadCount = count || 0;
+          } else {
+            // If never read, count all messages from other participant
+            const { count } = await supabase
+              .from('chat_messages')
+              .select('*', { count: 'exact', head: true })
+              .eq('private_chat_id', chat.id)
+              .neq('author_participant_id', myParticipant.id);
+            
+            unreadCount = count || 0;
+          }
+          
+          return {
+            id: chat.id,
+            eventId: chat.event_id,
+            myRole: isAnonymous ? 'anonymous' : 'exposed',
+            myParticipantId: myParticipant.id,
+            otherParticipantId: isAnonymous ? chat.exposed_participant_id : chat.anonymous_participant_id,
+            // What I see: if I'm anonymous, I see the exposed person's real name; if I'm exposed, I see their alias
+            displayName: isAnonymous ? chat.exposed_name : chat.anonymous_alias,
+            unreadCount,
+            lastMessageAt: chat.last_message_at,
+            createdAt: chat.created_at,
+          };
+        })
+      );
 
       setChats(formattedChats);
     } catch (error) {
@@ -78,6 +126,15 @@ export function usePrivateChats(eventId: string) {
       setLoading(false);
     }
   }, [user, eventId]);
+
+  // Mark a chat as read
+  const markAsRead = useCallback((chatId: string) => {
+    setLastReadTimestamp(chatId);
+    // Update local state immediately
+    setChats(prev => prev.map(c => 
+      c.id === chatId ? { ...c, unreadCount: 0 } : c
+    ));
+  }, []);
 
   useEffect(() => {
     fetchChats();
@@ -109,5 +166,31 @@ export function usePrivateChats(eventId: string) {
     };
   }, [user, eventId, fetchChats]);
 
-  return { chats, loading, refetch: fetchChats };
+  // Subscribe to new messages to update unread counts
+  useEffect(() => {
+    if (!user || !eventId) return;
+
+    const channel = supabase
+      .channel(`chat_messages_unread_${eventId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `event_id=eq.${eventId}`,
+        },
+        () => {
+          // Refetch to update unread counts
+          fetchChats();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, eventId, fetchChats]);
+
+  return { chats, loading, refetch: fetchChats, markAsRead };
 }
