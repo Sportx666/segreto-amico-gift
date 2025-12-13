@@ -615,6 +615,33 @@ export type Database = {
         }
         Relationships: []
       }
+      push_tokens: {
+        Row: {
+          created_at: string | null
+          id: string
+          platform: string
+          profile_id: string
+          token: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          platform: string
+          profile_id: string
+          token: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          platform?: string
+          profile_id?: string
+          token?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       wishlist_items: {
         Row: {
           affiliate_url: string | null
