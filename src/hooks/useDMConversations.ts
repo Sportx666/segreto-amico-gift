@@ -46,22 +46,22 @@ export function useDMConversations(eventId: string) {
         return;
       }
 
-      // Fetch private_chat_names for proper display names
-      const { data: chatNames } = await supabase
-        .from('private_chat_names')
-        .select('participant_a_id, participant_b_id, name_for_a, name_for_b')
+      // Fetch private_chats for proper display names
+      const { data: privateChats } = await supabase
+        .from('private_chats')
+        .select('anonymous_participant_id, exposed_participant_id, anonymous_alias, exposed_name')
         .eq('event_id', eventId)
-        .or(`participant_a_id.eq.${myParticipant.id},participant_b_id.eq.${myParticipant.id}`);
+        .or(`anonymous_participant_id.eq.${myParticipant.id},exposed_participant_id.eq.${myParticipant.id}`);
 
       // Create a map of participant ID -> display name for current user
       const nameMap = new Map<string, string>();
-      for (const entry of chatNames || []) {
-        if (entry.participant_a_id === myParticipant.id) {
-          // I am participant A, I see name_for_a (which is B's name for me to see)
-          nameMap.set(entry.participant_b_id, entry.name_for_a);
+      for (const chat of privateChats || []) {
+        if (chat.anonymous_participant_id === myParticipant.id) {
+          // I am anonymous, I see the exposed person's name
+          nameMap.set(chat.exposed_participant_id, chat.exposed_name);
         } else {
-          // I am participant B, I see name_for_b (which is A's alias for me to see)
-          nameMap.set(entry.participant_a_id, entry.name_for_b);
+          // I am exposed, I see the anonymous person's alias
+          nameMap.set(chat.anonymous_participant_id, chat.anonymous_alias);
         }
       }
 

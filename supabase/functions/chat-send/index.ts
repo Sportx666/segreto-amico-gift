@@ -1,5 +1,83 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 
+// FCM configuration
+const FCM_SERVER_KEY = Deno.env.get('FCM_SERVER_KEY');
+const FCM_URL = 'https://fcm.googleapis.com/fcm/send';
+
+// Send push notification via FCM
+async function sendFCM(
+  token: string, 
+  title: string, 
+  body: string, 
+  data?: Record<string, string>
+): Promise<{ success: boolean; invalidToken: boolean }> {
+  if (!FCM_SERVER_KEY) {
+    return { success: false, invalidToken: false };
+  }
+
+  try {
+    const response = await fetch(FCM_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `key=${FCM_SERVER_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: token,
+        notification: { title, body, sound: 'default' },
+        data,
+        priority: 'high',
+      }),
+    });
+
+    const result = await response.json();
+    
+    if (result.failure === 1) {
+      const errorType = result.results?.[0]?.error;
+      // InvalidRegistration or NotRegistered means token is stale
+      const invalidToken = ['InvalidRegistration', 'NotRegistered'].includes(errorType);
+      return { success: false, invalidToken };
+    }
+    
+    return { success: true, invalidToken: false };
+  } catch (error) {
+    console.error('FCM send error:', error);
+    return { success: false, invalidToken: false };
+  }
+}
+
+// Send push notifications to profile IDs
+async function sendPushToProfiles(
+  supabase: ReturnType<typeof createClient>,
+  profileIds: string[],
+  title: string,
+  body: string,
+  data?: Record<string, string>
+): Promise<void> {
+  if (!FCM_SERVER_KEY || profileIds.length === 0) return;
+
+  const { data: tokens } = await supabase
+    .from('push_tokens')
+    .select('id, token')
+    .in('profile_id', profileIds);
+
+  if (!tokens || tokens.length === 0) return;
+
+  const invalidTokenIds: string[] = [];
+
+  for (const tokenRecord of tokens) {
+    const result = await sendFCM(tokenRecord.token, title, body, data);
+    if (result.invalidToken) {
+      invalidTokenIds.push(tokenRecord.id);
+    }
+  }
+
+  // Clean up invalid tokens
+  if (invalidTokenIds.length > 0) {
+    await supabase.from('push_tokens').delete().in('id', invalidTokenIds);
+  }
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -257,7 +335,7 @@ Deno.serve(async (req: Request) => {
         .eq('id', messagePrivateChatId);
     }
 
-    // Create notifications
+    // Create notifications and send push
     try {
       if (channel === 'event') {
         // Get all other joined participants in this event
@@ -272,15 +350,17 @@ Deno.serve(async (req: Request) => {
           .neq('participant_id', participant.id);
 
         if (!membersError && otherMembers) {
-          const notifications = otherMembers
+          const profileIds = otherMembers
             .filter((m: any) => m.participants?.profile_id)
-            .map((m: any) => ({
-              profile_id: m.participants.profile_id,
-              type: 'chat',
-              title: 'Nuovo messaggio',
-              body: `${senderRealName} ha scritto nella chat dell'evento`,
-              event_id: eventId
-            }));
+            .map((m: any) => m.participants.profile_id);
+
+          const notifications = profileIds.map((pid: string) => ({
+            profile_id: pid,
+            type: 'chat',
+            title: 'Nuovo messaggio',
+            body: `${senderRealName} ha scritto nella chat dell'evento`,
+            event_id: eventId
+          }));
 
           if (notifications.length > 0) {
             const { error: notifError } = await supabase
@@ -291,6 +371,17 @@ Deno.serve(async (req: Request) => {
               console.error('Error creating event chat notifications:', notifError);
             } else {
               console.log(`Created ${notifications.length} notifications for event chat message`);
+              
+              // Send push notifications in background
+              EdgeRuntime.waitUntil(
+                sendPushToProfiles(
+                  supabase,
+                  profileIds,
+                  'Nuovo messaggio',
+                  `${senderRealName} ha scritto nella chat dell'evento`,
+                  { eventId, type: 'chat' }
+                )
+              );
             }
           }
         }
@@ -310,6 +401,17 @@ Deno.serve(async (req: Request) => {
           console.error('Error creating pair chat notification:', notifError);
         } else {
           console.log('Created notification for pair chat message');
+          
+          // Send push notification in background
+          EdgeRuntime.waitUntil(
+            sendPushToProfiles(
+              supabase,
+              [recipientProfileId],
+              'Nuovo messaggio privato',
+              `${aliasSnapshot} ti ha inviato un messaggio`,
+              { eventId, type: 'chat', privateChatId: messagePrivateChatId }
+            )
+          );
         }
       }
     } catch (notifErr) {
