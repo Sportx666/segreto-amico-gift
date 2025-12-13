@@ -521,58 +521,6 @@ export type Database = {
           },
         ]
       }
-      private_chat_names: {
-        Row: {
-          created_at: string | null
-          event_id: string
-          id: string
-          name_for_a: string
-          name_for_b: string
-          participant_a_id: string
-          participant_b_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          event_id: string
-          id?: string
-          name_for_a: string
-          name_for_b: string
-          participant_a_id: string
-          participant_b_id: string
-        }
-        Update: {
-          created_at?: string | null
-          event_id?: string
-          id?: string
-          name_for_a?: string
-          name_for_b?: string
-          participant_a_id?: string
-          participant_b_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "private_chat_names_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "private_chat_names_participant_a_id_fkey"
-            columns: ["participant_a_id"]
-            isOneToOne: false
-            referencedRelation: "participants"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "private_chat_names_participant_b_id_fkey"
-            columns: ["participant_b_id"]
-            isOneToOne: false
-            referencedRelation: "participants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       private_chats: {
         Row: {
           anonymous_alias: string
