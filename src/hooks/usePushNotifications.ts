@@ -7,6 +7,7 @@ import {
   setupPushListeners,
   unregisterPushNotifications,
   getStoredPushToken,
+  deletePushToken,
   PushNotificationState 
 } from '@/lib/pushNotifications';
 import { PushNotificationSchema, ActionPerformed } from '@capacitor/push-notifications';
@@ -29,14 +30,16 @@ export function usePushNotifications() {
     setState(prev => ({ ...prev, isSupported }));
 
     if (user?.id && isSupported) {
-      const existingToken = getStoredPushToken(user.id);
-      if (existingToken) {
-        setState(prev => ({ 
-          ...prev, 
-          isRegistered: true, 
-          token: existingToken 
-        }));
-      }
+      // Check async if token exists
+      getStoredPushToken(user.id).then(existingToken => {
+        if (existingToken) {
+          setState(prev => ({ 
+            ...prev, 
+            isRegistered: true, 
+            token: existingToken 
+          }));
+        }
+      });
     }
   }, [user?.id]);
 
@@ -112,8 +115,7 @@ export function usePushNotifications() {
 
     try {
       await unregisterPushNotifications();
-      localStorage.removeItem(`push_token_${user.id}`);
-      localStorage.removeItem(`push_platform_${user.id}`);
+      await deletePushToken(user.id);
       setState(prev => ({ 
         ...prev, 
         isRegistered: false, 

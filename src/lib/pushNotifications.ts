@@ -60,19 +60,25 @@ export const registerPushNotifications = async (): Promise<string | null> => {
 // Save the push token to the user's profile in the database
 export const savePushToken = async (userId: string, token: string): Promise<boolean> => {
   try {
-    // Store token in a push_tokens table or profiles table
-    // For now, we'll use localStorage as a simple solution
-    // In production, you'd want to store this server-side
     const platform = Capacitor.getPlatform();
-    const tokenKey = `push_token_${userId}`;
     
-    const existingToken = localStorage.getItem(tokenKey);
-    if (existingToken === token) {
-      return true; // Token already saved
-    }
+    // Save to Supabase push_tokens table
+    const { error } = await supabase
+      .from('push_tokens')
+      .upsert(
+        {
+          profile_id: userId,
+          token,
+          platform,
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'profile_id,token' }
+      );
 
-    localStorage.setItem(tokenKey, token);
-    localStorage.setItem(`push_platform_${userId}`, platform);
+    if (error) {
+      console.error('Error saving push token to database:', error);
+      return false;
+    }
     
     console.log(`Push token saved for user ${userId} on ${platform}`);
     return true;
@@ -126,11 +132,42 @@ export const unregisterPushNotifications = async (): Promise<void> => {
 };
 
 // Get the current push notification token from storage
-export const getStoredPushToken = (userId: string): string | null => {
-  return localStorage.getItem(`push_token_${userId}`);
+export const getStoredPushToken = async (userId: string): Promise<string | null> => {
+  try {
+    const { data } = await supabase
+      .from('push_tokens')
+      .select('token')
+      .eq('profile_id', userId)
+      .limit(1)
+      .maybeSingle();
+    
+    return data?.token || null;
+  } catch {
+    return null;
+  }
 };
 
 // Check if push notifications are enabled for the current user
-export const isPushEnabled = (userId: string): boolean => {
-  return !!getStoredPushToken(userId);
+export const isPushEnabled = async (userId: string): Promise<boolean> => {
+  const token = await getStoredPushToken(userId);
+  return !!token;
+};
+
+// Delete push token from database
+export const deletePushToken = async (userId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('push_tokens')
+      .delete()
+      .eq('profile_id', userId);
+
+    if (error) {
+      console.error('Error deleting push token:', error);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Error deleting push token:', error);
+    return false;
+  }
 };
