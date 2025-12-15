@@ -92,32 +92,37 @@ serve(async (req) => {
       ).data?.id)
       .maybeSingle()
 
-    // Get or create participant for this user
+    // Get or create participant for this user using upsert pattern to prevent duplicates
     let participantId: string
 
-    const { data: existingParticipant } = await supabase
+    // Use upsert with ON CONFLICT to atomically get or create
+    const { data: participant, error: participantErr } = await supabase
       .from('participants')
+      .upsert(
+        { profile_id: user.id },
+        { onConflict: 'profile_id', ignoreDuplicates: true }
+      )
       .select('id')
-      .eq('profile_id', user.id)
-      .maybeSingle()
+      .single()
 
-    if (existingParticipant?.id) {
-      participantId = existingParticipant.id
-    } else {
-      const { data: newParticipant, error: createErr } = await supabase
+    // If upsert returns nothing (ignoreDuplicates), fetch existing
+    if (participantErr || !participant) {
+      const { data: existingParticipant, error: fetchErr } = await supabase
         .from('participants')
-        .insert({ profile_id: user.id })
         .select('id')
+        .eq('profile_id', user.id)
         .single()
 
-      if (createErr || !newParticipant) {
-        console.error('Failed to create participant:', createErr)
+      if (fetchErr || !existingParticipant) {
+        console.error('Failed to get/create participant:', participantErr, fetchErr)
         return new Response(JSON.stringify({ error: 'participant_create_failed' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
-      participantId = newParticipant.id
+      participantId = existingParticipant.id
+    } else {
+      participantId = participant.id
     }
 
     // Check again for existing membership with the correct participant_id
