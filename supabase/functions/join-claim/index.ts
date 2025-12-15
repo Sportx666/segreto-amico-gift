@@ -110,29 +110,33 @@ serve(async (req) => {
           .is('profile_id', null)
       }
     } else {
-      // Generic invite - create or reuse participant bound to user
-      const { data: existing } = await supabase
+      // Generic invite - create or reuse participant bound to user using upsert
+      const { data: upserted, error: upsertErr } = await supabase
         .from('participants')
+        .upsert(
+          { profile_id: user.id },
+          { onConflict: 'profile_id', ignoreDuplicates: true }
+        )
         .select('id')
-        .eq('profile_id', user.id)
-        .maybeSingle()
+        .single()
 
-      if (existing?.id) {
-        participantId = existing.id
-      } else {
-        const { data: inserted, error: insErr } = await supabase
+      // If upsert returns nothing, fetch existing
+      if (upsertErr || !upserted) {
+        const { data: existing, error: fetchErr } = await supabase
           .from('participants')
-          .insert({ profile_id: user.id })
           .select('id')
+          .eq('profile_id', user.id)
           .single()
 
-        if (insErr || !inserted) {
-          return new Response(JSON.stringify({ error: insErr?.message || 'participant_create_failed' }), {
+        if (fetchErr || !existing) {
+          return new Response(JSON.stringify({ error: fetchErr?.message || 'participant_create_failed' }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           })
         }
-        participantId = inserted.id
+        participantId = existing.id
+      } else {
+        participantId = upserted.id
       }
     }
 

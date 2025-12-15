@@ -38,6 +38,8 @@
     "login_success": "Login successful! 🎉",
     "login_error": "Error during login",
     "google_login_error": "Error signing in with Google",
+    "facebook_login_error": "Error signing in with Facebook",
+    "discord_login_error": "Error signing in with Discord",
     "send_error": "Error sending"
   },
   "buttons": {

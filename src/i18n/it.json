@@ -38,6 +38,8 @@
     "login_success": "Accesso effettuato! 🎉",
     "login_error": "Errore durante l'accesso",
     "google_login_error": "Errore durante l'accesso con Google",
+    "facebook_login_error": "Errore durante l'accesso con Facebook",
+    "discord_login_error": "Errore durante l'accesso con Discord",
     "send_error": "Errore durante l'invio"
   },
   "buttons": {

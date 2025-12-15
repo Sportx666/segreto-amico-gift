@@ -852,6 +852,7 @@ export type Database = {
           participant_id: string
         }[]
       }
+      merge_duplicate_participants: { Args: never; Returns: Json }
       remove_unjoined_participant: {
         Args: { _event_id: string; _participant_id: string }
         Returns: Json
