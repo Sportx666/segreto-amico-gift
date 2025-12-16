@@ -48,7 +48,7 @@ export default function EventDetailPage() {
   const { nickname } = useNickname(event?.id);
   const { count: joinedCount, loading: countLoading } = useJoinedParticipantCount(id);
 
-  
+
   // Reveal animation hook
   const { shouldShow, isPlaying, startAnimation } = useRevealAnimation({
     eventId: id || '',
@@ -360,23 +360,23 @@ export default function EventDetailPage() {
           aria-label={t('event_detail.participants_tab')}
         >
           <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <TabsList className={`grid w-full ${event.draw_status === 'completed' ? 'grid-cols-4' : (userRole === 'admin' ? 'grid-cols-4' : 'grid-cols-3')} bg-white/80 backdrop-blur-sm shadow-card`}>
+            <TabsList className={`grid w-full ${event.draw_status === 'completed' ? 'grid-cols-4' : (userRole === 'admin' ? 'grid-cols-4' : 'grid-cols-3')} bg-white/80 backdrop-blur-sm shadow-card`}> 
               <TabsTrigger value="partecipanti" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 <span className="hidden sm:inline">{t('event_detail.participants_tab')}</span>
               </TabsTrigger>
-              {event.draw_status !== 'completed' && userRole === 'admin' && (
+              {event.draw_status !== 'completed' && userRole === 'admin' && ( 
                 <TabsTrigger value="esclusioni" className="flex items-center gap-2">
                   <Ban className="w-4 h-4" />
                   <span className="hidden sm:inline">{t('event_detail.exclusions_tab')}</span>
                 </TabsTrigger>
-              )}
-              {event.draw_status === 'completed' && (
-                <TabsTrigger value="assegnazione" className="flex items-center gap-2 bg-yellow-500/40 hover:bg-yellow-500/80 transition-all duration-300 data-[state=active]:text-red-500">
-                  <Gift className="w-4 h-4 animate-bounce" />
-                  <span className="hidden sm:inline font-semibold">{t('event_detail.assignment_tab')}</span>
-                </TabsTrigger>
-              )}
+              )} 
+              {event.draw_status === 'completed' && ( 
+                <TabsTrigger value="assegnazione" className="flex items-center gap-2 bg-yellow-500/40 hover:bg-yellow-500/80 transition-all duration-300 data-[state=active]:text-red-500"> 
+                  <Gift className="w-4 h-4 animate-bounce" /> 
+                  <span className="hidden sm:inline font-semibold">{t('event_detail.assignment_tab')}</span> 
+                </TabsTrigger> 
+              )} 
               <TabsTrigger value="sorteggio" className="flex items-center gap-2">
                 <Shuffle className="w-4 h-4" />
                 <span className="hidden sm:inline">{t('event_detail.draw_tab')}</span>
@@ -408,7 +408,7 @@ export default function EventDetailPage() {
             />
           </TabsContent>
 
-          {event.draw_status !== 'completed' && userRole === 'admin' && (
+          {event.draw_status !== 'completed' && userRole === 'admin' && ( 
             <TabsContent value="esclusioni">
               <EventExclusions eventId={event.id} userRole={userRole} />
             </TabsContent>
@@ -429,7 +429,7 @@ export default function EventDetailPage() {
               <UserAssignment
                 eventId={event.id}
                 eventStatus={event.draw_status}
-                drawDate={event.draw_date}
+                drawDate={event.draw_date} 
                 onRevealAnimation={() => handleRevealAnimation()}
               />
             )}
