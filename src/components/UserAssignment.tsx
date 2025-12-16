@@ -7,7 +7,6 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Gift, User, Heart, ExternalLink, Calendar } from 'lucide-react';
-import { toast } from 'sonner';
 import { getOrCreateParticipantId } from '@/lib/participants';
 import { formatDate } from '@/utils/format';
 import { differenceInDays, parseISO, isAfter } from 'date-fns';

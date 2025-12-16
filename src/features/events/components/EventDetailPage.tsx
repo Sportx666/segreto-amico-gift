@@ -48,6 +48,7 @@ export default function EventDetailPage() {
   const { nickname } = useNickname(event?.id);
   const { count: joinedCount, loading: countLoading } = useJoinedParticipantCount(id);
 
+  
   // Reveal animation hook
   const { shouldShow, isPlaying, startAnimation } = useRevealAnimation({
     eventId: id || '',
