@@ -159,7 +159,7 @@ export function UserAssignment({ eventId, eventStatus, drawDate, onRevealAnimati
                 <div className="w-24 h-24 rounded-full bg-gradient-primary flex items-center justify-center"> 
                   <div className="text-center text-primary-foreground"> 
                     <div className="text-3xl font-bold">{daysUntil}</div> 
-                    <div className="text-xs uppercase tracking-wide">{t('draw_countdown.days')}</div> 
+                    <div className="text-xs uppercase tracking-wide">{t(daysUntil === 1 ? 'draw_countdown.day' : 'draw_countdown.days')}</div> 
                   </div> 
                 </div> 
                 <Calendar className="absolute -bottom-1 -right-1 w-8 h-8 text-primary bg-white rounded-full p-1" /> 
