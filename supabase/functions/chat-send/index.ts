@@ -46,9 +46,14 @@ async function sendFCM(
   }
 }
 
+interface PushToken {
+  id: string;
+  token: string;
+}
+
 // Send push notifications to profile IDs
 async function sendPushToProfiles(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   profileIds: string[],
   title: string,
   body: string,
@@ -59,7 +64,7 @@ async function sendPushToProfiles(
   const { data: tokens } = await supabase
     .from('push_tokens')
     .select('id, token')
-    .in('profile_id', profileIds);
+    .in('profile_id', profileIds) as { data: PushToken[] | null };
 
   if (!tokens || tokens.length === 0) return;
 
@@ -372,16 +377,14 @@ Deno.serve(async (req: Request) => {
             } else {
               console.log(`Created ${notifications.length} notifications for event chat message`);
               
-              // Send push notifications in background
-              EdgeRuntime.waitUntil(
-                sendPushToProfiles(
-                  supabase,
-                  profileIds,
-                  'Nuovo messaggio',
-                  `${senderRealName} ha scritto nella chat dell'evento`,
-                  { eventId, type: 'chat' }
-                )
-              );
+              // Send push notifications in background (fire-and-forget)
+              sendPushToProfiles(
+                supabase,
+                profileIds,
+                'Nuovo messaggio',
+                `${senderRealName} ha scritto nella chat dell'evento`,
+                { eventId, type: 'chat' }
+              ).catch(err => console.error('Push notification error:', err));
             }
           }
         }
@@ -402,16 +405,14 @@ Deno.serve(async (req: Request) => {
         } else {
           console.log('Created notification for pair chat message');
           
-          // Send push notification in background
-          EdgeRuntime.waitUntil(
-            sendPushToProfiles(
-              supabase,
-              [recipientProfileId],
-              'Nuovo messaggio privato',
-              `${aliasSnapshot} ti ha inviato un messaggio`,
-              { eventId, type: 'chat', privateChatId: messagePrivateChatId }
-            )
-          );
+          // Send push notification in background (fire-and-forget)
+          sendPushToProfiles(
+            supabase,
+            [recipientProfileId],
+            'Nuovo messaggio privato',
+            `${aliasSnapshot} ti ha inviato un messaggio`,
+            { eventId, type: 'chat', privateChatId: messagePrivateChatId }
+          ).catch(err => console.error('Push notification error:', err));
         }
       }
     } catch (notifErr) {
