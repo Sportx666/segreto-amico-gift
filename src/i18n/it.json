@@ -395,6 +395,12 @@
     "auto_draw_disabled": "Sorteggio automatico disabilitato",
     "auto_draw_error": "Errore nel configurare il sorteggio automatico"
   },
+  "draw_countdown": {
+    "days": "giorni",
+    "title": "Conto alla rovescia",
+    "scheduled_for": "Il sorteggio è previsto per",
+    "get_ready": "Preparati a scoprire il tuo Amico Segreto!"
+  },
   "chat": {
     "title": "Chat",
     "unavailable": "Chat non disponibile",
