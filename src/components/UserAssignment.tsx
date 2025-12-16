@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { parseISO, isAfter, differenceInDays } from 'date-fns';
 import { useAuth } from '@/components/AuthProvider';
 import { useI18n } from '@/i18n';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Gift, User, Heart, ExternalLink, Calendar } from 'lucide-react';
 import { getOrCreateParticipantId } from '@/lib/participants';
+import { formatDate } from '@/utils/format';
 
 interface Assignment {
   id: string;

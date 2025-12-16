@@ -73,9 +73,16 @@ async function sendFCM(token: string, title: string, body: string, data?: Record
   }
 }
 
+interface PushTokenRecord {
+  id: string;
+  profile_id: string;
+  token: string;
+  platform: string;
+}
+
 // Internal function to send push notifications
 export async function sendPushNotifications(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   payload: PushPayload
 ): Promise<{ sent: number; failed: number; invalidTokens: string[] }> {
   const { profileIds, title, body, data } = payload;
@@ -88,7 +95,7 @@ export async function sendPushNotifications(
   const { data: tokens, error } = await supabase
     .from('push_tokens')
     .select('id, profile_id, token, platform')
-    .in('profile_id', profileIds);
+    .in('profile_id', profileIds) as { data: PushTokenRecord[] | null; error: any };
 
   if (error) {
     console.error('Error fetching push tokens:', error);
@@ -164,7 +171,7 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const result = await sendPushNotifications(supabase, payload);
+    const result = await sendPushNotifications(supabase as any, payload);
 
     return new Response(
       JSON.stringify(result),
