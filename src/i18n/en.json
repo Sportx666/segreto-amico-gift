@@ -395,6 +395,12 @@
     "auto_draw_disabled": "Automatic draw disabled",
     "auto_draw_error": "Error configuring automatic draw"
   },
+  "draw_countdown": {
+    "days": "days",
+    "title": "Countdown to Draw",
+    "scheduled_for": "The draw is scheduled for",
+    "get_ready": "Get ready to discover your Secret Friend!"
+  },
   "chat": {
     "title": "Chat",
     "unavailable": "Chat unavailable",
