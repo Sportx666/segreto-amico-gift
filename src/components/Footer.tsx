@@ -16,7 +16,14 @@ export const Footer = () => {
             v{import.meta.env.VITE_BUILD_TIME || 'dev'}
           </span>
         </p>
-        <nav className="order-1 md:order-2 flex items-center gap-4" role="navigation" aria-label="Link legali">
+        <nav className="order-1 md:order-2 flex items-center gap-4 flex-wrap justify-center" role="navigation" aria-label="Link legali">
+          <Link 
+            to="/regali" 
+            className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-1 font-medium"
+          >
+            {t('footer.gift_guide')}
+          </Link>
+          <span className="opacity-40" aria-hidden="true">•</span>
           <Link 
             to="/privacy" 
             className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-1"
