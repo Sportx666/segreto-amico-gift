@@ -9,7 +9,8 @@
     "wishlist": "Wishlist",
     "profile": "Profile",
     "logout": "Logout",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "gift_guide": "Gift Ideas"
   },
   "auth": {
     "login": "Login",
@@ -65,7 +66,78 @@
     "draw_desc": "The system automatically assigns who gives to whom, respecting your exclusions.",
     "wishlist_title": "Wishlist",
     "wishlist_desc": "Everyone can share their wishlist to make everything easier.",
-    "sponsored_content": "Sponsored content"
+    "sponsored_content": "Sponsored content",
+    "public_title": "Secret Santa",
+    "public_subtitle": "The free app to organize your gift exchange. Create events, invite friends and discover perfect gift ideas!",
+    "get_started": "Get Started Free",
+    "browse_gift_ideas": "Browse Gift Ideas",
+    "gift_guide_promo_title": "Looking for gift inspiration?",
+    "gift_guide_promo_desc": "Explore our curated gift guide with selected products for every budget and occasion.",
+    "explore_gift_guide": "Explore Gift Guide"
+  },
+  "navbar": {
+    "events": "Events",
+    "ideas": "Ideas",
+    "wishlist": "Wishlist",
+    "profile": "Profile",
+    "logout": "Logout",
+    "refresh": "Refresh",
+    "gift_guide": "Gift Ideas"
+  },
+  "footer": {
+    "privacy": "Privacy",
+    "cookies": "Cookies",
+    "terms": "Terms",
+    "gift_guide": "Gift Guide"
+  },
+  "gift_guide": {
+    "hero_title": "The Perfect Gift Guide",
+    "hero_subtitle": "Curated gift ideas for every budget and occasion. Find inspiration to surprise the people you love.",
+    "intro_title": "Carefully Selected Gifts",
+    "intro_description": "We've selected the best Amazon products to help you find the perfect gift. From tech to home, from kids to adults: there's something for everyone!",
+    "view_on_amazon": "View on Amazon",
+    "affiliate_disclosure": "As an Amazon Associate, we earn from qualifying purchases.",
+    "affiliate_disclosure_short": "Amazon affiliate link",
+    "affiliate_note": "Prices and availability may vary. Links lead to Amazon where you can complete your purchase.",
+    "cta_title": "Organize Your Gift Exchange",
+    "cta_description": "Create a Secret Santa event, invite your friends and let everyone share their wishlist.",
+    "cta_button": "Get Started Free",
+    "cta_button_logged_in": "My Events",
+    "how_it_works_title": "How Secret Santa Works",
+    "categories": {
+      "under_10": {
+        "title": "Gifts Under €10",
+        "description": "Cute little gifts without spending too much"
+      },
+      "under_20": {
+        "title": "Gifts Under €20",
+        "description": "Quality gift ideas at affordable prices"
+      },
+      "under_50": {
+        "title": "Gifts Under €50",
+        "description": "Special gifts for important occasions"
+      },
+      "for_her": {
+        "title": "Gifts for Her",
+        "description": "Gift ideas for women of all ages"
+      },
+      "for_him": {
+        "title": "Gifts for Him",
+        "description": "Gift ideas for men of all ages"
+      },
+      "for_kids": {
+        "title": "Gifts for Kids",
+        "description": "Toys and gifts for little ones"
+      },
+      "tech": {
+        "title": "Tech & Gadgets",
+        "description": "For technology lovers"
+      },
+      "home": {
+        "title": "For the Home",
+        "description": "Gift ideas to make the home more beautiful"
+      }
+    }
   },
   "events": {
     "title": "Your Events",
@@ -686,11 +758,6 @@
     "max_price": "Maximum price",
     "clear": "Clear",
     "apply": "Apply"
-  },
-  "footer": {
-    "privacy": "Privacy",
-    "cookies": "Cookies",
-    "terms": "Terms"
   },
   "accessibility": {
     "skip_to_content": "Skip to main content",

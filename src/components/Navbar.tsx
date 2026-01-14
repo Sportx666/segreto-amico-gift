@@ -7,7 +7,7 @@ import { useI18n } from "@/i18n";
 import { NotificationBell } from "./NotificationBell";
 import { LanguageMenu } from "./LanguageMenu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Calendar, Lightbulb, User, LogOut, Heart, RefreshCw } from "lucide-react";
+import { Calendar, Lightbulb, User, LogOut, Heart, RefreshCw, Gift } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
@@ -91,11 +91,21 @@ export const Navbar = () => {
               Amico Segreto
             </span>
           </Link>
-          <Link to="/auth">
-            <Button variant="outline" size="sm" className="font-medium">
-              {t('auth.login')}
-            </Button>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link 
+              to="/regali" 
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:inline-flex items-center gap-1.5"
+            >
+              <Gift className="w-4 h-4" />
+              {t('navbar.gift_guide')}
+            </Link>
+            <LanguageMenu />
+            <Link to="/auth">
+              <Button variant="outline" size="sm" className="font-medium">
+                {t('auth.login')}
+              </Button>
+            </Link>
+          </div>
         </div>
       </nav>
     );

@@ -9,7 +9,8 @@
     "wishlist": "Lista Desideri",
     "profile": "Profilo",
     "logout": "Esci",
-    "refresh": "Aggiorna"
+    "refresh": "Aggiorna",
+    "gift_guide": "Idee Regalo"
   },
   "auth": {
     "login": "Accedi",
@@ -65,7 +66,78 @@
     "draw_desc": "Il sistema assegna automaticamente chi regala a chi, rispettando le tue esclusioni.",
     "wishlist_title": "Lista Desideri",
     "wishlist_desc": "Ognuno può condividere la propria lista desideri per rendere tutto più facile.",
-    "sponsored_content": "Contenuti sponsorizzati"
+    "sponsored_content": "Contenuti sponsorizzati",
+    "public_title": "Amico Segreto",
+    "public_subtitle": "L'app gratuita per organizzare il tuo scambio di regali. Crea eventi, invita amici e scopri idee regalo perfette!",
+    "get_started": "Inizia Gratis",
+    "browse_gift_ideas": "Sfoglia Idee Regalo",
+    "gift_guide_promo_title": "Cerchi ispirazione per i regali?",
+    "gift_guide_promo_desc": "Esplora la nostra guida regalo curata con prodotti selezionati per ogni budget e occasione.",
+    "explore_gift_guide": "Esplora la Guida Regalo"
+  },
+  "navbar": {
+    "events": "Eventi",
+    "ideas": "Idee",
+    "wishlist": "Lista Desideri",
+    "profile": "Profilo",
+    "logout": "Esci",
+    "refresh": "Aggiorna",
+    "gift_guide": "Idee Regalo"
+  },
+  "footer": {
+    "privacy": "Privacy",
+    "cookies": "Cookie",
+    "terms": "Termini",
+    "gift_guide": "Idee Regalo"
+  },
+  "gift_guide": {
+    "hero_title": "Guida ai Regali Perfetti",
+    "hero_subtitle": "Idee regalo curate per ogni budget e occasione. Trova l'ispirazione per sorprendere le persone che ami.",
+    "intro_title": "Regali Selezionati con Cura",
+    "intro_description": "Abbiamo selezionato i migliori prodotti Amazon per aiutarti a trovare il regalo perfetto. Dalla tecnologia alla casa, dai bambini agli adulti: c'è qualcosa per tutti!",
+    "view_on_amazon": "Vedi su Amazon",
+    "affiliate_disclosure": "Come affiliato Amazon, guadagniamo da acquisti idonei.",
+    "affiliate_disclosure_short": "Link affiliato Amazon",
+    "affiliate_note": "I prezzi e la disponibilità possono variare. I link portano ad Amazon.it dove puoi completare l'acquisto.",
+    "cta_title": "Organizza il Tuo Scambio di Regali",
+    "cta_description": "Crea un evento Amico Segreto, invita i tuoi amici e lascia che ognuno condivida la propria lista desideri.",
+    "cta_button": "Inizia Gratis",
+    "cta_button_logged_in": "I Miei Eventi",
+    "how_it_works_title": "Come Funziona Amico Segreto",
+    "categories": {
+      "under_10": {
+        "title": "Regali sotto 10€",
+        "description": "Pensierini carini senza spendere troppo"
+      },
+      "under_20": {
+        "title": "Regali sotto 20€",
+        "description": "Idee regalo di qualità a prezzi accessibili"
+      },
+      "under_50": {
+        "title": "Regali sotto 50€",
+        "description": "Regali speciali per occasioni importanti"
+      },
+      "for_her": {
+        "title": "Regali per Lei",
+        "description": "Idee regalo per donne di ogni età"
+      },
+      "for_him": {
+        "title": "Regali per Lui",
+        "description": "Idee regalo per uomini di ogni età"
+      },
+      "for_kids": {
+        "title": "Regali per Bambini",
+        "description": "Giochi e regali per i più piccoli"
+      },
+      "tech": {
+        "title": "Tech & Gadget",
+        "description": "Per gli amanti della tecnologia"
+      },
+      "home": {
+        "title": "Per la Casa",
+        "description": "Idee regalo per rendere la casa più bella"
+      }
+    }
   },
   "events": {
     "title": "I Tuoi Eventi",
@@ -686,11 +758,6 @@
     "max_price": "Prezzo massimo",
     "clear": "Cancella",
     "apply": "Applica"
-  },
-  "footer": {
-    "privacy": "Privacy",
-    "cookies": "Cookie",
-    "terms": "Termini"
   },
   "accessibility": {
     "skip_to_content": "Salta al contenuto principale",

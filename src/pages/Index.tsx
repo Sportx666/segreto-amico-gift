@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { useI18n } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdSlot } from "@/components/AdSlot";
-import { Gift, Heart, Users, Sparkles, Calendar } from "lucide-react";
+import { Gift, Heart, Users, Sparkles, Calendar, ArrowRight } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 interface IndexProps {
@@ -19,11 +19,7 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth");
-    }
-  }, [user, loading, navigate]);
+  // Don't redirect - show public landing for non-authenticated users
 
   useEffect(() => {
     const fetchDisplayName = async () => {
@@ -67,8 +63,111 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
     );
   }
 
+  // Public landing page for non-authenticated users
   if (!user) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-hero">
+        <div className="relative overflow-hidden">
+          <div className="max-w-4xl mx-auto px-4 py-16 md:py-24 text-center">
+            <div className="space-y-6">
+              <div className="mx-auto w-24 h-24 flex items-center justify-center">
+                <img src={logo} alt="Amico Segreto Logo" className="w-full h-full object-contain drop-shadow-2xl" />
+              </div>
+              <div>
+                <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
+                  {t('home.public_title')}
+                </h1>
+                <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+                  {t('home.public_subtitle')}
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/auth">
+                  <Button size="lg" className="bg-white text-primary hover:bg-white/90 shadow-glow w-full sm:w-auto">
+                    <Users className="w-5 h-5 mr-2" />
+                    {t('home.get_started')}
+                  </Button>
+                </Link>
+                <Link to="/regali">
+                  <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 w-full sm:w-auto">
+                    <Gift className="w-5 h-5 mr-2" />
+                    {t('home.browse_gift_ideas')}
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Features Section for Public */}
+        <div className="max-w-6xl mx-auto px-4 py-16">
+          <h2 className="text-3xl font-bold text-center text-white mb-12">
+            {t('home.how_it_works')}
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white shadow-elegant">
+              <CardHeader className="text-center">
+                <div className="mx-auto w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
+                  <Users className="w-6 h-6" />
+                </div>
+                <CardTitle>{t('home.create_event_title')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-white/80 text-center">
+                  {t('home.create_event_desc')}
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white shadow-elegant">
+              <CardHeader className="text-center">
+                <div className="mx-auto w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
+                  <Gift className="w-6 h-6" />
+                </div>
+                <CardTitle>{t('home.draw_title')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-white/80 text-center">
+                  {t('home.draw_desc')}
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white shadow-elegant">
+              <CardHeader className="text-center">
+                <div className="mx-auto w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
+                  <Heart className="w-6 h-6" />
+                </div>
+                <CardTitle>{t('home.wishlist_title')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-white/80 text-center">
+                  {t('home.wishlist_desc')}
+                </CardDescription>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* CTA to Gift Guide */}
+        <div className="max-w-4xl mx-auto px-4 pb-16">
+          <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white">
+            <CardContent className="p-8 text-center">
+              <Sparkles className="w-12 h-12 mx-auto mb-4 text-yellow-300" />
+              <h3 className="text-2xl font-bold mb-3">{t('home.gift_guide_promo_title')}</h3>
+              <p className="text-white/80 mb-6">{t('home.gift_guide_promo_desc')}</p>
+              <Link to="/regali">
+                <Button size="lg" className="bg-white text-primary hover:bg-white/90">
+                  {t('home.explore_gift_guide')}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
 
   const greeting = t('home.greeting').replace('{name}', displayName ?? "Amico");
