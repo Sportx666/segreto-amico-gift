@@ -1,7 +1,7 @@
 // Curated gift products for public Gift Guide page
 // All products include affiliate-tagged Amazon URLs with verified Amazon.it ASINs
 
-import { productUrlFromASIN } from '@/lib/amazon';
+import { productUrlFromASIN, withAffiliateTag } from '@/lib/amazon';
 
 export interface CuratedProduct {
   asin: string;

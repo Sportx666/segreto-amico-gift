@@ -1,13 +1,27 @@
 import { useI18n } from '@/i18n';
 import { GiftCategory } from '@/data/curatedGifts';
 import { GiftProductCard } from './GiftProductCard';
+import { useGiftCategoryProducts } from '@/hooks/useGiftCategoryProducts';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface GiftCategorySectionProps {
   category: GiftCategory;
 }
 
+const ProductSkeleton = () => (
+  <div className="space-y-3">
+    <Skeleton className="aspect-square w-full rounded-lg" />
+    <Skeleton className="h-4 w-3/4" />
+    <div className="flex justify-between items-center">
+      <Skeleton className="h-5 w-16" />
+      <Skeleton className="h-8 w-20 rounded-md" />
+    </div>
+  </div>
+);
+
 export const GiftCategorySection = ({ category }: GiftCategorySectionProps) => {
   const { t } = useI18n();
+  const { products, isLoading } = useGiftCategoryProducts(category);
 
   return (
     <section className="py-8" id={category.id}>
@@ -26,9 +40,12 @@ export const GiftCategorySection = ({ category }: GiftCategorySectionProps) => {
       </div>
       
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {category.products.map((product) => (
-          <GiftProductCard key={product.asin} product={product} />
-        ))}
+        {isLoading
+          ? Array.from({ length: 4 }).map((_, i) => <ProductSkeleton key={i} />)
+          : products.map((product) => (
+              <GiftProductCard key={product.asin} product={product} />
+            ))
+        }
       </div>
     </section>
   );
