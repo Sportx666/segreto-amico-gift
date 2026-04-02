@@ -146,9 +146,8 @@ export const curatedCategories: GiftCategory[] = [
 
 // Get affiliate URL for a product
 export function getProductUrl(product: CuratedProduct): string {
-  // If product has a URL (from API), apply affiliate tag as safety net
+  // If product has a URL (from API), use it (already affiliate-tagged)
   if (product.url) {
-    const { withAffiliateTag } = require('@/lib/amazon');
     return withAffiliateTag(product.url);
   }
   // Fallback products use ASIN-based URL generation
