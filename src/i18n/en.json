@@ -819,9 +819,6 @@
     "enable_error": "Failed to enable push notifications",
     "permission_denied": "Notification permission denied"
   },
-  "footer": {
-    "about": "About Us"
-  },
   "about": {
     "hero_title": "About Us",
     "hero_subtitle": "The easiest and most fun way to organize your Secret Santa online",

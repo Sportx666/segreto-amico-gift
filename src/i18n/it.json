@@ -819,9 +819,6 @@
     "enable_error": "Impossibile attivare le notifiche push",
     "permission_denied": "Permesso notifiche negato"
   },
-  "footer": {
-    "about": "Chi Siamo"
-  },
   "about": {
     "hero_title": "Chi Siamo",
     "hero_subtitle": "Il modo più semplice e divertente per organizzare il tuo Secret Santa online",
