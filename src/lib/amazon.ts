@@ -72,3 +72,12 @@ export function ideaBucketUrl(budget: number, topic: string = "idee regalo"): st
   
   return withAffiliateTag(baseUrl);
 }
+
+/**
+ * Generates Amazon search URL for a generic query with affiliate tag
+ */
+export function amazonSearchUrl(query: string): string {
+  const encoded = encodeURIComponent(query);
+  const baseUrl = `https://www.amazon.it/s?k=${encoded}`;
+  return withAffiliateTag(baseUrl);
+}
