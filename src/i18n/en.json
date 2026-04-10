@@ -817,5 +817,42 @@
     "enable_success": "Push notifications enabled successfully",
     "enable_error": "Failed to enable push notifications",
     "permission_denied": "Notification permission denied"
+  },
+  "footer": {
+    "about": "About Us"
+  },
+  "about": {
+    "hero_title": "About Us",
+    "hero_subtitle": "The easiest and most fun way to organize your Secret Santa online",
+    "what_title": "What is Amico Segreto?",
+    "what_description": "Amico Segreto is a free platform that lets you organize gift exchanges among friends, family, or colleagues. Create an event, invite participants, and let the system randomly assign who gives to whom — all while keeping the secret! Each participant can create their own wishlist with Amazon products to make gift selection even easier.",
+    "how_title": "How It Works",
+    "faq_title": "Frequently Asked Questions",
+    "faq": {
+      "what_is_ss": {
+        "q": "What is Secret Santa?",
+        "a": "Secret Santa is a tradition where a group of people exchange gifts anonymously. Each participant is randomly assigned another person to give a gift to, without revealing their identity until the exchange."
+      },
+      "is_free": {
+        "q": "Is Amico Segreto free?",
+        "a": "Yes, Amico Segreto is completely free. You can create events, invite participants, run the draw, and manage wishlists at no cost."
+      },
+      "how_wishlist": {
+        "q": "How do wishlists work?",
+        "a": "Each participant can create a wishlist with products they'd like to receive. You can search Amazon products directly from the app and add them to your list. Whoever is assigned to you can see your list to choose the perfect gift."
+      },
+      "how_many": {
+        "q": "How many participants can I invite?",
+        "a": "There's no limit to the number of participants. You can organize small family exchanges or large office events with dozens of colleagues."
+      },
+      "is_anonymous": {
+        "q": "Is the assignment truly anonymous?",
+        "a": "Absolutely. The system performs the draw securely and each participant can only see who they've been assigned. No one, not even the organizer, can see all assignments."
+      }
+    },
+    "cta_title": "Ready to Get Started?",
+    "cta_description": "Organize your Secret Santa in minutes. It's free, fast, and fun!",
+    "cta_button": "Get Started",
+    "cta_button_logged_in": "Go to Your Events"
   }
 }

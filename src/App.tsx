@@ -17,6 +17,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Events from "./pages/Events";
 import GiftGuide from "./pages/GiftGuide";
+import About from "./pages/About";
 import EventNew from "./pages/EventNew";
 import EventEdit from "./pages/EventEdit";
 import EventDetail from "./pages/EventDetail";
@@ -72,6 +73,7 @@ const AppContent = () => {
             <Route path="/join/event/:code" element={<EventJoinByCode />} />
             <Route path="/ideas" element={<Ideas showMobileFeed={showMobileFeed} />} />
             <Route path="/regali" element={<GiftGuide />} />
+            <Route path="/chi-siamo" element={<About />} />
             <Route path="/wishlist" element={<Wishlist />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/privacy" element={<Privacy />} />

@@ -11,6 +11,11 @@
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>https://amicosegreto.fun/chi-siamo</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://amicosegreto.fun/privacy</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
