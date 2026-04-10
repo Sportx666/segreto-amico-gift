@@ -1,58 +1,61 @@
 
 
-# Plan: Fix Price Filtering + Add "View More" Button
+# Plan: Verification Results + Schema.org + OG Meta + /chi-siamo Page
 
-## Findings from Testing
+## Verification Results
 
-1. **Products load correctly** from the API -- 8 categories, 32 product cards rendered with real Amazon images and affiliate-tagged links (`?tag=amicosegreto-21`)
-2. **Price filtering is broken**: "Gifts Under €10" shows products at €21.26, €169.9, €24.99. The `maxPrice` param is sent to the API but the Rainforest/Amazon provider isn't filtering effectively. Need client-side price filtering as a safety net.
-3. **No "View More" button** exists yet
+The `/regali` page is working correctly:
+- All 8 categories fetch live products via `catalog-search` (8 POST requests, all 200 OK)
+- Client-side price filtering works: "Under €10" shows products at €5, €5, €5.6, €5
+- "View more on Amazon" links are visible next to each category heading
+- Affiliate tag `amicosegreto-21` is present on all product links
 
-## Changes
+No fixes needed for the existing implementation.
 
-### 1. Add client-side price filtering in `src/hooks/useGiftCategoryProducts.ts`
+## New Work
 
-After receiving API results, filter items by `minPrice`/`maxPrice` before slicing to 4. This ensures the "Under €10" category only shows products <= €10, even if the API returns unfiltered results.
+### 1. Add Schema.org Product markup to GiftGuide (`src/pages/GiftGuide.tsx`)
 
-```typescript
-// After fetching, filter by price range client-side
-let filtered = result.items;
-if (category.maxPrice) {
-  filtered = filtered.filter(item => 
-    item.price && parseFloat(item.price) <= category.maxPrice!
-  );
-}
-if (category.minPrice) {
-  filtered = filtered.filter(item => 
-    item.price && parseFloat(item.price) >= category.minPrice!
-  );
-}
-return filtered.slice(0, 4).map(...)
-```
+Inject a `<script type="application/ld+json">` block with an `ItemList` schema containing `ListItem` entries for each category. Since products are fetched dynamically, use a static `ItemList` of category names linking to their Amazon search URLs (via `amazonSearchUrl`/`ideaBucketUrl`). This gives Google structured data without needing to wait for API responses.
 
-### 2. Add "View More on Amazon" button to `src/components/gifts/GiftCategorySection.tsx`
+### 2. Add Open Graph meta tags for /regali (`src/pages/GiftGuide.tsx`)
 
-Add a button/link next to each category heading (or below the product grid) that links to an Amazon search for that category's query, with the affiliate tag from env.
+Create a `useEffect` that sets `<meta>` OG tags dynamically when the Gift Guide mounts:
+- `og:title`: "Guida ai Regali - Amico Segreto"
+- `og:description`: "Idee regalo curate per ogni budget e occasione"
+- `og:url`: "https://amicosegreto.fun/regali"
+- `og:type`: "website"
+- `og:image`: reuse existing PWA icon
 
-Uses the existing `ideaBucketUrl()` for price-based categories and a new Amazon search URL builder for other categories. All links go through `withAffiliateTag()` which reads `VITE_AMAZON_PARTNER_TAG`.
+Clean up on unmount to restore defaults.
 
-### 3. Add Amazon search URL helper to `src/lib/amazon.ts`
+### 3. Create `/chi-siamo` public page (`src/pages/About.tsx`)
 
-Add a function `amazonSearchUrl(query: string)` that generates `https://www.amazon.it/s?k=<query>&tag=<affiliate-tag>` for categories without price constraints. For price-based categories, reuse `ideaBucketUrl()`.
+A public page for Amazon reviewers with:
+- Hero section explaining what Amico Segreto is
+- How it works (3-step flow reusing existing i18n keys)
+- FAQ section (What is Secret Santa? Is it free? How do wishlists work?)
+- Link to the Gift Guide and a CTA to get started
 
-### 4. Add i18n keys
+### 4. Wire up routing and navigation
 
-Add `gift_guide.view_more` translation:
-- EN: "View more on Amazon"
-- IT: "Vedi altro su Amazon"
+- Add `/chi-siamo` route in `src/App.tsx`
+- Add "Chi Siamo" link in `src/components/Footer.tsx`
+- Add `/chi-siamo` to `public/sitemap.xml`
+
+### 5. Add i18n keys
+
+Add `about.*` keys to both `src/i18n/en.json` and `src/i18n/it.json` for the About page content.
 
 ## Files
 
 | File | Action |
 |------|--------|
-| `src/hooks/useGiftCategoryProducts.ts` | Add client-side price filtering |
-| `src/components/gifts/GiftCategorySection.tsx` | Add "View More" button with affiliate-tagged Amazon search link |
-| `src/lib/amazon.ts` | Add `amazonSearchUrl()` helper |
-| `src/i18n/en.json` | Add `view_more` key |
-| `src/i18n/it.json` | Add `view_more` key |
+| `src/pages/GiftGuide.tsx` | Add Schema.org JSON-LD + OG meta tags |
+| `src/pages/About.tsx` | Create: public about page |
+| `src/App.tsx` | Add `/chi-siamo` route |
+| `src/components/Footer.tsx` | Add "Chi Siamo" link |
+| `src/i18n/en.json` | Add about page translations |
+| `src/i18n/it.json` | Add about page translations |
+| `public/sitemap.xml` | Add `/chi-siamo` URL |
 
