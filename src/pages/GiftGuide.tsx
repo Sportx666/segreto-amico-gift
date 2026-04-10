@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Gift, Sparkles, Users, Heart, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,14 +8,52 @@ import { useAuth } from '@/components/AuthProvider';
 import { curatedCategories } from '@/data/curatedGifts';
 import { GiftCategorySection } from '@/components/gifts/GiftCategorySection';
 import { AffiliateDisclosure } from '@/components/gifts/AffiliateDisclosure';
+import { amazonSearchUrl, ideaBucketUrl } from '@/lib/amazon';
 import logo from '@/assets/logo.png';
 
 const GiftGuide = () => {
   const { t } = useI18n();
   const { user } = useAuth();
 
+  // Open Graph meta tags
+  useEffect(() => {
+    const metas: HTMLMetaElement[] = [];
+    const set = (property: string, content: string) => {
+      const el = document.createElement('meta');
+      el.setAttribute('property', property);
+      el.content = content;
+      document.head.appendChild(el);
+      metas.push(el);
+    };
+    set('og:title', 'Guida ai Regali - Amico Segreto');
+    set('og:description', 'Idee regalo curate per ogni budget e occasione');
+    set('og:url', 'https://amicosegreto.fun/regali');
+    set('og:type', 'website');
+    set('og:image', 'https://amicosegreto.fun/icons/icon-512x512.png');
+    return () => metas.forEach(m => m.remove());
+  }, []);
+
+  // Schema.org JSON-LD
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Guida ai Regali - Amico Segreto',
+    description: 'Idee regalo curate per ogni budget e occasione',
+    url: 'https://amicosegreto.fun/regali',
+    numberOfItems: curatedCategories.length,
+    itemListElement: curatedCategories.map((cat, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: t(cat.titleKey),
+      url: cat.maxPrice
+        ? ideaBucketUrl(cat.maxPrice, cat.searchQuery)
+        : amazonSearchUrl(cat.searchQuery),
+    })),
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Hero Section */}
       <div className="bg-gradient-hero text-white">
         <div className="container mx-auto px-4 py-16 md:py-24">

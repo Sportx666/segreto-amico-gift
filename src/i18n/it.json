@@ -88,7 +88,8 @@
     "privacy": "Privacy",
     "cookies": "Cookie",
     "terms": "Termini",
-    "gift_guide": "Idee Regalo"
+    "gift_guide": "Idee Regalo",
+    "about": "Chi Siamo"
   },
   "gift_guide": {
     "hero_title": "Guida ai Regali Perfetti",
@@ -817,5 +818,39 @@
     "enable_success": "Notifiche push attivate con successo",
     "enable_error": "Impossibile attivare le notifiche push",
     "permission_denied": "Permesso notifiche negato"
+  },
+  "about": {
+    "hero_title": "Chi Siamo",
+    "hero_subtitle": "Il modo più semplice e divertente per organizzare il tuo Secret Santa online",
+    "what_title": "Cos'è Amico Segreto?",
+    "what_description": "Amico Segreto è una piattaforma gratuita che ti permette di organizzare scambi di regali tra amici, familiari o colleghi. Crea un evento, invita i partecipanti e lascia che il sistema assegni casualmente chi regala a chi — il tutto mantenendo il segreto! Ogni partecipante può creare la propria lista dei desideri con prodotti da Amazon per rendere la scelta del regalo ancora più facile.",
+    "how_title": "Come Funziona",
+    "faq_title": "Domande Frequenti",
+    "faq": {
+      "what_is_ss": {
+        "q": "Cos'è il Secret Santa?",
+        "a": "Il Secret Santa (o Amico Segreto) è una tradizione in cui un gruppo di persone si scambia regali in modo anonimo. Ogni partecipante viene assegnato casualmente a un'altra persona a cui dovrà fare un regalo, senza rivelare la propria identità fino al momento dello scambio."
+      },
+      "is_free": {
+        "q": "Amico Segreto è gratuito?",
+        "a": "Sì, Amico Segreto è completamente gratuito. Puoi creare eventi, invitare partecipanti, effettuare il sorteggio e gestire le liste dei desideri senza alcun costo."
+      },
+      "how_wishlist": {
+        "q": "Come funzionano le liste dei desideri?",
+        "a": "Ogni partecipante può creare una lista dei desideri con prodotti che vorrebbe ricevere. Puoi cercare prodotti su Amazon direttamente dall'app e aggiungerli alla tua lista. Chi ti è stato assegnato potrà vedere la tua lista per scegliere il regalo perfetto."
+      },
+      "how_many": {
+        "q": "Quanti partecipanti posso invitare?",
+        "a": "Non c'è un limite al numero di partecipanti. Puoi organizzare scambi piccoli tra familiari o grandi eventi aziendali con decine di colleghi."
+      },
+      "is_anonymous": {
+        "q": "L'assegnazione è davvero anonima?",
+        "a": "Assolutamente sì. Il sistema effettua il sorteggio in modo sicuro e ogni partecipante può vedere solo chi gli è stato assegnato. Nessuno, nemmeno l'organizzatore, può vedere tutte le assegnazioni."
+      }
+    },
+    "cta_title": "Pronto a Iniziare?",
+    "cta_description": "Organizza il tuo Secret Santa in pochi minuti. È gratis, veloce e divertente!",
+    "cta_button": "Inizia Ora",
+    "cta_button_logged_in": "Vai ai Tuoi Eventi"
   }
 }

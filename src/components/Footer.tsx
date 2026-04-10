@@ -25,6 +25,13 @@ export const Footer = () => {
           </Link>
           <span className="opacity-40" aria-hidden="true">•</span>
           <Link 
+            to="/chi-siamo" 
+            className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-1"
+          >
+            {t('footer.about')}
+          </Link>
+          <span className="opacity-40" aria-hidden="true">•</span>
+          <Link 
             to="/privacy" 
             className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-1"
           >
