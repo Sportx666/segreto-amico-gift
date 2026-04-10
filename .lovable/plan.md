@@ -1,71 +1,58 @@
 
 
-# Plan: Live Catalog Search for Gift Guide with Env-Based Affiliate Tags
+# Plan: Fix Price Filtering + Add "View More" Button
 
-## Summary
+## Findings from Testing
 
-Replace hardcoded product arrays with live Rainforest API results. Fallback products remain for reliability. All affiliate links (both live and fallback) use the `VITE_AMAZON_PARTNER_TAG` from the env file via the existing `withAffiliateTag()` / `productUrlFromASIN()` utilities.
+1. **Products load correctly** from the API -- 8 categories, 32 product cards rendered with real Amazon images and affiliate-tagged links (`?tag=amicosegreto-21`)
+2. **Price filtering is broken**: "Gifts Under €10" shows products at €21.26, €169.9, €24.99. The `maxPrice` param is sent to the API but the Rainforest/Amazon provider isn't filtering effectively. Need client-side price filtering as a safety net.
+3. **No "View More" button** exists yet
 
 ## Changes
 
-### 1. Update `src/data/curatedGifts.ts`
-- Add `searchQuery`, `minPrice`, `maxPrice` fields to `GiftCategory`
-- Rename `products` → `fallbackProducts`
-- Keep all existing product data as fallbacks
-- No change to `getProductUrl()` — it already uses `productUrlFromASIN()` which reads `VITE_AMAZON_PARTNER_TAG`
+### 1. Add client-side price filtering in `src/hooks/useGiftCategoryProducts.ts`
 
-Search queries per category:
+After receiving API results, filter items by `minPrice`/`maxPrice` before slicing to 4. This ensures the "Under €10" category only shows products <= €10, even if the API returns unfiltered results.
 
-| Category | searchQuery | minPrice | maxPrice |
-|----------|------------|----------|----------|
-| under-10 | "regalo" | — | 10 |
-| under-20 | "idee regalo" | 10 | 20 |
-| under-50 | "regalo originale" | 20 | 50 |
-| for-her | "regalo donna" | — | — |
-| for-him | "regalo uomo" | — | — |
-| for-kids | "regalo bambini" | — | — |
-| tech | "gadget tecnologico" | — | — |
-| home | "regalo casa" | — | — |
-
-### 2. Create `src/hooks/useGiftCategoryProducts.ts`
-- Uses `CatalogService.searchProducts(query, 1, minPrice, maxPrice)`
-- Maps `CatalogItem` → `CuratedProduct` format
-- **Affiliate tagging**: API results already come with affiliate-tagged URLs from the edge function. For any URL that doesn't have a tag, apply `withAffiliateTag()` which reads `VITE_AMAZON_PARTNER_TAG` from env
-- Falls back to `category.fallbackProducts` on error/empty
-- `staleTime: 30 minutes` via react-query
-
-### 3. Update `src/components/gifts/GiftCategorySection.tsx`
-- Call `useGiftCategoryProducts(category)` 
-- Show 4 skeleton cards while loading
-- On error/empty → silently use fallback products (no visible error for reviewers)
-
-### 4. Minor updates to `src/components/gifts/GiftProductCard.tsx`
-- Handle case where `imageUrl` might be undefined from API results
-- Ensure `getProductUrl()` is used for fallback products and `withAffiliateTag(product.url)` for API products — both read the tag from env
-
-### 5. Update `src/pages/GiftGuide.tsx`
-- Update Schema.org JSON-LD to use dynamic products when available
-
-## Affiliate Tag Flow
-
-All paths use `VITE_AMAZON_PARTNER_TAG` from env:
-
-```text
-API products  → edge function applies tag server-side (from Supabase secrets)
-              → client applies withAffiliateTag() as safety net (reads VITE_ env)
-
-Fallback products → productUrlFromASIN() → getAffiliateTag() → reads VITE_AMAZON_PARTNER_TAG
+```typescript
+// After fetching, filter by price range client-side
+let filtered = result.items;
+if (category.maxPrice) {
+  filtered = filtered.filter(item => 
+    item.price && parseFloat(item.price) <= category.maxPrice!
+  );
+}
+if (category.minPrice) {
+  filtered = filtered.filter(item => 
+    item.price && parseFloat(item.price) >= category.minPrice!
+  );
+}
+return filtered.slice(0, 4).map(...)
 ```
 
-No hardcoded tag values anywhere in the product flow.
+### 2. Add "View More on Amazon" button to `src/components/gifts/GiftCategorySection.tsx`
+
+Add a button/link next to each category heading (or below the product grid) that links to an Amazon search for that category's query, with the affiliate tag from env.
+
+Uses the existing `ideaBucketUrl()` for price-based categories and a new Amazon search URL builder for other categories. All links go through `withAffiliateTag()` which reads `VITE_AMAZON_PARTNER_TAG`.
+
+### 3. Add Amazon search URL helper to `src/lib/amazon.ts`
+
+Add a function `amazonSearchUrl(query: string)` that generates `https://www.amazon.it/s?k=<query>&tag=<affiliate-tag>` for categories without price constraints. For price-based categories, reuse `ideaBucketUrl()`.
+
+### 4. Add i18n keys
+
+Add `gift_guide.view_more` translation:
+- EN: "View more on Amazon"
+- IT: "Vedi altro su Amazon"
 
 ## Files
 
 | File | Action |
 |------|--------|
-| `src/data/curatedGifts.ts` | Modify: add search config, rename products → fallbackProducts |
-| `src/hooks/useGiftCategoryProducts.ts` | Create |
-| `src/components/gifts/GiftCategorySection.tsx` | Modify: use hook + skeletons |
-| `src/components/gifts/GiftProductCard.tsx` | Minor: handle API product shape |
-| `src/pages/GiftGuide.tsx` | Minor: dynamic schema data |
+| `src/hooks/useGiftCategoryProducts.ts` | Add client-side price filtering |
+| `src/components/gifts/GiftCategorySection.tsx` | Add "View More" button with affiliate-tagged Amazon search link |
+| `src/lib/amazon.ts` | Add `amazonSearchUrl()` helper |
+| `src/i18n/en.json` | Add `view_more` key |
+| `src/i18n/it.json` | Add `view_more` key |
 
