@@ -18,8 +18,25 @@ export function useGiftCategoryProducts(category: GiftCategory) {
         return category.fallbackProducts;
       }
 
+      // Client-side price filtering as safety net (API may not filter precisely)
+      let filtered = result.items;
+      if (category.maxPrice) {
+        filtered = filtered.filter(item =>
+          item.price != null && parseFloat(String(item.price)) <= category.maxPrice!
+        );
+      }
+      if (category.minPrice) {
+        filtered = filtered.filter(item =>
+          item.price != null && parseFloat(String(item.price)) >= category.minPrice!
+        );
+      }
+
+      if (filtered.length === 0) {
+        return category.fallbackProducts;
+      }
+
       // Map CatalogItem → CuratedProduct, applying affiliate tag as safety net
-      return result.items.slice(0, 4).map((item): CuratedProduct => ({
+      return filtered.slice(0, 4).map((item): CuratedProduct => ({
         asin: item.asin || 'UNKNOWN',
         title: item.title,
         imageUrl: item.imageUrl || '',
