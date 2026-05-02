@@ -67,10 +67,12 @@ const GiftGuide = () => {
             <p className="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto">
               {t('gift_guide.hero_subtitle')}
             </p>
-            <AffiliateDisclosure className="mx-auto" />
           </div>
         </div>
       </div>
+
+      {/* Prominent affiliate disclosure — must remain above-the-fold for Amazon Associates compliance */}
+      <AffiliateDisclosure variant="prominent" />
 
       {/* Quick Category Navigation */}
       <div className="sticky top-16 z-40 bg-background/95 backdrop-blur-sm border-b">
@@ -92,14 +94,15 @@ const GiftGuide = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {/* Editorial Intro */}
-        <div className="max-w-3xl mx-auto text-center mb-12">
-          <h2 className="text-2xl md:text-3xl font-bold mb-4">
+        {/* Editorial intro — original Italian content above the product grid */}
+        <div className="max-w-3xl mx-auto mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">
             {t('gift_guide.intro_title')}
           </h2>
-          <p className="text-muted-foreground text-lg">
-            {t('gift_guide.intro_description')}
-          </p>
+          <div
+            className="prose prose-neutral dark:prose-invert max-w-none text-muted-foreground prose-p:leading-relaxed prose-p:mb-4"
+            dangerouslySetInnerHTML={{ __html: t('gift_guide.intro_body_html') }}
+          />
         </div>
 
         {/* Gift Categories */}

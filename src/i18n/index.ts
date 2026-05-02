@@ -61,15 +61,21 @@ export const createTranslator = (language: Language) => {
   };
 };
 
-// Detect default language from browser
+// Detect default language: Italian is the hard default.
+// English is only served when the user has explicitly toggled to it.
+// We do NOT fall back to navigator.language because:
+//  (a) crawlers (Googlebot, Amazon review bots) typically send en-US headers,
+//  (b) the site is Italian-targeted; <html lang="it"> and og:locale declare it_IT,
+//  (c) auto-switching based on browser locale creates SEO/canonical inconsistency.
 export const getDefaultLanguage = (): Language => {
-  const stored = localStorage.getItem('lang') as Language;
-  if (stored && (stored === 'it' || stored === 'en')) {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return 'it';
+  }
+  const stored = localStorage.getItem('lang') as Language | null;
+  if (stored === 'it' || stored === 'en') {
     return stored;
   }
-  
-  const browserLang = navigator.language.toLowerCase();
-  return browserLang.startsWith('it') ? 'it' : 'en';
+  return 'it';
 };
 
 // Save language preference
