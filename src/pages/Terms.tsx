@@ -240,8 +240,8 @@ export default function Terms() {
             Per domande riguardanti questi Termini e Condizioni, contattare:
           </p>
           <p>
-            <strong>Email:</strong> legal@amicosegreto.it<br />
-            <strong>Indirizzo:</strong> [Inserire indirizzo completo]<br />
+            <strong>Email:</strong> help@amicosegreto.fun<br />
+            <strong>Indirizzo:</strong> Viale Francesco del Greco 13, Vasto CH 66054<br />
             <strong>Oggetto:</strong> Termini e Condizioni - Richiesta informazioni
           </p>
         </section>
