@@ -211,7 +211,8 @@ export default function Terms() {
           <h2 className="text-2xl font-semibold mb-4">11. Legge Applicabile e Foro Competente</h2>
           <p className="mb-4">
             I presenti Termini e Condizioni sono regolati dalla legge italiana. 
-            Per qualsiasi controversia sarà competente esclusivamente il Foro di [Città], Italia.
+            Per qualsiasi controversia sarà competente il Foro del luogo di residenza del consumatore, 
+            ai sensi del Codice del Consumo (D.lgs. 206/2005).
           </p>
         </section>
 
