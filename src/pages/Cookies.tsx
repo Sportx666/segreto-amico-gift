@@ -118,7 +118,7 @@ export default function Cookies() {
             </p>
             <ul className="list-disc pl-6 mb-4 space-y-2">
               <li>Attraverso le impostazioni del proprio account</li>
-              <li>Contattando il supporto: <strong>privacy@amicosegreto.it</strong></li>
+              <li>Contattando il supporto: <a href="mailto:privacy@amicosegreto.fun" className="text-primary underline">privacy@amicosegreto.fun</a></li>
               <li>Utilizzando le impostazioni del browser per eliminare i cookie esistenti</li>
             </ul>
           </div>
@@ -162,7 +162,7 @@ export default function Cookies() {
             Per domande riguardanti questa Cookie Policy, contattare:
           </p>
           <p>
-            <strong>Email:</strong> privacy@amicosegreto.it<br />
+            <strong>Email:</strong> <a href="mailto:privacy@amicosegreto.fun" className="text-primary underline">privacy@amicosegreto.fun</a><br />
             <strong>Oggetto:</strong> Cookie Policy - Richiesta informazioni
           </p>
         </section>

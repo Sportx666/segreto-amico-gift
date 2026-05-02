@@ -20,8 +20,7 @@ export default function Privacy() {
           </p>
           <p className="mb-4">
             <strong>Contatti:</strong><br />
-            Email: help@amicosegreto.it<br />
-            Indirizzo: Viale Francesco del Greco 13, Vasto CH 66054
+            Email: <a href="mailto:privacy@amicosegreto.fun" className="text-primary underline">privacy@amicosegreto.fun</a>
           </p>
         </section>
 
@@ -119,7 +118,7 @@ export default function Privacy() {
             <li><strong>Revoca del consenso:</strong> revocare il consenso in qualsiasi momento</li>
           </ul>
           <p className="mb-4">
-            Per esercitare questi diritti, contattare: <strong>privacy@amicosegreto.it</strong>
+            Per esercitare questi diritti, contattare: <a href="mailto:privacy@amicosegreto.fun" className="text-primary underline">privacy@amicosegreto.fun</a>
           </p>
         </section>
 
