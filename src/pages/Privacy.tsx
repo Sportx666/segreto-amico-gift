@@ -20,8 +20,8 @@ export default function Privacy() {
           </p>
           <p className="mb-4">
             <strong>Contatti:</strong><br />
-            Email: privacy@amicosegreto.it<br />
-            Indirizzo: [Inserire indirizzo completo]
+            Email: help@amicosegreto.it<br />
+            Indirizzo: Viale Francesco del Greco 13, Vasto CH 66054
           </p>
         </section>
 
