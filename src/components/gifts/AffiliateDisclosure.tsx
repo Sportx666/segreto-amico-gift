@@ -2,15 +2,29 @@ import { useI18n } from '@/i18n';
 import { Info } from 'lucide-react';
 
 interface AffiliateDisclosureProps {
-  variant?: 'inline' | 'footer';
+  variant?: 'inline' | 'footer' | 'prominent';
   className?: string;
 }
 
-export const AffiliateDisclosure = ({ 
+export const AffiliateDisclosure = ({
   variant = 'inline',
-  className = '' 
+  className = '',
 }: AffiliateDisclosureProps) => {
   const { t } = useI18n();
+
+  if (variant === 'prominent') {
+    return (
+      <div className={`container mx-auto px-4 mt-6 ${className}`}>
+        <div className="rounded-lg border-2 border-accent bg-accent/20 p-4 flex gap-3 items-start">
+          <Info className="w-5 h-5 text-accent-foreground flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-accent-foreground leading-relaxed">
+            <strong>{t('gift_guide.affiliate_disclosure')}</strong>{' '}
+            {t('gift_guide.affiliate_note')}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (variant === 'footer') {
     return (

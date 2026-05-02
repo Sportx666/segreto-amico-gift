@@ -1,61 +1,92 @@
+# Phase 0 Minimal Fix — Italian default, prominent disclosure, editorial intro
 
+## Heads-up about the spec
 
-# Plan: Verification Results + Schema.org + OG Meta + /chi-siamo Page
+Your task brief pasted JSX/HTML snippets that arrived stripped of all tags (chat rendered them as empty paragraphs). I'm reconstructing the obvious intent below and calling it out explicitly so you can confirm before I write code. **Nothing outside the four files listed is touched.** No diff is shown ahead of time — Lovable applies edits directly — but I list every change precisely.
 
-## Verification Results
+## Scope (4 files, surgical edits)
 
-The `/regali` page is working correctly:
-- All 8 categories fetch live products via `catalog-search` (8 POST requests, all 200 OK)
-- Client-side price filtering works: "Under €10" shows products at €5, €5, €5.6, €5
-- "View more on Amazon" links are visible next to each category heading
-- Affiliate tag `amicosegreto-21` is present on all product links
+### 1. `src/i18n/index.ts` — Hard-default to Italian
 
-No fixes needed for the existing implementation.
+Replace `getDefaultLanguage` with the SSR-safe version that:
+- Returns `'it'` when `window`/`localStorage` are unavailable.
+- Returns the stored value only if it is `'it'` or `'en'`.
+- Otherwise returns `'it'`. **Never reads `navigator.language`.**
 
-## New Work
+Includes the comment block from the brief explaining the SEO/crawler rationale.
 
-### 1. Add Schema.org Product markup to GiftGuide (`src/pages/GiftGuide.tsx`)
+### 2. `src/components/gifts/AffiliateDisclosure.tsx` — Add `prominent` variant
 
-Inject a `<script type="application/ld+json">` block with an `ItemList` schema containing `ListItem` entries for each category. Since products are fetched dynamically, use a static `ItemList` of category names linking to their Amazon search URLs (via `amazonSearchUrl`/`ideaBucketUrl`). This gives Google structured data without needing to wait for API responses.
+Add `'prominent'` to the `variant` union and a new branch rendered as a high-visibility callout, intended to sit above-the-fold on `/regali`. Reconstructed styling (consistent with existing Tailwind tokens in the project):
 
-### 2. Add Open Graph meta tags for /regali (`src/pages/GiftGuide.tsx`)
+```tsx
+if (variant === 'prominent') {
+  return (
+    <div className={`container mx-auto px-4 mt-6 ${className}`}>
+      <div className="rounded-lg border border-yellow-300 bg-yellow-50 dark:bg-yellow-950/30 dark:border-yellow-800 p-4 flex gap-3">
+        <Info className="w-5 h-5 text-yellow-700 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+        <p className="text-sm text-yellow-900 dark:text-yellow-100 leading-relaxed">
+          {t('gift_guide.affiliate_disclosure')}{' '}
+          {t('gift_guide.affiliate_note')}
+        </p>
+      </div>
+    </div>
+  );
+}
+```
 
-Create a `useEffect` that sets `<meta>` OG tags dynamically when the Gift Guide mounts:
-- `og:title`: "Guida ai Regali - Amico Segreto"
-- `og:description`: "Idee regalo curate per ogni budget e occasione"
-- `og:url`: "https://amicosegreto.fun/regali"
-- `og:type`: "website"
-- `og:image`: reuse existing PWA icon
+The existing `'inline'` and `'footer'` branches are kept exactly as-is.
 
-Clean up on unmount to restore defaults.
+### 3. `src/pages/GiftGuide.tsx` — Three surgical edits
 
-### 3. Create `/chi-siamo` public page (`src/pages/About.tsx`)
+- **3a.** Remove `<AffiliateDisclosure className="mx-auto" />` from the hero section.
+- **3b.** Insert `<AffiliateDisclosure variant="prominent" />` between the closing `</div>` of the hero block and the sticky category nav.
+- **3c.** Replace the editorial intro block. The brief's snippet lost its tags; reconstructed intent:
+  - Keep the `intro_title` heading.
+  - Replace the single `intro_description` paragraph with a rich block rendered from the new `intro_body_html` translation key via `dangerouslySetInnerHTML`.
 
-A public page for Amazon reviewers with:
-- Hero section explaining what Amico Segreto is
-- How it works (3-step flow reusing existing i18n keys)
-- FAQ section (What is Secret Santa? Is it free? How do wishlists work?)
-- Link to the Gift Guide and a CTA to get started
+```tsx
+<div className="max-w-3xl mx-auto mb-12">
+  <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">
+    {t('gift_guide.intro_title')}
+  </h2>
+  <div
+    className="prose prose-neutral dark:prose-invert max-w-none text-muted-foreground"
+    dangerouslySetInnerHTML={{ __html: t('gift_guide.intro_body_html') }}
+  />
+</div>
+```
 
-### 4. Wire up routing and navigation
+No other change to `GiftGuide.tsx` (Schema.org JSON-LD, OG meta, sticky nav, categories, CTA, How-It-Works, footer disclosure all untouched).
 
-- Add `/chi-siamo` route in `src/App.tsx`
-- Add "Chi Siamo" link in `src/components/Footer.tsx`
-- Add `/chi-siamo` to `public/sitemap.xml`
+### 4. Translations
 
-### 5. Add i18n keys
+**`src/i18n/it.json` → `gift_guide`:**
+- `intro_title` → `"Come scegliere il regalo giusto per l'Amico Segreto"`
+- `affiliate_disclosure` → `"In qualità di Affiliato Amazon io ricevo un guadagno dagli acquisti idonei."`
+- `affiliate_note` → `"Questo non comporta alcun costo aggiuntivo per te. I prezzi e la disponibilità possono variare."`
+- Keep `intro_description` unchanged (other components may reference it).
+- Add `intro_body_html` containing the three Italian paragraphs from the brief, wrapped as `<p>…</p><p>…</p><p>…</p>`.
 
-Add `about.*` keys to both `src/i18n/en.json` and `src/i18n/it.json` for the About page content.
+**`src/i18n/en.json` → `gift_guide`:**
+- Add `intro_body_html`: `"<p>[TODO: translate to English when EN locale is enabled in production]</p>"`
+- No other EN changes.
+
+## Confirmations needed before I implement
+
+1. **Reconstructed JSX OK?** The brief's code blocks rendered as empty `<p>` tags. I'm using the styling above (yellow callout for `prominent`, `prose` block + `dangerouslySetInnerHTML` for the intro). Say "go" or send a corrected snippet.
+2. **`dangerouslySetInnerHTML` for `intro_body_html`** — required because the value is `<p>…</p>` HTML. The string is author-controlled (translation file), not user input, so it's safe. Confirm OK.
+
+## Out of scope (not touched)
+
+Supabase, auth, draw, wishlist, Capacitor, PWA, `/ideas`, `/auth`, `/profile`, `Footer.tsx`, `About.tsx`, sitemap, Schema.org/OG blocks already on `/regali`, all other pages.
 
 ## Files
 
 | File | Action |
 |------|--------|
-| `src/pages/GiftGuide.tsx` | Add Schema.org JSON-LD + OG meta tags |
-| `src/pages/About.tsx` | Create: public about page |
-| `src/App.tsx` | Add `/chi-siamo` route |
-| `src/components/Footer.tsx` | Add "Chi Siamo" link |
-| `src/i18n/en.json` | Add about page translations |
-| `src/i18n/it.json` | Add about page translations |
-| `public/sitemap.xml` | Add `/chi-siamo` URL |
-
+| `src/i18n/index.ts` | Replace `getDefaultLanguage` |
+| `src/components/gifts/AffiliateDisclosure.tsx` | Add `'prominent'` variant |
+| `src/pages/GiftGuide.tsx` | Remove hero disclosure, insert prominent disclosure, replace editorial intro |
+| `src/i18n/it.json` | Update 3 keys + add `intro_body_html` |
+| `src/i18n/en.json` | Add `intro_body_html` placeholder |

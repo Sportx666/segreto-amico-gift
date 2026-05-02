@@ -96,6 +96,7 @@
     "hero_subtitle": "Curated gift ideas for every budget and occasion. Find inspiration to surprise the people you love.",
     "intro_title": "Carefully Selected Gifts",
     "intro_description": "We've selected the best Amazon products to help you find the perfect gift. From tech to home, from kids to adults: there's something for everyone!",
+    "intro_body_html": "<p>[TODO: translate to English when EN locale is enabled in production]</p>",
     "view_on_amazon": "View on Amazon",
     "view_more": "View more on Amazon",
     "affiliate_disclosure": "As an Amazon Associate, we earn from qualifying purchases.",
