@@ -183,8 +183,7 @@ const GiftGuide = () => {
         </div>
       </main>
 
-      {/* Affiliate Footer Disclosure */}
-      <AffiliateDisclosure variant="footer" />
+    
     </div>
   );
 };
