@@ -1,76 +1,106 @@
 ## Goal
 
-Make the secondary CTA "Sfoglia Idee Regalo" on the public landing hero (`/`) much more eye-catching, with text that stays clearly visible in all states, and copy that intrigues users to click.
+Three enhancements to the public-landing "/regali" CTA in `src/pages/Index.tsx`:
 
-## Problem with current button
+1. Strong, accessible keyboard focus styling (and reduced-motion respect for sparkle/arrow).
+2. Plausible analytics for CTA **impressions** and **clicks**.
+3. Verify the gradient CTA is readable at all viewport widths and in light/dark modes.
 
-In `src/pages/Index.tsx` (lines 91-97):
+No backend changes. No Supabase / RLS / edge-function work. Scope: `index.html`, `src/pages/Index.tsx`, plus one tiny analytics helper. Plausible is privacy-friendly, cookieless, and our cookie policy already mentions analytics.
 
-```tsx
-<Button size="lg" variant="outline"
-  className="border-white/30 text-white hover:bg-white/10 w-full sm:w-auto">
-  <Gift className="w-5 h-5 mr-2" />
-  {t('home.browse_gift_ideas')}
-  <ArrowRight className="w-4 h-4 ml-2" />
-</Button>
+---
+
+## 1. Accessible focus + reduced-motion
+
+Today the CTA uses only `focus-visible:text-white` (inherited ring from the Button base), which barely shows on the dark hero gradient.
+
+Update the CTA `className` in `src/pages/Index.tsx` (line 94) to add a high-contrast focus ring that is visible against the green hero:
+
+```
+focus-visible:outline-none
+focus-visible:ring-4
+focus-visible:ring-white
+focus-visible:ring-offset-2
+focus-visible:ring-offset-primary
 ```
 
-Issues:
-- Transparent background + white text on the green/red gradient hero -> low contrast, label can wash out.
-- `variant="outline"` against the hero gradient also pulls the default `hover:bg-accent hover:text-accent-foreground` (light bg + dark text) on certain states, which can flash unreadable text.
-- Copy "Sfoglia Idee Regalo" is descriptive but flat — no curiosity hook.
+This gives a 4px white ring with a 2px primary-colored offset — meets WCAG 2.4.7 (focus visible) and 1.4.11 (non-text contrast >=3:1) on both the green hero and any background.
 
-## Changes
+Reduced motion: wrap the moving classes so they no-op when the OS prefers reduced motion. Tailwind ships `motion-safe:` and `motion-reduce:` variants:
 
-All edits scoped to `src/pages/Index.tsx` and the two i18n files. No other files touched.
+- Sparkle icon: `motion-safe:animate-sparkle` (was `animate-sparkle`)
+- Arrow: `transition-transform motion-safe:group-hover:translate-x-1`
 
-### 1. Restyle the button (public landing only, lines 91-97)
+This addresses WCAG 2.3.3 (animation from interactions).
 
-Replace with a high-contrast, warm-accent solid button that pops against the green hero, with a subtle animated sparkle and arrow nudge on hover. Text stays solid white at all times (no variant that swaps to light bg).
+## 2. Plausible analytics: impression + click
 
-```tsx
-<Link to="/regali" className="w-full sm:w-auto">
-  <Button
-    size="lg"
-    className="group w-full sm:w-auto bg-gradient-to-r from-amber-400 to-orange-500
-               text-white font-semibold shadow-glow
-               hover:from-amber-500 hover:to-orange-600 hover:text-white
-               focus-visible:text-white
-               border-0 transition-all"
-  >
-    <Sparkles className="w-5 h-5 mr-2 text-white animate-sparkle" />
-    {t('home.browse_gift_ideas')}
-    <ArrowRight className="w-4 h-4 ml-2 text-white transition-transform group-hover:translate-x-1" />
-  </Button>
-</Link>
+### 2a. Load Plausible
+
+Add to `index.html` `<head>` (gated by domain so it only fires on the live site, not localhost previews):
+
+```html
+<script defer data-domain="amicosegreto.fun" src="https://plausible.io/js/script.tagged-events.js"></script>
+<script>window.plausible = window.plausible || function(){(window.plausible.q = window.plausible.q || []).push(arguments)}</script>
 ```
 
-Why this works:
-- Warm amber/orange gradient contrasts strongly with the green/red hero gradient -> button "pops".
-- Solid white text + explicit `hover:text-white` and `focus-visible:text-white` guarantee the label is always readable (fixes the current wash-out).
-- Sparkles icon (already imported in this file) + arrow slide on hover add intrigue/motion.
-- `shadow-glow` (already in design tokens) adds a soft halo to draw the eye.
-- `animate-sparkle` is already used elsewhere in this file (line 217) so no new keyframes needed.
+`script.tagged-events.js` lets us track clicks declaratively via `class="plausible-event-name=..."`, and the queue shim lets us call `plausible(...)` for the impression event before the script loads.
 
-### 2. More intriguing copy
+### 2b. Tiny helper `src/lib/analytics.ts`
 
-Update the i18n key `home.browse_gift_ideas` in both locales:
+```ts
+declare global {
+  interface Window {
+    plausible?: (event: string, opts?: { props?: Record<string, string | number | boolean> }) => void;
+  }
+}
 
-- `src/i18n/it.json`: `"browse_gift_ideas": "Sfoglia Idee Regalo"` -> `"browse_gift_ideas": "Scopri Idee Regalo che Stupiscono"`
-- `src/i18n/en.json`: current EN value -> `"browse_gift_ideas": "Discover Gift Ideas That Wow"`
+export function trackEvent(name: string, props?: Record<string, string | number | boolean>) {
+  try { window.plausible?.(name, props ? { props } : undefined); } catch { /* noop */ }
+}
+```
 
-Curiosity-driven, benefit-led, still short enough for the button.
+Safe no-op in dev / when blocked.
+
+### 2c. Wire impression + click in `Index.tsx`
+
+- **Impression**: in the public-landing branch, add a `useEffect(() => { trackEvent('CTA Impression', { cta: 'browse_gift_ideas', location: 'home_hero' }); }, []);` that fires once when the logged-out hero mounts.
+- **Click**: add `onClick={() => trackEvent('CTA Click', { cta: 'browse_gift_ideas', location: 'home_hero' })}` to the `<Link to="/regali">` (the click still navigates; the call is fire-and-forget). Also add `data-analytics="cta-browse-gift-ideas"` for resilient querying.
+
+We use a JS handler (not just the tagged-events class) so the event name is consistent and props are typed.
+
+## 3. Responsive + light/dark verification
+
+Test plan, using `browser--navigate_to_sandbox` + `browser--screenshot`:
+
+- Light mode (default): viewports 320, 375, 768, 1280, 1920 — confirm:
+  - Text "Scopri Idee Regalo che Stupiscono" stays on a single line at >=375px, wraps cleanly at 320.
+  - Amber/orange gradient + white text contrast >=4.5:1 (WCAG AA for normal text — gradient endpoints `amber-400 #fbbf24` and `orange-500 #f97316` against white pass at semibold size lg).
+  - Glow shadow visible against green hero.
+- Dark mode: toggle `<html class="dark">` via DOM in the browser session. Hero in dark mode uses primary green background; the warm gradient CTA still pops and white text remains readable.
+- Keyboard: Tab to the CTA, screenshot the focus ring at 1280 light + dark.
+
+If any contrast issue surfaces (e.g. focus ring blending in dark mode), fall back to:
+`focus-visible:ring-offset-background` and bump ring color to `ring-amber-200`.
+
+No code changes expected from this step unless the screenshots reveal a regression.
+
+---
+
+## Files touched
+
+- `index.html` — add Plausible `<script>` tags in `<head>`.
+- `src/lib/analytics.ts` — new tiny helper (~10 lines).
+- `src/pages/Index.tsx` — focus classes, motion-safe variants, impression `useEffect`, click handler, data attribute.
 
 ## Out of scope
 
-- Authenticated hero buttons (lines 188-205) untouched.
-- Other CTAs, the gift-guide promo card, and `/regali` page untouched.
-- No design-token changes, no new dependencies.
+- No GA, no consent banner changes (Plausible is cookieless — already covered by current cookie policy mention of analytics; if user wants explicit consent gating later, that's a separate task).
+- No changes to other CTAs, `/regali` page, or any backend.
 
 ## Acceptance
 
-- On `/` (logged-out, viewport 1440 and mobile), the second hero CTA is a glowing amber/orange gradient button with white text reading "Scopri Idee Regalo che Stupiscono" (IT) / "Discover Gift Ideas That Wow" (EN).
-- Text remains fully white and readable in default, hover, focus, and active states.
-- Hover shows a slight arrow slide and gradient deepening; sparkle icon animates.
-- Clicking still navigates to `/regali`.
-- No other pages or components changed.
+- Tabbing to the CTA shows a visible 4px white ring with offset on the green hero in both light and dark modes.
+- With `prefers-reduced-motion: reduce`, the sparkle does not animate and the arrow does not slide on hover.
+- On a real `amicosegreto.fun` load, Plausible receives one `CTA Impression` event per logged-out home view and one `CTA Click` event per CTA click, both with `cta` and `location` props.
+- Screenshots at 320 / 375 / 768 / 1280 / 1920 in light and dark show readable label, intact gradient, no clipping or overlap.
