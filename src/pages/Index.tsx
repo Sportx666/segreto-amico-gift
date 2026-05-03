@@ -88,11 +88,14 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
                     {t('home.get_started')}
                   </Button>
                 </Link>
-                <Link to="/regali">
-                  <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 w-full sm:w-auto">
-                    <Gift className="w-5 h-5 mr-2" />
+                <Link to="/regali" className="w-full sm:w-auto">
+                  <Button
+                    size="lg"
+                    className="group w-full sm:w-auto bg-gradient-to-r from-amber-400 to-orange-500 text-white font-semibold shadow-glow hover:from-amber-500 hover:to-orange-600 hover:text-white focus-visible:text-white border-0 transition-all"
+                  >
+                    <Sparkles className="w-5 h-5 mr-2 text-white animate-sparkle" />
                     {t('home.browse_gift_ideas')}
-                    <ArrowRight className="w-4 h-4 ml-2" />
+                    <ArrowRight className="w-4 h-4 ml-2 text-white transition-transform group-hover:translate-x-1" />
                   </Button>
                 </Link>
               </div>
