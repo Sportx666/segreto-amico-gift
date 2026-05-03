@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AdSlot } from "@/components/AdSlot";
 import { Gift, Heart, Users, Sparkles, Calendar, ArrowRight } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { trackEvent } from "@/lib/analytics";
 
 interface IndexProps {
   showMobileFeed?: boolean;
@@ -55,6 +56,12 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
     };
   }, [user?.id]);
 
+  // Track impression of the public-landing gift-guide CTA (logged-out only).
+  useEffect(() => {
+    if (loading || user) return;
+    trackEvent("CTA Impression", { cta: "browse_gift_ideas", location: "home_hero" });
+  }, [loading, user]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
@@ -88,14 +95,21 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
                     {t('home.get_started')}
                   </Button>
                 </Link>
-                <Link to="/regali" className="w-full sm:w-auto">
+                <Link
+                  to="/regali"
+                  className="w-full sm:w-auto"
+                  data-analytics="cta-browse-gift-ideas"
+                  onClick={() =>
+                    trackEvent("CTA Click", { cta: "browse_gift_ideas", location: "home_hero" })
+                  }
+                >
                   <Button
                     size="lg"
-                    className="group w-full sm:w-auto bg-gradient-to-r from-amber-400 to-orange-500 text-white font-semibold shadow-glow hover:from-amber-500 hover:to-orange-600 hover:text-white focus-visible:text-white border-0 transition-all"
+                    className="group w-full sm:w-auto bg-gradient-to-r from-amber-400 to-orange-500 text-white font-semibold shadow-glow hover:from-amber-500 hover:to-orange-600 hover:text-white border-0 transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary focus-visible:text-white"
                   >
-                    <Sparkles className="w-5 h-5 mr-2 text-white animate-sparkle" />
+                    <Sparkles className="w-5 h-5 mr-2 text-white motion-safe:animate-sparkle" />
                     {t('home.browse_gift_ideas')}
-                    <ArrowRight className="w-4 h-4 ml-2 text-white transition-transform group-hover:translate-x-1" />
+                    <ArrowRight className="w-4 h-4 ml-2 text-white transition-transform motion-safe:group-hover:translate-x-1" />
                   </Button>
                 </Link>
               </div>
