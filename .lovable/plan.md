@@ -1,92 +1,76 @@
-# Phase 0 Minimal Fix — Italian default, prominent disclosure, editorial intro
+## Goal
 
-## Heads-up about the spec
+Make the secondary CTA "Sfoglia Idee Regalo" on the public landing hero (`/`) much more eye-catching, with text that stays clearly visible in all states, and copy that intrigues users to click.
 
-Your task brief pasted JSX/HTML snippets that arrived stripped of all tags (chat rendered them as empty paragraphs). I'm reconstructing the obvious intent below and calling it out explicitly so you can confirm before I write code. **Nothing outside the four files listed is touched.** No diff is shown ahead of time — Lovable applies edits directly — but I list every change precisely.
+## Problem with current button
 
-## Scope (4 files, surgical edits)
-
-### 1. `src/i18n/index.ts` — Hard-default to Italian
-
-Replace `getDefaultLanguage` with the SSR-safe version that:
-- Returns `'it'` when `window`/`localStorage` are unavailable.
-- Returns the stored value only if it is `'it'` or `'en'`.
-- Otherwise returns `'it'`. **Never reads `navigator.language`.**
-
-Includes the comment block from the brief explaining the SEO/crawler rationale.
-
-### 2. `src/components/gifts/AffiliateDisclosure.tsx` — Add `prominent` variant
-
-Add `'prominent'` to the `variant` union and a new branch rendered as a high-visibility callout, intended to sit above-the-fold on `/regali`. Reconstructed styling (consistent with existing Tailwind tokens in the project):
+In `src/pages/Index.tsx` (lines 91-97):
 
 ```tsx
-if (variant === 'prominent') {
-  return (
-    <div className={`container mx-auto px-4 mt-6 ${className}`}>
-      <div className="rounded-lg border border-yellow-300 bg-yellow-50 dark:bg-yellow-950/30 dark:border-yellow-800 p-4 flex gap-3">
-        <Info className="w-5 h-5 text-yellow-700 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
-        <p className="text-sm text-yellow-900 dark:text-yellow-100 leading-relaxed">
-          {t('gift_guide.affiliate_disclosure')}{' '}
-          {t('gift_guide.affiliate_note')}
-        </p>
-      </div>
-    </div>
-  );
-}
+<Button size="lg" variant="outline"
+  className="border-white/30 text-white hover:bg-white/10 w-full sm:w-auto">
+  <Gift className="w-5 h-5 mr-2" />
+  {t('home.browse_gift_ideas')}
+  <ArrowRight className="w-4 h-4 ml-2" />
+</Button>
 ```
 
-The existing `'inline'` and `'footer'` branches are kept exactly as-is.
+Issues:
+- Transparent background + white text on the green/red gradient hero -> low contrast, label can wash out.
+- `variant="outline"` against the hero gradient also pulls the default `hover:bg-accent hover:text-accent-foreground` (light bg + dark text) on certain states, which can flash unreadable text.
+- Copy "Sfoglia Idee Regalo" is descriptive but flat — no curiosity hook.
 
-### 3. `src/pages/GiftGuide.tsx` — Three surgical edits
+## Changes
 
-- **3a.** Remove `<AffiliateDisclosure className="mx-auto" />` from the hero section.
-- **3b.** Insert `<AffiliateDisclosure variant="prominent" />` between the closing `</div>` of the hero block and the sticky category nav.
-- **3c.** Replace the editorial intro block. The brief's snippet lost its tags; reconstructed intent:
-  - Keep the `intro_title` heading.
-  - Replace the single `intro_description` paragraph with a rich block rendered from the new `intro_body_html` translation key via `dangerouslySetInnerHTML`.
+All edits scoped to `src/pages/Index.tsx` and the two i18n files. No other files touched.
+
+### 1. Restyle the button (public landing only, lines 91-97)
+
+Replace with a high-contrast, warm-accent solid button that pops against the green hero, with a subtle animated sparkle and arrow nudge on hover. Text stays solid white at all times (no variant that swaps to light bg).
 
 ```tsx
-<div className="max-w-3xl mx-auto mb-12">
-  <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">
-    {t('gift_guide.intro_title')}
-  </h2>
-  <div
-    className="prose prose-neutral dark:prose-invert max-w-none text-muted-foreground"
-    dangerouslySetInnerHTML={{ __html: t('gift_guide.intro_body_html') }}
-  />
-</div>
+<Link to="/regali" className="w-full sm:w-auto">
+  <Button
+    size="lg"
+    className="group w-full sm:w-auto bg-gradient-to-r from-amber-400 to-orange-500
+               text-white font-semibold shadow-glow
+               hover:from-amber-500 hover:to-orange-600 hover:text-white
+               focus-visible:text-white
+               border-0 transition-all"
+  >
+    <Sparkles className="w-5 h-5 mr-2 text-white animate-sparkle" />
+    {t('home.browse_gift_ideas')}
+    <ArrowRight className="w-4 h-4 ml-2 text-white transition-transform group-hover:translate-x-1" />
+  </Button>
+</Link>
 ```
 
-No other change to `GiftGuide.tsx` (Schema.org JSON-LD, OG meta, sticky nav, categories, CTA, How-It-Works, footer disclosure all untouched).
+Why this works:
+- Warm amber/orange gradient contrasts strongly with the green/red hero gradient -> button "pops".
+- Solid white text + explicit `hover:text-white` and `focus-visible:text-white` guarantee the label is always readable (fixes the current wash-out).
+- Sparkles icon (already imported in this file) + arrow slide on hover add intrigue/motion.
+- `shadow-glow` (already in design tokens) adds a soft halo to draw the eye.
+- `animate-sparkle` is already used elsewhere in this file (line 217) so no new keyframes needed.
 
-### 4. Translations
+### 2. More intriguing copy
 
-**`src/i18n/it.json` → `gift_guide`:**
-- `intro_title` → `"Come scegliere il regalo giusto per l'Amico Segreto"`
-- `affiliate_disclosure` → `"In qualità di Affiliato Amazon io ricevo un guadagno dagli acquisti idonei."`
-- `affiliate_note` → `"Questo non comporta alcun costo aggiuntivo per te. I prezzi e la disponibilità possono variare."`
-- Keep `intro_description` unchanged (other components may reference it).
-- Add `intro_body_html` containing the three Italian paragraphs from the brief, wrapped as `<p>…</p><p>…</p><p>…</p>`.
+Update the i18n key `home.browse_gift_ideas` in both locales:
 
-**`src/i18n/en.json` → `gift_guide`:**
-- Add `intro_body_html`: `"<p>[TODO: translate to English when EN locale is enabled in production]</p>"`
-- No other EN changes.
+- `src/i18n/it.json`: `"browse_gift_ideas": "Sfoglia Idee Regalo"` -> `"browse_gift_ideas": "Scopri Idee Regalo che Stupiscono"`
+- `src/i18n/en.json`: current EN value -> `"browse_gift_ideas": "Discover Gift Ideas That Wow"`
 
-## Confirmations needed before I implement
+Curiosity-driven, benefit-led, still short enough for the button.
 
-1. **Reconstructed JSX OK?** The brief's code blocks rendered as empty `<p>` tags. I'm using the styling above (yellow callout for `prominent`, `prose` block + `dangerouslySetInnerHTML` for the intro). Say "go" or send a corrected snippet.
-2. **`dangerouslySetInnerHTML` for `intro_body_html`** — required because the value is `<p>…</p>` HTML. The string is author-controlled (translation file), not user input, so it's safe. Confirm OK.
+## Out of scope
 
-## Out of scope (not touched)
+- Authenticated hero buttons (lines 188-205) untouched.
+- Other CTAs, the gift-guide promo card, and `/regali` page untouched.
+- No design-token changes, no new dependencies.
 
-Supabase, auth, draw, wishlist, Capacitor, PWA, `/ideas`, `/auth`, `/profile`, `Footer.tsx`, `About.tsx`, sitemap, Schema.org/OG blocks already on `/regali`, all other pages.
+## Acceptance
 
-## Files
-
-| File | Action |
-|------|--------|
-| `src/i18n/index.ts` | Replace `getDefaultLanguage` |
-| `src/components/gifts/AffiliateDisclosure.tsx` | Add `'prominent'` variant |
-| `src/pages/GiftGuide.tsx` | Remove hero disclosure, insert prominent disclosure, replace editorial intro |
-| `src/i18n/it.json` | Update 3 keys + add `intro_body_html` |
-| `src/i18n/en.json` | Add `intro_body_html` placeholder |
+- On `/` (logged-out, viewport 1440 and mobile), the second hero CTA is a glowing amber/orange gradient button with white text reading "Scopri Idee Regalo che Stupiscono" (IT) / "Discover Gift Ideas That Wow" (EN).
+- Text remains fully white and readable in default, hover, focus, and active states.
+- Hover shows a slight arrow slide and gradient deepening; sparkle icon animates.
+- Clicking still navigates to `/regali`.
+- No other pages or components changed.
