@@ -49,6 +49,7 @@ jobs:
           VITE_ADSENSE_EDGE_RIGHT_SLOT: ${{ secrets.ADSENSE_EDGE_RIGHT_SLOT }}
           VITE_ADSENSE_MOBILE_FEED_SLOT: ${{ secrets.ADSENSE_MOBILE_FEED_SLOT }}
           VITE_AMAZON_PARTNER_TAG: amicosegreto-21
+          VITE_PINTEREST_TAG_ID: "2612933961253"
           VITE_I18N_ENABLED: ${{ env.VITE_I18N_ENABLED }}
 
       - name: Deploy to Hostinger via FTP
