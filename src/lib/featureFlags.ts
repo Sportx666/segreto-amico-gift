@@ -31,5 +31,5 @@ export type FeatureFlagKey = keyof typeof featureFlags;
 
 // Helper to check if a feature is enabled
 export const isFeatureEnabled = (flag: FeatureFlagKey): boolean => {
-  return featureFlags[flag];
+  return Boolean(featureFlags[flag]);
 };
