@@ -1,106 +1,56 @@
-## Goal
+# Add Pinterest Tag
 
-Three enhancements to the public-landing "/regali" CTA in `src/pages/Index.tsx`:
+Install the Pinterest base tag (ID `2612933961253`) for retargeting and conversion tracking across the site.
 
-1. Strong, accessible keyboard focus styling (and reduced-motion respect for sparkle/arrow).
-2. Plausible analytics for CTA **impressions** and **clicks**.
-3. Verify the gradient CTA is readable at all viewport widths and in light/dark modes.
+## Changes
 
-No backend changes. No Supabase / RLS / edge-function work. Scope: `index.html`, `src/pages/Index.tsx`, plus one tiny analytics helper. Plausible is privacy-friendly, cookieless, and our cookie policy already mentions analytics.
-
----
-
-## 1. Accessible focus + reduced-motion
-
-Today the CTA uses only `focus-visible:text-white` (inherited ring from the Button base), which barely shows on the dark hero gradient.
-
-Update the CTA `className` in `src/pages/Index.tsx` (line 94) to add a high-contrast focus ring that is visible against the green hero:
-
-```
-focus-visible:outline-none
-focus-visible:ring-4
-focus-visible:ring-white
-focus-visible:ring-offset-2
-focus-visible:ring-offset-primary
-```
-
-This gives a 4px white ring with a 2px primary-colored offset — meets WCAG 2.4.7 (focus visible) and 1.4.11 (non-text contrast >=3:1) on both the green hero and any background.
-
-Reduced motion: wrap the moving classes so they no-op when the OS prefers reduced motion. Tailwind ships `motion-safe:` and `motion-reduce:` variants:
-
-- Sparkle icon: `motion-safe:animate-sparkle` (was `animate-sparkle`)
-- Arrow: `transition-transform motion-safe:group-hover:translate-x-1`
-
-This addresses WCAG 2.3.3 (animation from interactions).
-
-## 2. Plausible analytics: impression + click
-
-### 2a. Load Plausible
-
-Add to `index.html` `<head>` (gated by domain so it only fires on the live site, not localhost previews):
+### 1. `index.html` — `<head>`
+Add the Pinterest base script just below the existing Plausible Analytics block (last item before `</head>`). The `em` parameter is left empty for anonymous visitors; we'll populate it dynamically once a user is authenticated (see step 3).
 
 ```html
-<script defer data-domain="amicosegreto.fun" src="https://plausible.io/js/script.tagged-events.js"></script>
-<script>window.plausible = window.plausible || function(){(window.plausible.q = window.plausible.q || []).push(arguments)}</script>
+<!-- Pinterest Tag -->
+<script>
+  !function(e){if(!window.pintrk){window.pintrk = function () {
+  window.pintrk.queue.push(Array.prototype.slice.call(arguments))};var
+    n=window.pintrk;n.queue=[],n.version="3.0";var
+    t=document.createElement("script");t.async=!0,t.src=e;var
+    r=document.getElementsByTagName("script")[0];
+    r.parentNode.insertBefore(t,r)}}("https://s.pinimg.com/ct/core.js");
+  pintrk('load', '2612933961253');
+  pintrk('page');
+</script>
+<!-- end Pinterest Tag -->
 ```
 
-`script.tagged-events.js` lets us track clicks declaratively via `class="plausible-event-name=..."`, and the queue shim lets us call `plausible(...)` for the impression event before the script loads.
+### 2. `index.html` — top of `<body>`
+Add the `<noscript>` pixel fallback. Per HTML5 rules, `<noscript><img></noscript>` cannot live in `<head>`, so it goes at the start of `<body>` (consistent with project convention).
 
-### 2b. Tiny helper `src/lib/analytics.ts`
+```html
+<noscript>
+  <img height="1" width="1" style="display:none;" alt=""
+    src="https://ct.pinterest.com/v3/?event=init&tid=2612933961253&noscript=1" />
+</noscript>
+```
+
+### 3. `src/components/AuthProvider.tsx` — Enhanced Match
+When a user signs in (and on initial session restore), call `pintrk('load', ...)` again with their email so Pinterest can attribute conversions. Pinterest hashes the email client-side automatically when passed to `em`.
+
+Inside the existing `onAuthStateChange` and `getSession` handlers, after we have `session.user.email`:
 
 ```ts
-declare global {
-  interface Window {
-    plausible?: (event: string, opts?: { props?: Record<string, string | number | boolean> }) => void;
-  }
-}
-
-export function trackEvent(name: string, props?: Record<string, string | number | boolean>) {
-  try { window.plausible?.(name, props ? { props } : undefined); } catch { /* noop */ }
+if (session?.user?.email && typeof window !== 'undefined' && (window as any).pintrk) {
+  (window as any).pintrk('load', '2612933961253', { em: session.user.email });
+  (window as any).pintrk('page');
 }
 ```
 
-Safe no-op in dev / when blocked.
+A small TypeScript shim on `Window` (inline `(window as any)`) avoids needing a new `.d.ts`.
 
-### 2c. Wire impression + click in `Index.tsx`
+## Files modified
+- `index.html` (head script + body noscript)
+- `src/components/AuthProvider.tsx` (Enhanced Match on login)
 
-- **Impression**: in the public-landing branch, add a `useEffect(() => { trackEvent('CTA Impression', { cta: 'browse_gift_ideas', location: 'home_hero' }); }, []);` that fires once when the logged-out hero mounts.
-- **Click**: add `onClick={() => trackEvent('CTA Click', { cta: 'browse_gift_ideas', location: 'home_hero' })}` to the `<Link to="/regali">` (the click still navigates; the call is fire-and-forget). Also add `data-analytics="cta-browse-gift-ideas"` for resilient querying.
-
-We use a JS handler (not just the tagged-events class) so the event name is consistent and props are typed.
-
-## 3. Responsive + light/dark verification
-
-Test plan, using `browser--navigate_to_sandbox` + `browser--screenshot`:
-
-- Light mode (default): viewports 320, 375, 768, 1280, 1920 — confirm:
-  - Text "Scopri Idee Regalo che Stupiscono" stays on a single line at >=375px, wraps cleanly at 320.
-  - Amber/orange gradient + white text contrast >=4.5:1 (WCAG AA for normal text — gradient endpoints `amber-400 #fbbf24` and `orange-500 #f97316` against white pass at semibold size lg).
-  - Glow shadow visible against green hero.
-- Dark mode: toggle `<html class="dark">` via DOM in the browser session. Hero in dark mode uses primary green background; the warm gradient CTA still pops and white text remains readable.
-- Keyboard: Tab to the CTA, screenshot the focus ring at 1280 light + dark.
-
-If any contrast issue surfaces (e.g. focus ring blending in dark mode), fall back to:
-`focus-visible:ring-offset-background` and bump ring color to `ring-amber-200`.
-
-No code changes expected from this step unless the screenshots reveal a regression.
-
----
-
-## Files touched
-
-- `index.html` — add Plausible `<script>` tags in `<head>`.
-- `src/lib/analytics.ts` — new tiny helper (~10 lines).
-- `src/pages/Index.tsx` — focus classes, motion-safe variants, impression `useEffect`, click handler, data attribute.
-
-## Out of scope
-
-- No GA, no consent banner changes (Plausible is cookieless — already covered by current cookie policy mention of analytics; if user wants explicit consent gating later, that's a separate task).
-- No changes to other CTAs, `/regali` page, or any backend.
-
-## Acceptance
-
-- Tabbing to the CTA shows a visible 4px white ring with offset on the green hero in both light and dark modes.
-- With `prefers-reduced-motion: reduce`, the sparkle does not animate and the arrow does not slide on hover.
-- On a real `amicosegreto.fun` load, Plausible receives one `CTA Impression` event per logged-out home view and one `CTA Click` event per CTA click, both with `cta` and `location` props.
-- Screenshots at 320 / 375 / 768 / 1280 / 1920 in light and dark show readable label, intact gradient, no clipping or overlap.
+## Notes
+- Tag fires on every page load via the SPA's initial mount — sufficient for retargeting.
+- No route-change `pintrk('page')` re-fires are added; can be added later inside a router listener if Pinterest reports show low page views.
+- No cookie consent gating added (matches current Plausible setup which is also unconditional).
