@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { debugLog } from "@/lib/debug";
+import { pinterestLoad } from "@/lib/pinterest";
 import { toast } from "sonner";
 
 interface AuthContextType {
@@ -84,9 +85,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
 
       // Pinterest Enhanced Match: re-fire load with email when authenticated
-      if (session?.user?.email && typeof window !== 'undefined' && (window as any).pintrk) {
-        (window as any).pintrk('load', '2612933961253', { em: session.user.email });
-        (window as any).pintrk('page');
+      if (session?.user?.email) {
+        pinterestLoad(session.user.email);
       }
 
       // Ensure profile exists for authenticated user
@@ -113,9 +113,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
 
       // Pinterest Enhanced Match on initial session restore
-      if (session?.user?.email && typeof window !== 'undefined' && (window as any).pintrk) {
-        (window as any).pintrk('load', '2612933961253', { em: session.user.email });
-        (window as any).pintrk('page');
+      if (session?.user?.email) {
+        pinterestLoad(session.user.email);
       }
 
       // Ensure profile exists for existing session

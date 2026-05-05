@@ -18,6 +18,12 @@ export const featureFlags = {
    * When disabled, Italian is used as the default language
    */
   i18n: import.meta.env.VITE_I18N_ENABLED !== 'false',
+
+  /**
+   * Pinterest Tag ID (public). Empty string disables Pinterest tracking.
+   * Set VITE_PINTEREST_TAG_ID in .env / build env.
+   */
+  pinterestTagId: (import.meta.env.VITE_PINTEREST_TAG_ID as string | undefined) ?? '',
 } as const;
 
 // Type for feature flag keys
@@ -25,5 +31,5 @@ export type FeatureFlagKey = keyof typeof featureFlags;
 
 // Helper to check if a feature is enabled
 export const isFeatureEnabled = (flag: FeatureFlagKey): boolean => {
-  return featureFlags[flag];
+  return Boolean(featureFlags[flag]);
 };
