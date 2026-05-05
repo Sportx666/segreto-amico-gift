@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { debugLog } from "@/lib/debug";
+import { pinterestLoad } from "@/lib/pinterest";
 import { toast } from "sonner";
 
 interface AuthContextType {

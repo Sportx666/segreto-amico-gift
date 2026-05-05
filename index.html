@@ -100,7 +100,7 @@
   <script defer data-domain="amicosegreto.fun" src="https://plausible.io/js/script.tagged-events.js"></script>
   <script>window.plausible = window.plausible || function(){(window.plausible.q = window.plausible.q || []).push(arguments)}</script>
 
-  <!-- Pinterest Tag -->
+  <!-- Pinterest Tag (loader only; load+page fired from app code with VITE_PINTEREST_TAG_ID) -->
   <script>
     !function(e){if(!window.pintrk){window.pintrk = function () {
     window.pintrk.queue.push(Array.prototype.slice.call(arguments))};var
@@ -108,8 +108,6 @@
       t=document.createElement("script");t.async=!0,t.src=e;var
       r=document.getElementsByTagName("script")[0];
       r.parentNode.insertBefore(t,r)}}("https://s.pinimg.com/ct/core.js");
-    pintrk('load', '2612933961253');
-    pintrk('page');
   </script>
   <!-- end Pinterest Tag -->
 </head>
