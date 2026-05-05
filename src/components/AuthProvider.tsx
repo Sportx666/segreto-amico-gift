@@ -112,6 +112,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(session?.user ?? null);
       setLoading(false);
 
+      // Pinterest Enhanced Match on initial session restore
+      if (session?.user?.email && typeof window !== 'undefined' && (window as any).pintrk) {
+        (window as any).pintrk('load', '2612933961253', { em: session.user.email });
+        (window as any).pintrk('page');
+      }
+
       // Ensure profile exists for existing session
       if (session?.user) {
         setTimeout(() => {
