@@ -9,6 +9,7 @@ import { curatedCategories } from '@/data/curatedGifts';
 import { GiftCategorySection } from '@/components/gifts/GiftCategorySection';
 import { AffiliateDisclosure } from '@/components/gifts/AffiliateDisclosure';
 import { amazonSearchUrl, ideaBucketUrl } from '@/lib/amazon';
+import { pinterestTrack } from '@/lib/pinterest';
 import logo from '@/assets/logo.png';
 
 const GiftGuide = () => {
@@ -31,6 +32,11 @@ const GiftGuide = () => {
     set('og:type', 'website');
     set('og:image', 'https://amicosegreto.fun/icons/icon-512x512.png');
     return () => metas.forEach(m => m.remove());
+  }, []);
+
+  // Pinterest PageVisit for the /regali route
+  useEffect(() => {
+    pinterestTrack('pagevisit', { page: 'gift_guide' });
   }, []);
 
   // Schema.org JSON-LD

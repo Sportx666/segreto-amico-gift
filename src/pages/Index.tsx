@@ -9,6 +9,7 @@ import { AdSlot } from "@/components/AdSlot";
 import { Gift, Heart, Users, Sparkles, Calendar, ArrowRight } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { trackEvent } from "@/lib/analytics";
+import { pinterestTrack } from "@/lib/pinterest";
 
 interface IndexProps {
   showMobileFeed?: boolean;
@@ -61,6 +62,11 @@ const Index = ({ showMobileFeed = false }: IndexProps) => {
     if (loading || user) return;
     trackEvent("CTA Impression", { cta: "browse_gift_ideas", location: "home_hero" });
   }, [loading, user]);
+
+  // Pinterest PageVisit for the home route
+  useEffect(() => {
+    pinterestTrack("pagevisit", { page: "home" });
+  }, []);
 
   if (loading) {
     return (
