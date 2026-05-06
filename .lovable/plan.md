@@ -1,47 +1,71 @@
-## Plan: Pinterest Tag — Env Config + Conversion Events
+# Switch Catalog to Amazon PA-API v5
 
-### 1. Environment variable
-- Add `VITE_PINTEREST_TAG_ID=2612933961253` to `.env` and `.env.example` (and `.env.uat.example`).
-- Add it as a build env in `.github/workflows/deploy.yml` (hardcoded value, mirroring `VITE_AMAZON_PARTNER_TAG`) so production builds always include it.
-- Extend `src/lib/featureFlags.ts` with a `pinterestTagId` value (string, empty = disabled) so all access is centralized.
+## Current state
 
-### 2. Centralize Pinterest helper
-- Create `src/lib/pinterest.ts` exporting:
-  - `PINTEREST_TAG_ID` (from `import.meta.env.VITE_PINTEREST_TAG_ID`)
-  - `pinterestLoad(email?)` — calls `pintrk('load', id, { em })` then `pintrk('page')`
-  - `pinterestTrack(event, props?)` — wraps `window.pintrk('track', event, props)`, no-ops if tag missing or `pintrk` undefined
-  - Minimal `window.pintrk` typing via `src/vite-env.d.ts` augmentation.
-- Replace hardcoded `'2612933961253'` usage in `src/components/AuthProvider.tsx` with `pinterestLoad(session.user.email)`.
+- `catalog-search` edge function already supports `amazon` provider via PA-API v5 SearchItems with full SigV4 signing — looks correct.
+- `catalog-item` edge function only supports `rainforest` and `mock` — **no Amazon branch exists**, so single-product lookups would fail or fall back to mock when `CATALOG_PROVIDER=amazon`.
+- `CATALOG_PROVIDER` secret is currently set to `rainforest` (per `.env` and secrets list). Needs to be set to `amazon`.
+- Amazon credentials are already stored as Supabase secrets: `AMAZON_PAAPI_ACCESS_KEY`, `AMAZON_PAAPI_SECRET_KEY`, `AMAZON_PAAPI_PARTNER_TAG`, `AMAZON_PAAPI_REGION`, `AMAZON_MARKETPLACE`.
+- `src/lib/validation.ts` warning message references only `AMZ_ASSOC_TAG`/`RAINFOREST_ASSOC_TAG` — minor doc drift.
+- `README.md` and `.env` default examples still say `CATALOG_PROVIDER=rainforest`.
 
-### 3. Bootstrap script in `index.html`
-- Replace the inline hardcoded tag ID with a small loader that:
-  - Defines the standard `pintrk` shim and injects `core.js`.
-  - Reads the tag id from a `window.__PINTEREST_TAG_ID__` injected by Vite at build time, OR — since `index.html` cannot read Vite env directly without a plugin — keep `index.html` to only define the shim + load script, and call the initial `pintrk('load', ...)` + `pintrk('page')` from `src/main.tsx` using `pinterestLoad()`. The `<noscript>` pixel fallback stays in `<body>` with the production tag id (acceptable since the value is public).
-- This guarantees the same code works across dev/UAT/prod just by changing the env var.
+## Issues to fix
 
-### 4. Conversion event tracking
-Fire `PageVisit` events (Pinterest standard event) on key routes:
-- `src/pages/Index.tsx` — on mount, call `pinterestTrack('pagevisit', { page: 'home' })`.
-- `src/pages/GiftGuide.tsx` (the `/regali` route) — on mount, call `pinterestTrack('pagevisit', { page: 'gift_guide' })`.
+1. **`catalog-item` lacks Amazon support** — must add a PA-API v5 `GetItems` branch using the same SigV4 signing approach as `catalog-search`.
+2. **Provider secret** — flip `CATALOG_PROVIDER` runtime secret to `amazon` so both functions actually use PA-API.
+3. **Doc drift** — update `.env`, `README.md`, and `validation.ts` warning to reflect Amazon as primary provider.
+4. **Sanity check existing PA-API signing in `catalog-search`** — confirm:
+   - `Marketplace` value uses `www.amazon.it` form (correct).
+   - `x-amz-target` matches the operation (`SearchItems` for search; will need `GetItems` for item).
+   - Region defaults to `eu-west-1` for IT marketplace (correct).
+   - Payload hashing uses the exact same JSON string sent in the body (correct — insertion order preserved).
 
-Both fire once per mount, guarded inside the helper so missing tag id = silent no-op.
+## Changes
 
-### 5. Memory
-- Add a memory entry: `mem://integrations/pinterest-tag` documenting `VITE_PINTEREST_TAG_ID`, helper location, and event conventions; reference it from `mem://index.md`.
+### 1. `supabase/functions/catalog-item/index.ts` — full rewrite to mirror `catalog-search` architecture
 
-### Files touched
-- `.env`, `.env.example`, `.env.uat.example`
-- `.github/workflows/deploy.yml`
-- `index.html`
-- `src/main.tsx`
-- `src/lib/featureFlags.ts`
-- `src/lib/pinterest.ts` (new)
-- `src/vite-env.d.ts`
-- `src/components/AuthProvider.tsx`
-- `src/pages/Index.tsx`
-- `src/pages/GiftGuide.tsx`
-- `mem://integrations/pinterest-tag` (new), `mem://index.md`
+- Add module-scope `CONFIG` block (same as `catalog-search`) computing marketplace, affiliate tag, Amazon credentials, and Rainforest key once at cold start.
+- Add `AmazonPAAPIClient` with a `getItem(asin)` method:
+  - Endpoint: `POST https://{host}/paapi5/getitems`
+  - Payload: `{ ItemIds: [asin], Resources: ["Images.Primary.Large", "ItemInfo.Title", "Offers.Listings.Price"], PartnerTag, PartnerType: "Associates", Marketplace: "www.amazon.it" }`
+  - Headers: `x-amz-target: com.amazon.paapi5.v1.ProductAdvertisingAPIv1.GetItems`
+  - SigV4 signing identical to search (shared helpers).
+- Singleton clients for Rainforest and Amazon, instantiated once.
+- Provider routing:
+  - `mock` → mock product
+  - `rainforest` → existing Rainforest client (kept as fallback option)
+  - `amazon` → new PA-API GetItems client
+- Map PA-API response to existing `CatalogItem` shape (title, image, asin, url with affiliate tag, price, currency).
+- Reuse the same error mapping (`API_RATE_LIMIT` → 429, `AMAZON_PAAPI_AUTH_ERROR` → 503).
 
-### Notes
-- Pinterest tag ID is public (visible in HTML), so storing in `.env` / GitHub workflow plaintext is fine — no secret needed.
-- All `pintrk` calls go through the helper so future events (Signup, Lead, AddToCart on wishlist add, etc.) are trivial to add.
+### 2. Flip provider secret
+
+- Use `update_secret` to set `CATALOG_PROVIDER = amazon`.
+- Keep `RAINFOREST_API_KEY` in place so we can roll back instantly by flipping the secret.
+
+### 3. Minor cleanup
+
+- `.env`: change default `CATALOG_PROVIDER=rainforest` → `CATALOG_PROVIDER=amazon` (local dev hint only — Edge Functions read from Supabase secrets, not `.env`).
+- `README.md`: update “Configuration” section so Amazon is presented as the default and Rainforest as the fallback.
+- `src/lib/validation.ts`: include `AMAZON_PAAPI_PARTNER_TAG` in the warning message.
+
+### 4. Verification
+
+- After deploy, call both functions via `supabase--curl_edge_functions`:
+  - `POST /catalog-search { "q": "lego", "page": 1 }` — expect `provider: "amazon"`, real items.
+  - `POST /catalog-item { "asin": "B0BSHF7WHW" }` — expect `provider: "amazon"`, real product.
+- Tail `supabase--edge_function_logs` for `catalog-search` and `catalog-item` to confirm no signing/auth errors.
+- If 401/403 from Amazon → credentials/region/marketplace mismatch; will re-check `AMAZON_PAAPI_REGION` (must be `eu-west-1` for `amazon.it`) and `AMAZON_PAAPI_PARTNER_TAG` (must match an Associates account approved for the IT marketplace).
+
+## Files touched
+
+- `supabase/functions/catalog-item/index.ts` (rewrite)
+- `.env` (default hint)
+- `README.md` (provider section)
+- `src/lib/validation.ts` (warning text)
+- Supabase secret: `CATALOG_PROVIDER` → `amazon`
+
+## Out of scope
+
+- No changes to frontend `CatalogService` or `useGiftCategoryProducts` — they are provider-agnostic and continue to work via the unified edge function response shape.
+- No DB migrations.

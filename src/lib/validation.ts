@@ -19,7 +19,7 @@ export function validateEnvironment(): void {
     if (tag === 'yourtag-21') {
       console.warn(
         '⚠️ PRODUCTION WARNING: Amazon affiliate tag not configured!\n' +
-        'Set AMZ_ASSOC_TAG or RAINFOREST_ASSOC_TAG in your environment variables.\n' +
+        'Set AMZ_ASSOC_TAG, AMAZON_PAAPI_PARTNER_TAG, or RAINFOREST_ASSOC_TAG in your environment variables.\n' +
         'Using fallback tag "yourtag-21" which should be replaced.'
       );
     } else {
