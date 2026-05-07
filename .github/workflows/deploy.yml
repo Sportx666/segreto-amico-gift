@@ -28,6 +28,25 @@ jobs:
       - name: Set build timestamp
         run: echo "BUILD_TIME=$(date -u +'%Y%m%d-%H%M')" >> $GITHUB_ENV
 
+      - name: Refresh sitemap lastmod for dynamic pages
+        run: |
+          TODAY=$(date -u +'%Y-%m-%d')
+          # Update lastmod for high-churn pages: / and /regali
+          python3 - <<PY
+          import re, pathlib, os
+          today = os.environ.get("TODAY") or "$TODAY"
+          p = pathlib.Path("public/sitemap.xml")
+          xml = p.read_text()
+          for loc in ["https://amicosegreto.fun/", "https://amicosegreto.fun/regali"]:
+              pattern = re.compile(
+                  r"(<loc>" + re.escape(loc) + r"</loc>\s*<lastmod>)[^<]+(</lastmod>)"
+              )
+              xml = pattern.sub(r"\g<1>" + today + r"\g<2>", xml)
+          p.write_text(xml)
+          PY
+        env:
+          TODAY: ${{ github.run_id }}
+
       - name: Load .env file
         run: |
           # Load .env file into GitHub Actions environment
