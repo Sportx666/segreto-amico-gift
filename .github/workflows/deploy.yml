@@ -80,3 +80,22 @@ jobs:
           exclude: |
             **/.git*
             **/.git*/**
+
+      - name: Ping IndexNow
+        if: ${{ env.INDEXNOW_KEY != '' }}
+        env:
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+        run: |
+          curl -fsS -X POST "https://api.indexnow.org/indexnow" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"host\": \"amicosegreto.fun\",
+              \"key\": \"${INDEXNOW_KEY}\",
+              \"keyLocation\": \"https://amicosegreto.fun/${INDEXNOW_KEY}.txt\",
+              \"urlList\": [
+                \"https://amicosegreto.fun/\",
+                \"https://amicosegreto.fun/regali\",
+                \"https://amicosegreto.fun/chi-siamo\",
+                \"https://amicosegreto.fun/sitemap.xml\"
+              ]
+            }" || echo "IndexNow ping failed (non-blocking)"
