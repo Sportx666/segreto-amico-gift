@@ -31,10 +31,9 @@ jobs:
       - name: Refresh sitemap lastmod for dynamic pages
         run: |
           TODAY=$(date -u +'%Y-%m-%d')
-          # Update lastmod for high-churn pages: / and /regali
-          python3 - <<PY
-          import re, pathlib, os
-          today = os.environ.get("TODAY") or "$TODAY"
+          python3 - "$TODAY" <<'PY'
+          import re, sys, pathlib
+          today = sys.argv[1]
           p = pathlib.Path("public/sitemap.xml")
           xml = p.read_text()
           for loc in ["https://amicosegreto.fun/", "https://amicosegreto.fun/regali"]:
@@ -44,8 +43,6 @@ jobs:
               xml = pattern.sub(r"\g<1>" + today + r"\g<2>", xml)
           p.write_text(xml)
           PY
-        env:
-          TODAY: ${{ github.run_id }}
 
       - name: Load .env file
         run: |
