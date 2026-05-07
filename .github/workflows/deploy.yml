@@ -82,9 +82,13 @@ jobs:
             **/.git*/**
 
       - name: Ping IndexNow
-        if: ${{ env.INDEXNOW_KEY != '' }}
         env:
           INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+        run: |
+          if [ -z "$INDEXNOW_KEY" ]; then
+            echo "INDEXNOW_KEY secret not set — skipping IndexNow ping."
+            exit 0
+          fi
         run: |
           curl -fsS -X POST "https://api.indexnow.org/indexnow" \
             -H "Content-Type: application/json" \
