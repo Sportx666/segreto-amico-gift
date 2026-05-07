@@ -28,6 +28,22 @@ jobs:
       - name: Set build timestamp
         run: echo "BUILD_TIME=$(date -u +'%Y%m%d-%H%M')" >> $GITHUB_ENV
 
+      - name: Refresh sitemap lastmod for dynamic pages
+        run: |
+          TODAY=$(date -u +'%Y-%m-%d')
+          python3 - "$TODAY" <<'PY'
+          import re, sys, pathlib
+          today = sys.argv[1]
+          p = pathlib.Path("public/sitemap.xml")
+          xml = p.read_text()
+          for loc in ["https://amicosegreto.fun/", "https://amicosegreto.fun/regali"]:
+              pattern = re.compile(
+                  r"(<loc>" + re.escape(loc) + r"</loc>\s*<lastmod>)[^<]+(</lastmod>)"
+              )
+              xml = pattern.sub(r"\g<1>" + today + r"\g<2>", xml)
+          p.write_text(xml)
+          PY
+
       - name: Load .env file
         run: |
           # Load .env file into GitHub Actions environment
@@ -64,3 +80,25 @@ jobs:
           exclude: |
             **/.git*
             **/.git*/**
+
+      - name: Ping IndexNow
+        env:
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+        run: |
+          if [ -z "$INDEXNOW_KEY" ]; then
+            echo "INDEXNOW_KEY secret not set — skipping IndexNow ping."
+            exit 0
+          fi
+          curl -fsS -X POST "https://api.indexnow.org/indexnow" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"host\": \"amicosegreto.fun\",
+              \"key\": \"${INDEXNOW_KEY}\",
+              \"keyLocation\": \"https://amicosegreto.fun/${INDEXNOW_KEY}.txt\",
+              \"urlList\": [
+                \"https://amicosegreto.fun/\",
+                \"https://amicosegreto.fun/regali\",
+                \"https://amicosegreto.fun/chi-siamo\",
+                \"https://amicosegreto.fun/sitemap.xml\"
+              ]
+            }" || echo "IndexNow ping failed (non-blocking)"
