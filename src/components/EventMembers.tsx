@@ -31,6 +31,31 @@ export const EventMembers = ({ eventId, userRole, eventStatus, joinCode, eventNa
   const { count: joinedCount } = useJoinedParticipantCount(eventId);
   const [diag, setDiag] = useState<DebugData>({});
   const [currentUserParticipantId, setCurrentUserParticipantId] = useState<string | null>(null);
+  const [emailById, setEmailById] = useState<Record<string, string | null>>({});
+
+  // Admin-only: fetch invite emails via SECURITY DEFINER RPC
+  useEffect(() => {
+    if (userRole !== 'admin' || !eventId) {
+      setEmailById({});
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.rpc('get_event_member_emails', { _event_id: eventId });
+      if (cancelled) return;
+      if (error) {
+        console.warn('get_event_member_emails failed', error);
+        setEmailById({});
+        return;
+      }
+      const map: Record<string, string | null> = {};
+      for (const row of data ?? []) {
+        map[(row as { member_id: string }).member_id] = (row as { anonymous_email: string | null }).anonymous_email;
+      }
+      setEmailById(map);
+    })();
+    return () => { cancelled = true; };
+  }, [userRole, eventId, members.length]);
 
   useEffect(() => {
     const getCurrentUserParticipant = async () => {
@@ -74,7 +99,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus, joinCode, eventNa
         const pid = await getOrCreateParticipantId(user.id);
         const { data: selfRow } = await supabase
           .from('event_members')
-          .select('id, role, anonymous_name, anonymous_email, status, participant_id')
+          .select('id, role, anonymous_name, status, participant_id')
           .eq('event_id', eventId)
           .eq('participant_id', pid)
           .maybeSingle();
@@ -211,7 +236,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus, joinCode, eventNa
         {members.map((member) => (
           <MemberCard
             key={member.id}
-            member={member}
+            member={{ ...member, anonymous_email: emailById[member.id] ?? null }}
             eventId={eventId}
             userRole={userRole}
             eventStatus={eventStatus || 'pending'}

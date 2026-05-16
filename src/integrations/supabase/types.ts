@@ -597,42 +597,68 @@ export type Database = {
           },
         ]
       }
-      profiles: {
+      profile_private: {
         Row: {
           address: string | null
-          avatar_url: string | null
           city: string | null
           country: string | null
-          created_at: string | null
-          display_name: string | null
+          created_at: string
           family_group: string | null
-          id: string
           phone: string | null
           postal_code: string | null
+          profile_id: string
+          updated_at: string
         }
         Insert: {
           address?: string | null
-          avatar_url?: string | null
           city?: string | null
           country?: string | null
-          created_at?: string | null
-          display_name?: string | null
+          created_at?: string
           family_group?: string | null
-          id: string
           phone?: string | null
           postal_code?: string | null
+          profile_id: string
+          updated_at?: string
         }
         Update: {
           address?: string | null
-          avatar_url?: string | null
           city?: string | null
           country?: string | null
-          created_at?: string | null
-          display_name?: string | null
+          created_at?: string
           family_group?: string | null
-          id?: string
           phone?: string | null
           postal_code?: string | null
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_private_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
         }
         Relationships: []
       }
@@ -819,6 +845,13 @@ export type Database = {
           avatar_url: string
           display_name: string
           id: string
+        }[]
+      }
+      get_event_member_emails: {
+        Args: { _event_id: string }
+        Returns: {
+          anonymous_email: string
+          member_id: string
         }[]
       }
       get_own_profile: {
