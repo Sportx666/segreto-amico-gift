@@ -236,7 +236,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus, joinCode, eventNa
         {members.map((member) => (
           <MemberCard
             key={member.id}
-            member={member}
+            member={{ ...member, anonymous_email: emailById[member.id] ?? null }}
             eventId={eventId}
             userRole={userRole}
             eventStatus={eventStatus || 'pending'}
