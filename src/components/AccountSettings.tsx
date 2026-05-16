@@ -137,7 +137,6 @@ const AccountSettings = () => {
           <div className="border-t pt-6">
             <h4 className="text-sm font-medium mb-4 text-destructive">{t('account.danger_zone')}</h4>
             <DeleteAccountDialog />
-            </div>
           </div>
         </CardContent>
       </Card>
