@@ -115,17 +115,25 @@ const Profile = () => {
       }
       const { error } = await supabase
         .from("profiles")
-        .update({ 
-          display_name: displayName, 
-          address, 
-          city, 
-          postal_code: postalCode, 
-          country, 
-          phone, 
-          avatar_url: url 
+        .update({
+          display_name: displayName,
+          avatar_url: url,
         })
         .eq("id", user.id);
       if (error) throw error;
+
+      // Persist sensitive fields in profile_private (self-only RLS)
+      const { error: ppError } = await supabase
+        .from("profile_private")
+        .upsert({
+          profile_id: user.id,
+          address,
+          city,
+          postal_code: postalCode,
+          country,
+          phone,
+        }, { onConflict: "profile_id" });
+      if (ppError) throw ppError;
       setAvatarUrl(url);
       setFile(null);
       toast.success(t('common.success'));
