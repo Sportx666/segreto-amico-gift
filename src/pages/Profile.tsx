@@ -34,19 +34,21 @@ const Profile = () => {
   useEffect(() => {
     async function load() {
       if (!user) return;
-      const { data } = await supabase
-        .from("profiles")
-        .select("display_name, address, city, postal_code, country, phone, avatar_url")
-        .eq("id", user.id)
-        .single();
-      if (data) {
-        setDisplayName(data.display_name ?? "");
-        setAddress(data.address ?? "");
-        setCity(data.city ?? "");
-        setPostalCode(data.postal_code ?? "");
-        setCountry(data.country ?? "");
-        setPhone(data.phone ?? "");
-        setAvatarUrl(data.avatar_url);
+      // Use get_own_profile RPC which joins public profiles + private profile_private
+      const { data, error } = await supabase.rpc('get_own_profile');
+      if (error) {
+        console.error('get_own_profile failed', error);
+        return;
+      }
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row) {
+        setDisplayName(row.display_name ?? "");
+        setAddress(row.address ?? "");
+        setCity(row.city ?? "");
+        setPostalCode(row.postal_code ?? "");
+        setCountry(row.country ?? "");
+        setPhone(row.phone ?? "");
+        setAvatarUrl(row.avatar_url ?? null);
       }
     }
     load();
