@@ -76,7 +76,7 @@ export const DeleteAccountDialog = () => {
                 </ul>
                 <div className="space-y-2 pt-2">
                   <Label htmlFor="confirm-delete" className="text-foreground">
-                    {t("account.delete.confirm_prompt", { word: CONFIRM_WORD })}
+                    {t("account.delete.confirm_prompt").replace("{word}", CONFIRM_WORD)}
                   </Label>
                   <Input
                     id="confirm-delete"
