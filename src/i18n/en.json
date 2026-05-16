@@ -682,7 +682,23 @@
     "fast_login_title": "Set Up Quick Login",
     "fast_login_desc": "Set a password to sign in without checking your email every time.",
     "setup_now": "Set Up Now",
-    "setup_complete": "You can now sign in faster!"
+    "setup_complete": "You can now sign in faster!",
+    "danger_zone": "Danger Zone",
+    "delete": {
+      "button": "Delete my account",
+      "title": "Delete account permanently?",
+      "intro": "This will permanently delete your account and all associated data.",
+      "warning_events": "All events you administer will be deleted for you and other participants.",
+      "warning_data": "Your profile, wishlists, messages, notifications, and devices will be removed.",
+      "warning_email": "You will no longer be able to sign up or sign in with this email.",
+      "warning_undo": "This action cannot be undone.",
+      "confirm_prompt": "To confirm, type {word} below:",
+      "cancel": "Cancel",
+      "confirm": "Delete permanently",
+      "deleting": "Deleting...",
+      "success": "Account deleted.",
+      "error": "Failed to delete account"
+    }
   },
   "password_setup": {
     "title": "Faster Login",

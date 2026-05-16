@@ -9,6 +9,7 @@ import { Shield, Mail, Key, LogOut, User } from "lucide-react";
 import { usePasswordAuth } from "@/hooks/usePasswordAuth";
 import PasswordSetup from "./PasswordSetup";
 import { useI18n } from "@/i18n";
+import DeleteAccountDialog from "./DeleteAccountDialog";
 
 const AccountSettings = () => {
   const { t } = useI18n();
@@ -129,6 +130,13 @@ const AccountSettings = () => {
                 <LogOut className="w-4 h-4 mr-2" />
                 {signingOut ? t('account.signing_out') : t('account.signout')}
               </Button>
+            </div>
+          </div>
+
+          {/* Danger Zone */}
+          <div className="border-t pt-6">
+            <h4 className="text-sm font-medium mb-4 text-destructive">{t('account.danger_zone')}</h4>
+            <DeleteAccountDialog />
             </div>
           </div>
         </CardContent>

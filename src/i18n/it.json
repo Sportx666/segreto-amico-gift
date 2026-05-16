@@ -682,7 +682,23 @@
     "fast_login_title": "Configura l'Accesso Veloce",
     "fast_login_desc": "Imposta una password per accedere senza dover controllare l'email ogni volta.",
     "setup_now": "Configura Ora",
-    "setup_complete": "Ora puoi accedere più velocemente!"
+    "setup_complete": "Ora puoi accedere più velocemente!",
+    "danger_zone": "Zona Pericolosa",
+    "delete": {
+      "button": "Elimina il mio account",
+      "title": "Eliminare definitivamente l'account?",
+      "intro": "Questa azione eliminerà in modo permanente il tuo account e tutti i dati associati.",
+      "warning_events": "Tutti gli eventi che amministri verranno eliminati per te e per gli altri partecipanti.",
+      "warning_data": "Il tuo profilo, liste dei desideri, messaggi, notifiche e dispositivi verranno rimossi.",
+      "warning_email": "Non potrai più registrarti né accedere con questa email.",
+      "warning_undo": "Questa azione è irreversibile.",
+      "confirm_prompt": "Per confermare, digita {word} qui sotto:",
+      "cancel": "Annulla",
+      "confirm": "Elimina definitivamente",
+      "deleting": "Eliminazione...",
+      "success": "Account eliminato.",
+      "error": "Impossibile eliminare l'account"
+    }
   },
   "password_setup": {
     "title": "Accesso Più Veloce",
