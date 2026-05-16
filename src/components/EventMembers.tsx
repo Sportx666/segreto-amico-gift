@@ -99,7 +99,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus, joinCode, eventNa
         const pid = await getOrCreateParticipantId(user.id);
         const { data: selfRow } = await supabase
           .from('event_members')
-          .select('id, role, anonymous_name, anonymous_email, status, participant_id')
+          .select('id, role, anonymous_name, status, participant_id')
           .eq('event_id', eventId)
           .eq('participant_id', pid)
           .maybeSingle();
