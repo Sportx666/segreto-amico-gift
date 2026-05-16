@@ -1,67 +1,83 @@
+
 ## Goal
+Let a user permanently delete their own account from Profile → Account Settings, with a strong confirmation, server-side cleanup of related data, immediate sign-out, and a block preventing the same email from signing up again.
 
-Speed up search engine recrawls by (1) adding `<lastmod>` dates to every URL in `public/sitemap.xml` and (2) pinging IndexNow with the sitemap URL after each deploy.
+## UX
 
-## Changes
+In `src/components/AccountSettings.tsx`, add a new "Danger zone" section under the existing security actions:
 
-### 1. `public/sitemap.xml` — add `<lastmod>`
+- Destructive outline button: "Delete my account"
+- Clicking it opens an `AlertDialog` (shadcn) with:
+  - Title: "Delete account permanently?"
+  - Warning list (i18n):
+    - All your events you administer will be deleted
+    - Your wishlists, messages, notifications, push tokens, profile data will be removed
+    - You will no longer be able to sign in with this email
+    - This action cannot be undone
+  - A text input requiring the user to type `DELETE` (or their email) to enable the confirm button
+  - Cancel + Confirm (destructive) buttons
+- On confirm: call the edge function, show toast, then sign out and redirect to `/`.
 
-Add an ISO-8601 date (`YYYY-MM-DD`) to each `<url>` entry. Use today's date as the baseline. Going forward, the deploy workflow will refresh the homepage and `/regali` lastmod automatically (high-churn pages); the static legal pages stay on a manual cadence.
+All strings added to `src/i18n/it.json` and `src/i18n/en.json` under `account.delete.*`.
 
-```xml
-<url>
-  <loc>https://amicosegreto.fun/</loc>
-  <lastmod>2026-05-07</lastmod>
-  <changefreq>weekly</changefreq>
-  <priority>1.0</priority>
-</url>
-```
+## Backend — new edge function `delete-account`
 
-### 2. Auto-refresh `<lastmod>` for dynamic pages at build time
+File: `supabase/functions/delete-account/index.ts`
 
-Add a step in `.github/workflows/deploy.yml` (before `npm run build`) that updates `<lastmod>` on `/` and `/regali` to the current UTC date using `sed`. Keeps churn-prone pages fresh without manual edits.
+- Validates JWT from `Authorization` header using the anon client (`supabase.auth.getUser(token)`).
+- Uses a service-role client to:
+  1. Look up the user's `participants.id`s for cleanup of cross-referenced rows.
+  2. Delete dependent rows the user owns or authored (RLS-bypassing, in this order to respect references):
+     - `notifications` where `profile_id = user.id`
+     - `notification_settings` where `profile_id = user.id`
+     - `push_tokens` where `profile_id = user.id`
+     - `chat_messages` where `author_participant_id` in user's participants
+     - `private_chats` where user is anonymous or exposed participant
+     - `anonymous_aliases` where `participant_id` in user's participants
+     - `wishlist_items` and `wishlists` owned by user's participants
+     - `assignments` and `exclusions` referencing user's participants → easier: delete events the user admins (cascades nothing automatically since there are no FKs, so explicitly delete `assignments`, `exclusions`, `event_members`, `wishlist_items`, `wishlists`, `join_tokens`, `chat_messages`, `private_chats`, `notifications` for those `event_id`s, then `events`).
+     - `event_members` where `participant_id` in user's participants (leaves other events but removes their membership)
+     - `participants` where `profile_id = user.id`
+     - `profiles` where `id = user.id`
+  3. Add the email to a new `blocked_emails` table (see migration).
+  4. `supabase.auth.admin.deleteUser(user.id)` to remove the auth record.
+- Returns `{ ok: true }`. CORS + zod input validation (no body needed, but validate method).
 
-### 3. IndexNow ping after deploy
+## Database migration
 
-#### a. Generate an IndexNow key file
+1. Create `blocked_emails` table:
+   ```
+   id uuid pk default gen_random_uuid()
+   email text unique not null  (stored lowercased)
+   reason text default 'account_deleted'
+   created_at timestamptz default now()
+   ```
+   RLS enabled; no policies (only service role / triggers access it).
 
-- Pick a 32-char hex key (e.g. generated once, stored as repo secret `INDEXNOW_KEY`).
-- Add `public/<KEY>.txt` containing just the key (required for verification by IndexNow). Since the key is public-by-design, we can also commit it directly — but using a secret keeps it out of the repo. Implementation: a workflow step writes `public/${INDEXNOW_KEY}.txt` before build.
+2. Create a `SECURITY DEFINER` trigger on `auth.users` BEFORE INSERT that rejects signups whose `lower(email)` exists in `public.blocked_emails`. (Adding a trigger on `auth.users` is the only minimal touch to the auth schema; allowed because we are not modifying schema structure, only attaching one trigger function.)
 
-#### b. Add a post-deploy ping step in `.github/workflows/deploy.yml`
+   Function `public.prevent_blocked_email_signup()` raises an exception with a clear message ("This email cannot be used to register again.") when a match is found.
 
-After the FTP deploy step, add:
+3. Helper RPC (optional) `public.delete_my_account_data()` is NOT used — all deletion happens in the edge function with the service role for clearer auditability and error handling.
 
-```yaml
-- name: Ping IndexNow
-  run: |
-    curl -fsS -X POST "https://api.indexnow.org/indexnow" \
-      -H "Content-Type: application/json" \
-      -d '{
-        "host": "amicosegreto.fun",
-        "key": "${{ secrets.INDEXNOW_KEY }}",
-        "keyLocation": "https://amicosegreto.fun/${{ secrets.INDEXNOW_KEY }}.txt",
-        "urlList": [
-          "https://amicosegreto.fun/",
-          "https://amicosegreto.fun/regali",
-          "https://amicosegreto.fun/chi-siamo",
-          "https://amicosegreto.fun/sitemap.xml"
-        ]
-      }'
-```
+## Client wiring
 
-IndexNow notifies Bing, Yandex, Seznam, Naver, and Yep instantly. Google does not consume IndexNow, but Bingbot discovery often accelerates Google indexing indirectly. (For Google specifically, the existing Search Console sitemap submission remains the primary signal.)
+- New component `src/components/DeleteAccountDialog.tsx` containing the AlertDialog + confirmation input.
+- Imported and rendered from `AccountSettings.tsx`.
+- On success: `await supabase.auth.signOut()` then `window.location.href = "/"`.
+- Errors surfaced via `sonner` toast.
 
-### 4. Documentation
-
-Short note in `README.md` describing the `INDEXNOW_KEY` secret and how the ping works.
-
-## What you need to do
-
-- Create a GitHub Actions secret named `INDEXNOW_KEY` with a 32-character hex string (I can generate one for you).
-- Approve the plan and I'll implement the rest.
+## Secrets
+None new. Uses existing `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` already configured.
 
 ## Out of scope
+- No "soft delete" / 30-day grace period (can be added later behind a flag).
+- No admin override to un-block an email — manual SQL removal from `blocked_emails` if needed.
 
-- No Google-specific ping (Google deprecated their sitemap ping endpoint in 2023; Search Console remains the channel).
-- No runtime change to the app — only build/deploy plumbing and a static XML edit.
+## Files touched
+
+- new `supabase/functions/delete-account/index.ts`
+- new `src/components/DeleteAccountDialog.tsx`
+- edit `src/components/AccountSettings.tsx` (add danger zone)
+- edit `src/i18n/it.json`, `src/i18n/en.json` (strings)
+- new migration: `blocked_emails` table + auth.users signup trigger
