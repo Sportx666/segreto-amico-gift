@@ -108,6 +108,27 @@ export type Database = {
           },
         ]
       }
+      blocked_emails: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          reason?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          reason?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           alias_snapshot: string
