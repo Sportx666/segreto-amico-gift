@@ -16,23 +16,7 @@ const GiftGuide = () => {
   const { t } = useI18n();
   const { user } = useAuth();
 
-  // Open Graph meta tags
-  useEffect(() => {
-    const metas: HTMLMetaElement[] = [];
-    const set = (property: string, content: string) => {
-      const el = document.createElement('meta');
-      el.setAttribute('property', property);
-      el.content = content;
-      document.head.appendChild(el);
-      metas.push(el);
-    };
-    set('og:title', 'Guida ai Regali - Amico Segreto');
-    set('og:description', 'Idee regalo curate per ogni budget e occasione');
-    set('og:url', 'https://amicosegreto.fun/regali');
-    set('og:type', 'website');
-    set('og:image', 'https://amicosegreto.fun/icons/icon-512x512.png');
-    return () => metas.forEach(m => m.remove());
-  }, []);
+  // Open Graph meta tags handled via <SEO> component below
 
   // Pinterest PageVisit for the /regali route
   useEffect(() => {
