@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Gift, Users, Heart, ArrowRight, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useI18n } from '@/i18n';
 import { useAuth } from '@/components/AuthProvider';
+import { SEO } from '@/components/SEO';
 import logo from '@/assets/logo.png';
 
 const About = () => {
