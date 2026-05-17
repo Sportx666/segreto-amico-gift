@@ -1,6 +1,13 @@
+import { SEO } from '@/components/SEO';
+
 export default function Privacy() {
   return (
     <div className="container mx-auto px-4 py-10 max-w-4xl">
+      <SEO
+        title="Informativa sulla Privacy — Amico Segreto"
+        description="Come trattiamo i dati personali degli utenti di Amico Segreto: finalità, base giuridica, diritti dell'interessato."
+        path="/privacy"
+      />
       <h1 className="text-3xl font-bold mb-8">Informativa sulla Privacy</h1>
       
       <div className="prose prose-gray max-w-none space-y-8">
