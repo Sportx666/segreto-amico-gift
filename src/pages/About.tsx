@@ -12,22 +12,6 @@ const About = () => {
   const { t } = useI18n();
   const { user } = useAuth();
 
-  useEffect(() => {
-    const metas: HTMLMetaElement[] = [];
-    const set = (property: string, content: string) => {
-      const el = document.createElement('meta');
-      el.setAttribute('property', property);
-      el.content = content;
-      document.head.appendChild(el);
-      metas.push(el);
-    };
-    set('og:title', 'Chi Siamo - Amico Segreto');
-    set('og:description', 'Scopri come funziona Amico Segreto: organizza il tuo Secret Santa online gratis');
-    set('og:url', 'https://amicosegreto.fun/chi-siamo');
-    set('og:type', 'website');
-    set('og:image', 'https://amicosegreto.fun/icons/icon-512x512.png');
-    return () => metas.forEach(m => m.remove());
-  }, []);
 
   const jsonLd = {
     '@context': 'https://schema.org',
