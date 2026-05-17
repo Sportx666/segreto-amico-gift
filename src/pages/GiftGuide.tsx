@@ -44,6 +44,11 @@ const GiftGuide = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Guida ai Regali — Idee per ogni budget | Amico Segreto"
+        description="Idee regalo curate per ogni budget e occasione: scopri suggerimenti pensati per il tuo Secret Santa."
+        path="/regali"
+      />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Hero Section */}
       <div className="bg-gradient-hero text-white">
