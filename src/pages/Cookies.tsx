@@ -1,6 +1,13 @@
+import { SEO } from '@/components/SEO';
+
 export default function Cookies() {
   return (
     <div className="container mx-auto px-4 py-10 max-w-4xl">
+      <SEO
+        title="Cookie Policy — Amico Segreto"
+        description="Cosa sono i cookie e come li utilizziamo su Amico Segreto: tipologie, finalità e gestione delle preferenze."
+        path="/cookies"
+      />
       <h1 className="text-3xl font-bold mb-8">Cookie Policy</h1>
       
       <div className="prose prose-gray max-w-none space-y-8">
