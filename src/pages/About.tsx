@@ -23,6 +23,11 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Chi Siamo — Amico Segreto"
+        description="Scopri come funziona Amico Segreto: organizza il tuo Secret Santa online gratis, in italiano, in pochi minuti."
+        path="/chi-siamo"
+      />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* Hero */}
