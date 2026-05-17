@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Gift, Users, Heart, ArrowRight, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,28 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useI18n } from '@/i18n';
 import { useAuth } from '@/components/AuthProvider';
+import { SEO } from '@/components/SEO';
 import logo from '@/assets/logo.png';
 
 const About = () => {
   const { t } = useI18n();
   const { user } = useAuth();
 
-  useEffect(() => {
-    const metas: HTMLMetaElement[] = [];
-    const set = (property: string, content: string) => {
-      const el = document.createElement('meta');
-      el.setAttribute('property', property);
-      el.content = content;
-      document.head.appendChild(el);
-      metas.push(el);
-    };
-    set('og:title', 'Chi Siamo - Amico Segreto');
-    set('og:description', 'Scopri come funziona Amico Segreto: organizza il tuo Secret Santa online gratis');
-    set('og:url', 'https://amicosegreto.fun/chi-siamo');
-    set('og:type', 'website');
-    set('og:image', 'https://amicosegreto.fun/icons/icon-512x512.png');
-    return () => metas.forEach(m => m.remove());
-  }, []);
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -39,6 +23,11 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Chi Siamo — Amico Segreto"
+        description="Scopri come funziona Amico Segreto: organizza il tuo Secret Santa online gratis, in italiano, in pochi minuti."
+        path="/chi-siamo"
+      />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* Hero */}

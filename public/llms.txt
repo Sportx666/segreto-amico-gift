@@ -1,0 +1,18 @@
+# L'Amico Segreto
+
+> Organizza il Secret Santa (Amico Segreto) online gratis: crea il gruppo, invita su WhatsApp, lascia che il sorteggio avvenga in automatico. App in italiano e inglese.
+
+Amico Segreto (amicosegreto.fun) è un'app web e mobile per organizzare lo scambio di regali natalizio noto come Secret Santa. Gli utenti creano un gruppo, impostano budget e data, invitano amici tramite link condivisibile e l'app gestisce automaticamente il sorteggio, le wishlist e la chat privata tra partecipanti.
+
+## Pages
+
+- [Home](/): landing page con introduzione al servizio e accesso rapido.
+- [Chi Siamo](/chi-siamo): cos'è Amico Segreto, come funziona, FAQ.
+- [Guida ai Regali](/regali): idee regalo curate per ogni budget e occasione.
+- [Privacy](/privacy): informativa sul trattamento dei dati personali.
+- [Termini e Condizioni](/terms): termini d'uso del servizio.
+- [Cookie Policy](/cookies): tipologie di cookie utilizzati.
+
+## Optional
+
+- [Login / Registrazione](/auth): accesso utente (richiede autenticazione).

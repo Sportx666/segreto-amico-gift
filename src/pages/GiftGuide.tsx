@@ -10,29 +10,14 @@ import { GiftCategorySection } from '@/components/gifts/GiftCategorySection';
 import { AffiliateDisclosure } from '@/components/gifts/AffiliateDisclosure';
 import { amazonSearchUrl, ideaBucketUrl } from '@/lib/amazon';
 import { pinterestTrack } from '@/lib/pinterest';
+import { SEO } from '@/components/SEO';
 import logo from '@/assets/logo.png';
 
 const GiftGuide = () => {
   const { t } = useI18n();
   const { user } = useAuth();
 
-  // Open Graph meta tags
-  useEffect(() => {
-    const metas: HTMLMetaElement[] = [];
-    const set = (property: string, content: string) => {
-      const el = document.createElement('meta');
-      el.setAttribute('property', property);
-      el.content = content;
-      document.head.appendChild(el);
-      metas.push(el);
-    };
-    set('og:title', 'Guida ai Regali - Amico Segreto');
-    set('og:description', 'Idee regalo curate per ogni budget e occasione');
-    set('og:url', 'https://amicosegreto.fun/regali');
-    set('og:type', 'website');
-    set('og:image', 'https://amicosegreto.fun/icons/icon-512x512.png');
-    return () => metas.forEach(m => m.remove());
-  }, []);
+  // Open Graph meta tags handled via <SEO> component below
 
   // Pinterest PageVisit for the /regali route
   useEffect(() => {
@@ -59,6 +44,11 @@ const GiftGuide = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Guida ai Regali — Idee per ogni budget | Amico Segreto"
+        description="Idee regalo curate per ogni budget e occasione: scopri suggerimenti pensati per il tuo Secret Santa."
+        path="/regali"
+      />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Hero Section */}
       <div className="bg-gradient-hero text-white">
