@@ -10,6 +10,7 @@ import { GiftCategorySection } from '@/components/gifts/GiftCategorySection';
 import { AffiliateDisclosure } from '@/components/gifts/AffiliateDisclosure';
 import { amazonSearchUrl, ideaBucketUrl } from '@/lib/amazon';
 import { pinterestTrack } from '@/lib/pinterest';
+import { SEO } from '@/components/SEO';
 import logo from '@/assets/logo.png';
 
 const GiftGuide = () => {
