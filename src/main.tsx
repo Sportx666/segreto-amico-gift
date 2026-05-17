@@ -5,6 +5,7 @@ import { validateEnvironment } from '@/lib/validation'
 import { I18nProvider } from '@/components/I18nProvider'
 import { initServiceWorker } from '@/lib/registerSW'
 import { pinterestLoad } from '@/lib/pinterest'
+import { HelmetProvider } from 'react-helmet-async'
 import './index.css'
 
 initDebug();
