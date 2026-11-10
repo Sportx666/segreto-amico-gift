@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/components/AuthProvider';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, SUPABASE_URL } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useI18n } from '@/i18n';
 
@@ -62,7 +62,7 @@ export function useChat(options: UseChatOptions) {
     const fetchId = ++fetchIdRef.current;
     const currentOffset = isLoadMore ? offset : 0;
     
-    let url = `https://eociecgrdwllggcohmko.supabase.co/functions/v1/chat-list?eventId=${eventId}&channel=${channel}&offset=${currentOffset}&limit=25`;
+    let url = `${SUPABASE_URL}/functions/v1/chat-list?eventId=${eventId}&channel=${channel}&offset=${currentOffset}&limit=25`;
     
     if (channel === 'pair' && privateChatId) {
       url += `&privateChatId=${privateChatId}`;
@@ -119,7 +119,7 @@ export function useChat(options: UseChatOptions) {
         }
       }
 
-      const response = await fetch('https://eociecgrdwllggcohmko.supabase.co/functions/v1/chat-send', {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/chat-send`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,

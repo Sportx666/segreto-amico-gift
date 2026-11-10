@@ -2,6 +2,7 @@
  * Catalog service - handles product search and details via pluggable providers
  */
 import { ApiService } from './api';
+import { SUPABASE_URL } from '@/integrations/supabase/client';
 
 export interface CatalogItem {
   title: string;
@@ -46,7 +47,7 @@ export class CatalogService {
     try {
       return await ApiService.fetchRequest<CatalogSearchResult>(
         'catalog_search',
-        'https://eociecgrdwllggcohmko.supabase.co/functions/v1/catalog-search',
+        `${SUPABASE_URL}/functions/v1/catalog-search`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -76,7 +77,7 @@ export class CatalogService {
     try {
       return await ApiService.fetchRequest<CatalogItemResult>(
         'catalog_item',
-        'https://eociecgrdwllggcohmko.supabase.co/functions/v1/catalog-item',
+        `${SUPABASE_URL}/functions/v1/catalog-item`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

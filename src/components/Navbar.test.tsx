@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { screen } from '@testing-library/dom';
 import { MemoryRouter } from 'react-router-dom';
+import { I18nProvider } from './I18nProvider';
 import { Navbar } from './Navbar';
 
 // Mock the useAuth hook
@@ -14,9 +15,11 @@ describe('Navbar', () => {
   it('renders unauthenticated navbar with login button', () => {
     (useAuth as ReturnType<typeof vi.fn>).mockReturnValue({ user: null, loading: false });
     render(
-      <MemoryRouter initialEntries={["/"]}>
-        <Navbar />
-      </MemoryRouter>
+      <I18nProvider>
+        <MemoryRouter initialEntries={["/"]}>
+          <Navbar />
+        </MemoryRouter>
+      </I18nProvider>
     );
 
     expect(screen.getByText('Amico Segreto')).toBeInTheDocument();
@@ -26,9 +29,11 @@ describe('Navbar', () => {
   it('does not render on /auth route', () => {
     (useAuth as ReturnType<typeof vi.fn>).mockReturnValue({ user: null, loading: false });
     render(
-      <MemoryRouter initialEntries={["/auth"]}>
-        <Navbar />
-      </MemoryRouter>
+      <I18nProvider>
+        <MemoryRouter initialEntries={["/auth"]}>
+          <Navbar />
+        </MemoryRouter>
+      </I18nProvider>
     );
 
     expect(screen.queryByText('Amico Segreto')).not.toBeInTheDocument();
@@ -37,9 +42,11 @@ describe('Navbar', () => {
   it('renders authenticated navbar with navigation links', () => {
     (useAuth as ReturnType<typeof vi.fn>).mockReturnValue({ user: { id: 'u1' }, loading: false });
     render(
-      <MemoryRouter initialEntries={["/"]}>
-        <Navbar />
-      </MemoryRouter>
+      <I18nProvider>
+        <MemoryRouter initialEntries={["/"]}>
+          <Navbar />
+        </MemoryRouter>
+      </I18nProvider>
     );
 
     expect(screen.getByText('Amico Segreto')).toBeInTheDocument();

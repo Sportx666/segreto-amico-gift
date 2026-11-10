@@ -153,11 +153,14 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // Verify service role key for internal calls
+    // Internal-only: require an exact Bearer service-role token.
+    // verify_jwt is false so this check is the only gate. A substring
+    // match is not enough, and a missing key must fail closed.
     const authHeader = req.headers.get('authorization');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    if (!authHeader?.includes(serviceRoleKey || '')) {
+    const expected = serviceRoleKey ? `Bearer ${serviceRoleKey}` : '';
+
+    if (!serviceRoleKey || authHeader !== expected) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

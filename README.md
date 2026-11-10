@@ -23,28 +23,9 @@ A modern web application for organizing Secret Santa gift exchanges with integra
 
 ### 1. Environment Configuration
 
-Copy `.env.example` to `.env` and configure:
+Copy `.env.example` to `.env` for local `npm run dev` / `npm run build`. Do not commit `.env`.
 
-```bash
-# Supabase Configuration
-VITE_SUPABASE_URL=your-supabase-url
-VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-anon-key
-SUPABASE_URL=your-supabase-url
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-
-# Catalog Provider (choose one)
-CATALOG_PROVIDER=rainforest  # or 'amazon' or 'none'
-
-# Rainforest API (for Amazon product search)
-RAINFOREST_API_KEY=your-rainforest-api-key
-RAINFOREST_DOMAIN=amazon.it
-
-# Amazon PA-API (alternative to Rainforest)
-AMAZON_API_ENABLED=false
-AMZ_ACCESS_KEY=your-access-key-id
-AMZ_SECRET_KEY=your-secret-access-key
-AMZ_ASSOC_TAG=your-associate-tag
-```
+Only `VITE_*` values belong in that file. Server secrets (`SUPABASE_SERVICE_ROLE_KEY`, Rainforest, Amazon PA-API, `SCHEDULER_SECRET`, mail provider keys) are Supabase Edge Function secrets, not Vite env vars and not GitHub Actions build env.
 
 ### 2. Catalog Provider Setup
 
@@ -307,24 +288,20 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-trick
 
 ### Supabase Configuration
 
-Set the following variables for Supabase:
+Client builds read only `VITE_*` variables (see `.env.example`):
 
-- `VITE_SUPABASE_URL`: Public project URL (client-side)
-- `VITE_SUPABASE_PUBLISHABLE_KEY`: Publishable anon key (client-side)
-- `SUPABASE_URL`: Project URL (server-side; same as above)
-- `SUPABASE_SERVICE_ROLE_KEY`: Service role key (server-side; privileged)
-- `SUPABASE_ANON_KEY` (optional): Anon key for the debug API to run RLS checks using your session token.
+- `VITE_SUPABASE_URL`: Public project URL
+- `VITE_SUPABASE_PUBLISHABLE_KEY`: Publishable anon key
+- `VITE_SUPABASE_PROJECT_ID`, `VITE_PUBLIC_BASE_URL`, `VITE_AUTH_REDIRECT_OVERRIDE`
+- `VITE_ADS_ENABLED`, `VITE_AMAZON_PARTNER_TAG`, `VITE_PINTEREST_TAG_ID`, `VITE_I18N_ENABLED`
 
-Where to find these in Supabase:
+`npm run build` refuses to run when `VITE_SUPABASE_URL` or `VITE_SUPABASE_PUBLISHABLE_KEY` is empty.
 
-- In your Supabase Dashboard: Project Settings → API
-  - Project URL → use for `VITE_SUPABASE_URL` and `SUPABASE_URL`
-  - anon public key → use for `VITE_SUPABASE_PUBLISHABLE_KEY`
-  - service_role secret → use for `SUPABASE_SERVICE_ROLE_KEY` (do not expose client-side)
+Edge Functions receive `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` from the Supabase runtime. Set any other server secret in the function secrets, not in `.env` and not as a `VITE_*` variable. The service role key must not be exposed to the browser.
 
 ### Catalog Provider Configuration
 
-To enable product search with different providers:
+To enable product search with different providers, set these as Supabase Edge Function secrets (not in `.env` and not in the GitHub Actions build):
 
 #### Rainforest API (Recommended for Development)
 1. **Sign up**: Visit [Rainforest API](https://www.rainforestapi.com/)
@@ -352,8 +329,6 @@ To enable product search with different providers:
 
 **Important**: PA-API requires approval from Amazon and has strict rate limits. Use Rainforest API for development and testing.
 
-In deployment (e.g., Vercel), add the server-side variables in your Project → Settings → Environment Variables and redeploy.
-
 ### Localhost caveat
 
 WhatsApp on a phone will not open `localhost` links generated from your desktop. To test invite links from a mobile device, either:
@@ -363,7 +338,7 @@ WhatsApp on a phone will not open `localhost` links generated from your desktop.
 
 ### Debugging permissions
 
-Enable debug mode by adding `?debug=1` to the URL. You can also POST to `/api/debug/rls` with your `Authorization: Bearer <access_token>` header and body `{ eventId }` to verify if your current session can insert into `participants` and `event_members` under RLS.
+`?debug=1` and the member debug panel work only while running the dev server. Production builds force that panel off. The `debug-rls` Edge Function has been removed.
 
 ## Database migrations
 

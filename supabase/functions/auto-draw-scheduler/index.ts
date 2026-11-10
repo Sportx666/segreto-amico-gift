@@ -11,11 +11,12 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  // Validate scheduler secret for cron job authentication
+  // Cron/shared-secret auth. verify_jwt is false by design.
+  // Fail closed if SCHEDULER_SECRET is unset in Edge Function secrets.
   const schedulerSecret = Deno.env.get('SCHEDULER_SECRET')
   const providedSecret = req.headers.get('x-scheduler-secret')
   
-  if (!schedulerSecret || providedSecret !== schedulerSecret) {
+  if (!schedulerSecret || !providedSecret || providedSecret !== schedulerSecret) {
     console.error('Unauthorized scheduler access attempt')
     return new Response(
       JSON.stringify({ error: 'Unauthorized' }),

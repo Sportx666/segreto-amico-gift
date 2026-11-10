@@ -13,6 +13,7 @@ type ApiError = {
 type TraceCategory = 'rls_error' | 'network_error' | 'parse_error' | 'validation_error' | 'unique_violation';
 
 const isTraceEnabled = () => {
+  if (import.meta.env.PROD) return false;
   return import.meta.env.VITE_DB_TRACE === '1' || import.meta.env.VITE_DB_TRACE === 'true';
 };
 
