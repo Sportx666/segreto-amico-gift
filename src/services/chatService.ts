@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, SUPABASE_URL } from '@/integrations/supabase/client';
 
 export interface ChatMessage {
   id: string;
@@ -26,8 +26,6 @@ export interface PrivateChat {
   lastMessageAt: string;
   createdAt: string;
 }
-
-const SUPABASE_URL = 'https://eociecgrdwllggcohmko.supabase.co';
 
 // Cache for participant lookups
 const participantCache = new Map<string, { id: string; timestamp: number }>();

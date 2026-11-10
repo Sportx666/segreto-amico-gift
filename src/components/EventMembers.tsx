@@ -198,7 +198,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus, joinCode, eventNa
 
   return (
     <div className="space-y-6">
-      {isDebug() && (
+      {import.meta.env.DEV && isDebug() && (
         <DebugPanel 
           eventId={eventId} 
           diag={diag} 

@@ -1,4 +1,10 @@
 export function isDebug(): boolean {
+  // Production builds must not show the debug panel or verbose tracing.
+  // Vite statically replaces import.meta.env.PROD. A copied env object
+  // (import.meta as any).env is not replaced, so ?debug=1 / localStorage
+  // could still turn the panel on after a production build.
+  if (import.meta.env.PROD) return false;
+
   // 1) URL param has highest priority: ?debug=1 enables, ?debug=0 disables
   try {
     if (typeof window !== 'undefined') {
@@ -20,10 +26,9 @@ export function isDebug(): boolean {
 
   // 3) Vite env: VITE_DEBUG toggles; otherwise default to DEV
   try {
-    const env = (import.meta as any)?.env ?? {};
-    if (env?.VITE_DEBUG === '1' || env?.VITE_DEBUG === 'true') return true;
-    if (env?.VITE_DEBUG === '0' || env?.VITE_DEBUG === 'false') return false;
-    if (env?.DEV) return true;
+    if (import.meta.env.VITE_DEBUG === '1' || import.meta.env.VITE_DEBUG === 'true') return true;
+    if (import.meta.env.VITE_DEBUG === '0' || import.meta.env.VITE_DEBUG === 'false') return false;
+    if (import.meta.env.DEV) return true;
   } catch {}
 
   return false;

@@ -152,7 +152,7 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
           </EmptyState>
         ) : (
           <>
-            {isDebug() && (
+            {import.meta.env.DEV && isDebug() && (
               <Card className="p-4 mb-6">
                 <pre className="text-xs whitespace-pre-wrap break-words">{JSON.stringify(diag, null, 2)}</pre>
               </Card>
