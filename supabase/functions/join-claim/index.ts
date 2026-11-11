@@ -6,8 +6,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+function json(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
+}
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -15,223 +21,45 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    if (req.method !== 'POST') {
-      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-        status: 405,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
+    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
     const authHeader = req.headers.get('authorization')
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
+    if (!authHeader) return json({ error: 'unauthorized' }, 401)
 
     const accessToken = authHeader.replace('Bearer ', '')
     const { data: { user }, error: userErr } = await supabase.auth.getUser(accessToken)
-    if (userErr || !user) {
-      return new Response(JSON.stringify({ error: 'unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
+    if (userErr || !user) return json({ error: 'unauthorized' }, 401)
 
-    const { token } = await req.json()
-    if (!token) {
-      return new Response(JSON.stringify({ error: 'token_required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
+    const { token } = await req.json().catch(() => ({ token: null }))
+    if (!token) return json({ error: 'token_required' }, 400)
 
-    // Load token row
-    const { data: jt, error: jtErr } = await supabase
-      .from('join_tokens')
-      .select('event_id, participant_id, expires_at, used_at')
-      .eq('token', token)
-      .single()
-
-    if (jtErr || !jt) {
-      return new Response(JSON.stringify({ error: 'invalid' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    if (jt.used_at) {
-      return new Response(JSON.stringify({ error: 'used' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    if (new Date(jt.expires_at) < new Date()) {
-      return new Response(JSON.stringify({ error: 'expired' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    let participantId = jt.participant_id as string | null
-
-    if (participantId) {
-      // Load participant
-      const { data: participant, error: partErr } = await supabase
-        .from('participants')
-        .select('id, profile_id')
-        .eq('id', participantId)
-        .single()
-
-      if (partErr || !participant) {
-        return new Response(JSON.stringify({ error: 'invalid' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-
-      if (participant.profile_id && participant.profile_id !== user.id) {
-        return new Response(JSON.stringify({ error: 'forbidden' }), {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-
-      if (!participant.profile_id) {
-        await supabase
-          .from('participants')
-          .update({ profile_id: user.id })
-          .eq('id', participantId)
-          .is('profile_id', null)
-      }
-    } else {
-      // Generic invite - create or reuse participant bound to user using upsert
-      const { data: upserted, error: upsertErr } = await supabase
-        .from('participants')
-        .upsert(
-          { profile_id: user.id },
-          { onConflict: 'profile_id', ignoreDuplicates: true }
-        )
-        .select('id')
-        .single()
-
-      // If upsert returns nothing, fetch existing
-      if (upsertErr || !upserted) {
-        const { data: existing, error: fetchErr } = await supabase
-          .from('participants')
-          .select('id')
-          .eq('profile_id', user.id)
-          .single()
-
-        if (fetchErr || !existing) {
-          return new Response(JSON.stringify({ error: fetchErr?.message || 'participant_create_failed' }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
-        participantId = existing.id
-      } else {
-        participantId = upserted.id
-      }
-    }
-
-    // Upsert event membership
-    const { data: memberRow, error: memberErr } = await supabase
-      .from('event_members')
-      .upsert({
-        event_id: jt.event_id,
-        participant_id: participantId,
-        role: 'member',
-        status: 'joined',
-      }, { onConflict: 'event_id,participant_id' })
-      .select('id')
-      .single()
-
-    if (memberErr || !memberRow) {
-      return new Response(JSON.stringify({ error: memberErr?.message || 'member_upsert_failed' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    // Fix any duplicate memberships and check for merging
-    const { data: fixResult, error: fixErr } = await supabase.rpc(
-      'fix_event_membership_duplicates',
-      { _event_id: jt.event_id, _profile_id: user.id }
-    )
-
-    if (fixErr) {
-      console.warn('Failed to fix duplicates:', fixErr)
-    }
-
-    // If duplicates were merged, notify admin
-    if (fixResult?.merged_pids?.length > 0) {
-      try {
-        // Get admin email
-        const { data: event } = await supabase
-          .from('events')
-          .select('admin_profile_id')
-          .eq('id', jt.event_id)
-          .single()
-        
-        if (event?.admin_profile_id) {
-          const { data: adminProfile } = await supabase
-            .from('profiles')
-            .select('email')
-            .eq('id', event.admin_profile_id)
-            .single()
-          
-          if (adminProfile?.email) {
-            // Send merge notification
-            await supabase.functions.invoke('mail-merge-notice', {
-              body: {
-                adminEmail: adminProfile.email,
-                eventId: jt.event_id,
-                profileId: user.id,
-                mergedPids: fixResult.merged_pids
-              }
-            })
-          }
-        }
-      } catch (mailErr) {
-        console.warn('Failed to send merge notification:', mailErr)
-      }
-    }
-
-    // Ensure default wishlist exists
-    const { data: wl } = await supabase
-      .from('wishlists')
-      .select('id')
-      .eq('event_id', jt.event_id)
-      .eq('owner_id', participantId)
-      .maybeSingle()
-
-    if (!wl) {
-      await supabase
-        .from('wishlists')
-        .insert({ event_id: jt.event_id, owner_id: participantId, title: 'La mia lista' })
-    }
-
-    // Mark token as used
-    await supabase
-      .from('join_tokens')
-      .update({ used_at: new Date().toISOString() })
-      .eq('token', token)
-
-    return new Response(JSON.stringify({ redirect: `/events/${jt.event_id}` }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    const { data, error } = await supabase.rpc('claim_join_token', {
+      _token: token,
+      _profile_id: user.id,
     })
 
+    if (error) {
+      console.error('claim_join_token failed:', error)
+      // The function raises only after it has decided to abort the transaction,
+      // so used_at is not left set.
+      return json({ error: 'claim_failed' }, 500)
+    }
+
+    const payload = (data ?? {}) as { error?: string; redirect?: string; already_member?: boolean }
+    if (payload.error === 'invalid') return json({ error: 'invalid' }, 400)
+    if (payload.error === 'used') return json({ error: 'used' }, 400)
+    if (payload.error === 'expired') return json({ error: 'expired' }, 400)
+    if (payload.error === 'forbidden') return json({ error: 'forbidden' }, 403)
+    if (!payload.redirect) return json({ error: 'claim_failed' }, 500)
+
+    return json({
+      redirect: payload.redirect,
+      ...(payload.already_member ? { message: 'already_member' } : {}),
+    })
   } catch (error) {
     console.error('Error in join-claim function:', error)
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    return json({ error: 'Internal server error' }, 500)
   }
 })
