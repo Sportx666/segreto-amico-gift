@@ -23,16 +23,15 @@ export interface I18nContextType {
 export const I18nContext = createContext<I18nContextType | null>(null);
 
 export const useI18n = () => {
+  const context = useContext(I18nContext);
   if (!featureFlags.i18n) {
-    // Return Italian-only context when disabled
     return {
       language: 'it' as Language,
       setLanguage: () => {},
       t: (key: string) => getTranslation(translations.it, key)
     };
   }
-  
-  const context = useContext(I18nContext);
+
   if (!context) {
     throw new Error('useI18n must be used within I18nProvider');
   }

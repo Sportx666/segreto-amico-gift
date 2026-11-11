@@ -69,16 +69,12 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
 
     const target = new Date(event.draw_date).getTime();
 
-    let timer: ReturnType<typeof setInterval>;
-
     const updateTime = () => {
-      const now = Date.now();
-      const diff = target - now;
+      const diff = target - Date.now();
 
       if (diff <= 0) {
         setTimeLeft("0d 0h 0m 0s");
-        clearInterval(timer);
-        return;
+        return false;
       }
 
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -86,12 +82,15 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
       setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+      return true;
     };
 
-    timer = setInterval(updateTime, 1000);
     updateTime();
+    const timer = window.setInterval(() => {
+      if (!updateTime()) window.clearInterval(timer);
+    }, 1000);
 
-    return () => clearInterval(timer);
+    return () => window.clearInterval(timer);
   }, [event.draw_date, event.draw_status]);
 
   const fetchData = async () => {

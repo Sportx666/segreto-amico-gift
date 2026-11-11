@@ -5,12 +5,11 @@ import { Globe } from 'lucide-react';
 import { featureFlags } from '@/lib/featureFlags';
 
 export function LanguageMenu() {
-  // Hide language menu when i18n is disabled
+  const { language, setLanguage } = useI18n();
+
   if (!featureFlags.i18n) {
     return null;
   }
-
-  const { language, setLanguage } = useI18n();
 
   const languages = [
     { code: 'it' as const, name: 'Italiano', flag: '🇮🇹' },
