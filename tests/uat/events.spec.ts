@@ -15,7 +15,7 @@ test.describe('Events Flow (UI Only)', () => {
     await expect(page).toHaveURL(/\/auth/);
     
     // Check that next parameter is preserved for redirect after login
-    await expect(page.url()).toContain('next=');
+    await expect(page.url()).toContain('next=%2Fevents');
   });
 
   test('create event form elements are accessible via direct route', async ({ page }) => {
@@ -31,5 +31,6 @@ test.describe('Events Flow (UI Only)', () => {
     // Test accessing event detail page
     await page.goto('/events/test-id');
     await expect(page).toHaveURL(/\/auth/);
+    await expect(page.url()).toContain('next=%2Fevents%2Ftest-id');
   });
 });

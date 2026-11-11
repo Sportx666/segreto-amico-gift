@@ -42,7 +42,8 @@ const Events = ({ showMobileFeed = false }: EventsProps) => {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      navigate("/auth");
+      const next = `${window.location.pathname}${window.location.search}`;
+      navigate(`/auth?next=${encodeURIComponent(next)}`);
       return;
     }
     fetchEvents();

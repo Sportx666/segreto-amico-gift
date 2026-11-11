@@ -1,23 +1,20 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Home Page', () => {
-  test('loads home page and shows navbar', async ({ page }) => {
+  test('loads the public landing page', async ({ page }) => {
     await page.goto('/');
-    
-    // Should redirect to auth since no user is logged in
-    await expect(page).toHaveURL(/\/auth/);
-    
-    // Check for auth page elements
+
+    await expect(page).toHaveURL(/\/$/);
     await expect(page.locator('h1')).toContainText('Amico Segreto');
-    await expect(page.locator('input[type="email"]')).toBeVisible();
-    await expect(page.locator('text=Continua con Google')).toBeVisible();
+    await expect(page.locator('nav').first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Accedi' })).toBeVisible();
   });
 
-  test('navbar is visible on auth page', async ({ page }) => {
+  test('auth page hides the site navbar', async ({ page }) => {
     await page.goto('/auth');
-    
-    // Check navbar elements
-    await expect(page.locator('nav')).toBeVisible();
-    await expect(page.locator('text=Amico Segreto')).toBeVisible();
+
+    await expect(page.locator('nav')).toHaveCount(0);
+    await expect(page.getByText('Amico Segreto').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /Invia Link Magico/ })).toBeVisible();
   });
 });
