@@ -1,101 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
+import { computePairs, drawComputationError, exclusionSetFromRows, type Member } from './pairing.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-// Types for internal pairing
-interface Member { id: string; participantId: string }
-interface Pair { giver: string; receiver: string }
-
-function shuffle<T>(arr: T[]): void {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-}
-
-function computePairs(
-  givers: Member[],
-  receivers: Member[],
-  opts: { exclusions: Set<string>; antiRecurrence?: Set<string>; maxTries?: number }
-): Pair[] {
-  if (givers.length !== receivers.length) {
-    throw new Error('IMPOSSIBLE');
-  }
-  const n = givers.length;
-  const exclusions = opts.exclusions;
-  const anti = opts.antiRecurrence || new Set<string>();
-  const maxTries = opts.maxTries ?? 200;
-
-  // Build allowed edges adjacency list by participantId
-  const giverIds = givers.map(g => g.participantId);
-  const receiverIds = receivers.map(r => r.participantId);
-
-  const allowed: Map<string, string[]> = new Map();
-  for (const g of giverIds) {
-    const candidates = receiverIds.filter(r => r !== g && !exclusions.has(`${g}|${r}`) && !anti.has(`${g}|${r}`));
-    allowed.set(g, candidates);
-  }
-
-  // Quick randomized attempts
-  for (let t = 0; t < maxTries; t++) {
-    const assignment = new Map<string, string>(); // giver->receiver
-    const used = new Set<string>();
-    for (const g of giverIds) {
-      const options = [...(allowed.get(g) || [])];
-      shuffle(options);
-      const choice = options.find(r => !used.has(r));
-      if (!choice) { assignment.clear(); break; }
-      assignment.set(g, choice);
-      used.add(choice);
-    }
-    if (assignment.size === n) {
-      return Array.from(assignment.entries()).map(([giver, receiver]) => ({ giver, receiver }));
-    }
-  }
-
-  // Kuhn's algorithm for perfect matching
-  const gIndex = new Map<string, number>();
-  const rIndex = new Map<string, number>();
-  giverIds.forEach((g, i) => gIndex.set(g, i));
-  receiverIds.forEach((r, i) => rIndex.set(r, i));
-
-  const graph: number[][] = giverIds.map(g => (allowed.get(g) || []).map(r => rIndex.get(r)!).filter(i => i !== undefined));
-  const matchR: number[] = Array(receiverIds.length).fill(-1);
-
-  function dfs(u: number, seen: boolean[]): boolean {
-    for (const v of graph[u]) {
-      if (seen[v]) continue;
-      seen[v] = true;
-      if (matchR[v] === -1 || dfs(matchR[v], seen)) {
-        matchR[v] = u;
-        return true;
-      }
-    }
-    return false;
-  }
-
-  let matchCount = 0;
-  for (let u = 0; u < giverIds.length; u++) {
-    const seen = Array(receiverIds.length).fill(false);
-    if (dfs(u, seen)) matchCount++;
-  }
-
-  if (matchCount !== n) {
-    throw new Error('IMPOSSIBLE');
-  }
-
-  const pairs: Pair[] = [];
-  for (let v = 0; v < receiverIds.length; v++) {
-    const u = matchR[v];
-    if (u !== -1) {
-      pairs.push({ giver: giverIds[u], receiver: receiverIds[v] });
-    }
-  }
-  return pairs;
-}
 
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight requests
@@ -217,10 +126,8 @@ Deno.serve(async (req: Request) => {
     const giverArr: Member[] = members.map((m: any) => ({ id: m.id, participantId: m.participant_id }));
     const receiverArr: Member[] = giverArr;
 
-    const memberToParticipant = new Map<string, string>();
-    giverArr.forEach(m => memberToParticipant.set(m.id, m.participantId));
-
-    // Load exclusions (by member id) -> convert to participant pairs
+    // exclusions.giver_id / blocked_id reference participants(id), the same
+    // ids stored on assignments. Do not look them up as event_members ids.
     const { data: exclusionsData, error: exclusionsError } = await supabase
       .from('exclusions')
       .select('giver_id, blocked_id')
@@ -235,12 +142,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const exclusionSet = new Set<string>();
-    (exclusionsData || []).forEach((ex: any) => {
-      const g = memberToParticipant.get(ex.giver_id);
-      const r = memberToParticipant.get(ex.blocked_id);
-      if (g && r) exclusionSet.add(`${g}|${r}`);
-    });
+    const exclusionSet = exclusionSetFromRows(exclusionsData || []);
 
     // Anti-recurrence from previous event assignments
     const { data: eventRow } = await supabase
@@ -266,20 +168,15 @@ Deno.serve(async (req: Request) => {
     }
 
     // Compute pairs
-    let pairs: Pair[] = [];
+    let pairs: { giver: string; receiver: string }[] = [];
     try {
       pairs = computePairs(giverArr, receiverArr, { exclusions: exclusionSet, antiRecurrence: antiSet });
-    } catch (err: any) {
-      if (err?.message === 'IMPOSSIBLE') {
-        return new Response(
-          JSON.stringify({ error: 'Impossibile rispettare i vincoli' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      console.error('Compute pairs error', err);
+    } catch (err: unknown) {
+      const failure = drawComputationError(err);
+      if (failure.status >= 500) console.error('Compute pairs error', err);
       return new Response(
-        JSON.stringify({ error: 'Errore nel calcolo delle assegnazioni' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: failure.error }),
+        { status: failure.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
