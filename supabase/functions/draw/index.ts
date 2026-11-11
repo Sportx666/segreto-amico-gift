@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { computePairs, drawComputationError, exclusionSetFromRows, type Member } from './pairing.ts';
+import { schedulerBypassAuthorized, schedulerMayDraw } from '../_shared/schedulerAuth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -33,30 +34,40 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Auth check - authentication is always required
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Bypass only for the service role plus the scheduler secret, compared in
+    // constant time. A wrong or missing secret falls through to the admin check.
+    const schedulerCall = schedulerBypassAuthorized({
+      authorizationHeader: req.headers.get('authorization'),
+      schedulerSecretHeader: req.headers.get('x-scheduler-secret'),
+      serviceRoleKey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
+      schedulerSecret: Deno.env.get('SCHEDULER_SECRET'),
+    });
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    let userId: string | null = null;
+    if (!schedulerCall) {
+      const authHeader = req.headers.get('authorization');
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: 'Missing authorization header' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid authentication' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      userId = user.id;
     }
-    
-    const userId = user.id;
 
     // Verify user is event admin
     const { data: event, error: eventErr } = await supabase
       .from('events')
-      .select('admin_profile_id')
+      .select('admin_profile_id, draw_status, auto_draw_enabled')
       .eq('id', eventId)
       .maybeSingle();
     if (eventErr || !event) {
@@ -66,7 +77,14 @@ Deno.serve(async (req: Request) => {
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    if (event.admin_profile_id !== userId) {
+    if (schedulerCall) {
+      if (!schedulerMayDraw(event)) {
+        return new Response(
+          JSON.stringify({ error: 'Sorteggio automatico non consentito per questo evento' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else if (event.admin_profile_id !== userId) {
       return new Response(
         JSON.stringify({ error: 'Accesso negato: solo gli amministratori possono avviare il sorteggio' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

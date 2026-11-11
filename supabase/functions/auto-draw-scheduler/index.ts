@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { schedulerRequestAuthorized } from '../_shared/schedulerAuth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,11 +12,11 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  // Validate scheduler secret for cron job authentication
+  // Fail closed when SCHEDULER_SECRET is unset. Compare in constant time.
   const schedulerSecret = Deno.env.get('SCHEDULER_SECRET')
   const providedSecret = req.headers.get('x-scheduler-secret')
-  
-  if (!schedulerSecret || providedSecret !== schedulerSecret) {
+
+  if (!schedulerRequestAuthorized(schedulerSecret, providedSecret)) {
     console.error('Unauthorized scheduler access attempt')
     return new Response(
       JSON.stringify({ error: 'Unauthorized' }),
@@ -72,7 +73,8 @@ serve(async (req) => {
 
         // Perform the draw by calling the existing draw function
         const { data: drawResult, error: drawError } = await supabaseClient.functions.invoke('draw', {
-          body: { eventId: event.id }
+          body: { eventId: event.id },
+          headers: { 'x-scheduler-secret': schedulerSecret },
         })
 
         if (drawError) {
