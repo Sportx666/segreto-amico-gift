@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Shuffle, CheckCircle, AlertTriangle, Users, Gift } from "lucide-react";
 import { toast } from "sonner";
 import { AutoDrawToggle } from "@/components/AutoDrawToggle";
+import { readFunctionError } from "@/lib/functionError";
 
 interface EventDrawProps {
   eventId: string;
@@ -126,7 +127,9 @@ export const EventDraw = ({ eventId, userRole, event, onStatusChange }: EventDra
       });
 
       if (error || !data?.assignedCount) {
-        throw new Error((error as any)?.message || (data as any)?.error || t('draw_section.draw_error'));
+        const serverMessage = error ? await readFunctionError(error) : null;
+        const detail = serverMessage || (data as { error?: string } | null)?.error;
+        throw new Error(detail || t('draw_section.draw_error'));
       }
 
       toast.success(t('draw_section.draw_complete').replace('{count}', data.assignedCount));

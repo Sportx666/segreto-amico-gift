@@ -822,7 +822,8 @@
     "invalid_code": "Invalid event code",
     "event_closed": "This event is closed to new participants",
     "join_error": "Error joining event",
-    "joining": "Joining event..."
+    "joining": "Joining event...",
+    "forbidden_link": "This invite belongs to another account"
   },
   "push_notifications": {
     "title": "Push Notifications",

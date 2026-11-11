@@ -822,7 +822,8 @@
     "invalid_code": "Codice evento non valido",
     "event_closed": "Questo evento non accetta più nuovi partecipanti",
     "join_error": "Errore nell'entrare nell'evento",
-    "joining": "Accesso all'evento in corso..."
+    "joining": "Accesso all'evento in corso...",
+    "forbidden_link": "Questo invito è riservato a un altro account"
   },
   "push_notifications": {
     "title": "Notifiche Push",
