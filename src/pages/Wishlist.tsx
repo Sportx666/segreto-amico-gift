@@ -22,6 +22,7 @@ import { useI18n } from "@/i18n";
 import { withAffiliateTag, productUrlFromASIN } from "@/lib/amazon";
 import { WishlistItem } from "@/components/WishlistItem";
 import { CatalogService } from "@/services/catalog";
+import { getOrCreateParticipantId } from "@/lib/participants";
 
 type Product = {
   asin: string;
@@ -264,21 +265,13 @@ export default function Wishlist() {
         return;
       }
 
-      const { data: participant } = await supabase
-        .from("participants")
-        .select("id")
-        .eq("profile_id", user.id)
-        .single();
-      if (!participant) {
-        toast.error(t('wishlist.participant_not_found'));
-        return;
-      }
+      const participantId = await getOrCreateParticipantId(user.id);
 
       const asinMatch = url.match(/\/dp\/([A-Z0-9]{10})/);
       const asin = asinMatch ? asinMatch[1] : "";
 
       const { error } = await supabase.from("wishlist_items").insert({
-        owner_id: participant.id,
+        owner_id: participantId,
         wishlist_id: wishlistId,
         event_id: currentEventId,
         asin: asin || null,
@@ -318,20 +311,12 @@ export default function Wishlist() {
         return;
       }
 
-      const { data: participant } = await supabase
-        .from("participants")
-        .select("id")
-        .eq("profile_id", user.id)
-        .single();
-      if (!participant) {
-        toast.error(t('wishlist.participant_not_found'));
-        return;
-      }
+      const participantId = await getOrCreateParticipantId(user.id);
 
       const normalized = withAffiliateTag(raw);
 
       const { error } = await supabase.from("wishlist_items").insert({
-        owner_id: participant.id,
+        owner_id: participantId,
         wishlist_id: selectedWishlistId,
         event_id: currentEventId,
         title: emptyManualTitle.trim() || (raw.includes("amazon.") ? t('wishlist.manual_amazon_product') : t('wishlist.manual_product')),
@@ -366,16 +351,7 @@ export default function Wishlist() {
         return;
       }
 
-      const { data: participant } = await supabase
-        .from("participants")
-        .select("id")
-        .eq("profile_id", user.id)
-        .single();
-
-      if (!participant) {
-        toast.error(t('wishlist.participant_not_found'));
-        return;
-      }
+      const participantId = await getOrCreateParticipantId(user.id);
 
       if (!selectedWishlistId && !targetWishlistIdForSearch) {
         toast.error(t('wishlist.select_valid_list'));
@@ -396,7 +372,7 @@ export default function Wishlist() {
       }
 
       const { error } = await supabase.from("wishlist_items").insert({
-        owner_id: participant.id,
+        owner_id: participantId,
         wishlist_id: targetWishlistId,
         event_id: currentEventId,
         asin: product.asin,
@@ -1022,11 +998,10 @@ export default function Wishlist() {
                 try {
                   const { data: { user } } = await supabase.auth.getUser();
                   if (!user) { toast.error(t('wishlist.not_authenticated')); return; }
-                  const { data: participant } = await supabase.from('participants').select('id').eq('profile_id', user.id).single();
-                  if (!participant) { toast.error(t('wishlist.participant_not_found')); return; }
+                  const participantId = await getOrCreateParticipantId(user.id);
                   const { data: inserted, error } = await supabase
                     .from('wishlists')
-                    .insert({ owner_id: participant.id, title: newListTitle.trim(), event_id: newListEventId })
+                    .insert({ owner_id: participantId, title: newListTitle.trim(), event_id: newListEventId })
                     .select('id,title,event_id')
                     .single();
                   if (error) throw error;
@@ -1116,8 +1091,7 @@ export default function Wishlist() {
                 try {
                   const { data: { user } } = await supabase.auth.getUser();
                   if (!user) { toast.error(t('wishlist.not_authenticated')); return; }
-                  const { data: participant } = await supabase.from('participants').select('id').eq('profile_id', user.id).single();
-                  if (!participant) { toast.error(t('wishlist.participant_not_found')); return; }
+                  const participantId = await getOrCreateParticipantId(user.id);
                   const { data: existingItem } = await supabase
                     .from('wishlist_items').select('id')
                     .eq('wishlist_id', selectedWishlistId)
@@ -1125,7 +1099,7 @@ export default function Wishlist() {
                     .maybeSingle();
                   if (existingItem) { toast.error(t('wishlist.item_exists')); return; }
                   const { error } = await supabase.from('wishlist_items').insert({
-                    owner_id: participant.id,
+                    owner_id: participantId,
                     wishlist_id: selectedWishlistId,
                     asin: prod.asin,
                     title: prod.title,
