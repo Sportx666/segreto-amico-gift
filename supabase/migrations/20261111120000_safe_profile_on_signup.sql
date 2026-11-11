@@ -31,10 +31,13 @@ BEGIN
 END;
 $$;
 
--- Clients do not call this. Trigger execution does not need EXECUTE.
+-- Clients do not call this. The auth role that inserts users still needs EXECUTE.
 REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.handle_new_user() FROM anon;
 REVOKE ALL ON FUNCTION public.handle_new_user() FROM authenticated;
+-- auth.users inserts run as supabase_auth_admin, which is not a superuser.
+-- The trigger still checks EXECUTE for that role. Do not grant anon or authenticated.
+GRANT EXECUTE ON FUNCTION public.handle_new_user() TO supabase_auth_admin;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
@@ -52,6 +55,8 @@ SELECT
     'User'
   )
 FROM auth.users u
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.profiles p WHERE p.id = u.id
-);
+ON CONFLICT (id) DO NOTHING;
+
+-- Rollback (does not delete profile rows already written):
+--   DROP TRIGGER on_auth_user_created ON auth.users;
+--   DROP FUNCTION public.handle_new_user();
