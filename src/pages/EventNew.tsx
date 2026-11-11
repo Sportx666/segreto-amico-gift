@@ -21,7 +21,7 @@ const EventNew = () => {
   const [coverUploading, setCoverUploading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const today = new Date().toISOString().split("T")[0];
 
@@ -147,13 +147,14 @@ const EventNew = () => {
   };
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       const next = `${location.pathname}${location.search}`;
       navigate(`/auth?next=${encodeURIComponent(next)}`);
     }
-  }, [user, navigate, location.pathname, location.search]);
+  }, [authLoading, user, navigate, location.pathname, location.search]);
 
-  if (!user) {
+  if (authLoading || !user) {
     return null;
   }
 
