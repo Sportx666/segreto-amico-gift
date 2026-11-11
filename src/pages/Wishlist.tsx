@@ -961,7 +961,6 @@ export default function Wishlist() {
                 minPrice={priceFilter.min}
                 maxPrice={priceFilter.max}
                 onAddToWishlist={handleAddFromSearch}
-                showSummary={false}
               />
             )}
 

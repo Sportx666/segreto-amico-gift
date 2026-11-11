@@ -31,6 +31,7 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [priceFilter, setPriceFilter] = useState<{min?: number, max?: number}>({});
+  const [searchProvider, setSearchProvider] = useState<string | undefined>();
   
   // Hooks for wishlist operations
   const { data: wishlists = [] } = useUserWishlists();
@@ -156,6 +157,7 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
               minPrice={priceFilter.min}
               maxPrice={priceFilter.max}
               onAddToWishlist={handleAddToWishlist}
+              onProviderChange={setSearchProvider}
             />
           </div>
         )}
@@ -163,7 +165,9 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
         {/* Disclosure Footer */}
         <div className="mt-16 pt-8 border-t border-border/50 text-center">
           <p className="text-xs text-muted-foreground">
-            Come affiliato Amazon, guadagniamo da acquisti idonei.
+            {searchProvider === 'rainforest'
+              ? 'Risultati forniti da Rainforest API. I prezzi potrebbero non essere aggiornati.'
+              : 'Come affiliato Amazon, guadagniamo da acquisti idonei.'}
           </p>
         </div>
       </div>

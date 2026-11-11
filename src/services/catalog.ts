@@ -36,6 +36,38 @@ export function catalogPageCount(total: number, pageSize: number): number {
   return Math.max(1, Math.ceil(total / size));
 }
 
+/** Amazon SearchItems ItemPage is 1–10. Rainforest is not capped that way. */
+export const AMAZON_MAX_SEARCH_PAGE = 10;
+
+export function catalogVisiblePages(
+  provider: string | undefined,
+  total: number,
+  pageSize: number,
+): number {
+  const pages = catalogPageCount(total, pageSize);
+  if (provider === 'rainforest') return pages;
+  return Math.min(AMAZON_MAX_SEARCH_PAGE, pages);
+}
+
+export function catalogHasNextPage(
+  page: number,
+  visiblePages: number,
+  itemCount: number,
+  pageSize: number,
+): boolean {
+  if (page >= visiblePages) return false;
+  if (itemCount < pageSize) return false;
+  return true;
+}
+
+/** Same render as a criteria change must request page 1, not the previous page. */
+export function pageForSearchCriteria(
+  stored: { criteria: string; page: number },
+  criteria: string,
+): number {
+  return stored.criteria === criteria ? stored.page : 1;
+}
+
 export class CatalogService {
   /**
    * Search for products using the configured catalog provider
