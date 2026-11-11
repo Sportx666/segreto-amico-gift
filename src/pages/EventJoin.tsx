@@ -5,13 +5,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n";
+import { readFunctionError } from "@/lib/functionError";
 
 const EventJoin = () => {
   const { t } = useI18n();
   const { token } = useParams<{ token: string }>();
   const { session, loading } = useAuth();
   const navigate = useNavigate();
-  const [status, setStatus] = useState<"loading" | "invalid" | "expired" | "used">("loading");
+  const [status, setStatus] = useState<"loading" | "invalid" | "expired" | "used" | "forbidden">("loading");
 
   useEffect(() => {
     if (!token || loading) return;
@@ -27,10 +28,10 @@ const EventJoin = () => {
       });
 
       if (error) {
-        if (error.message === 'invalid') setStatus('invalid');
-        else if (error.message === 'used') setStatus('used');
-        else if (error.message === 'expired') setStatus('expired');
-        else if (error.message === 'forbidden') setStatus('invalid');
+        const code = await readFunctionError(error);
+        if (code === 'used') setStatus('used');
+        else if (code === 'expired') setStatus('expired');
+        else if (code === 'forbidden') setStatus('forbidden');
         else setStatus('invalid');
         return;
       }
@@ -50,6 +51,8 @@ const EventJoin = () => {
         return t('event_join.expired_link');
       case "used":
         return t('event_join.used_link');
+      case "forbidden":
+        return t('event_join.forbidden_link');
       default:
         return t('event_join.verifying');
     }
@@ -62,7 +65,7 @@ const EventJoin = () => {
           <CardHeader className="p-0">
             <CardTitle>{renderMessage()}</CardTitle>
           </CardHeader>
-          {(status === "invalid" || status === "expired" || status === "used") && (
+          {(status === "invalid" || status === "expired" || status === "used" || status === "forbidden") && (
             <Button onClick={() => navigate("/")}>{t('event_join.back_home')}</Button>
           )}
         </CardContent>

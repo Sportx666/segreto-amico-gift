@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n";
 import { Loader2 } from "lucide-react";
+import { readFunctionError } from "@/lib/functionError";
 
 const EventJoinByCode = () => {
   const { t } = useI18n();
@@ -30,9 +31,9 @@ const EventJoinByCode = () => {
 
         if (error) {
           console.error('Join event error:', error);
-          const errorMessage = error.message || 'error';
-          if (errorMessage.includes('invalid_code')) setStatus('invalid_code');
-          else if (errorMessage.includes('event_closed')) setStatus('event_closed');
+          const code = await readFunctionError(error);
+          if (code === 'invalid_code') setStatus('invalid_code');
+          else if (code === 'event_closed') setStatus('event_closed');
           else setStatus('error');
           return;
         }
