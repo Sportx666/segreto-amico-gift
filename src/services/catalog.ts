@@ -30,6 +30,12 @@ export interface CatalogItemResult {
   provider?: string;
 }
 
+export function catalogPageCount(total: number, pageSize: number): number {
+  if (!Number.isFinite(total) || total <= 0) return 1;
+  const size = pageSize > 0 ? pageSize : 10;
+  return Math.max(1, Math.ceil(total / size));
+}
+
 export class CatalogService {
   /**
    * Search for products using the configured catalog provider

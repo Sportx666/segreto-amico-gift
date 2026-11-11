@@ -274,6 +274,11 @@
     "products_found": "products",
     "sample_data": "sample data",
     "service_unavailable": "service temporarily unavailable",
+    "search_failed": "Search is unavailable. Try again in a moment.",
+    "retry_search": "Try again",
+    "previous_page": "Previous",
+    "next_page": "Next",
+    "page_status": "Page {page} of {pages}",
     "quick_ideas": "🎁 Quick gift ideas",
     "quick_ideas_desc": "Find the perfect gift without leaving the page",
     "categories": {
