@@ -20,8 +20,8 @@ BEGIN
   VALUES (
     NEW.id,
     COALESCE(
-      NULLIF(NEW.raw_user_meta_data->>'display_name', ''),
-      NULLIF(split_part(COALESCE(NEW.email, ''), '@', 1), ''),
+      NULLIF(btrim(NEW.raw_user_meta_data->>'display_name'), ''),
+      NULLIF(btrim(split_part(COALESCE(NEW.email, ''), '@', 1)), ''),
       'User'
     )
   )
@@ -50,8 +50,8 @@ INSERT INTO public.profiles (id, display_name)
 SELECT
   u.id,
   COALESCE(
-    NULLIF(u.raw_user_meta_data->>'display_name', ''),
-    NULLIF(split_part(COALESCE(u.email, ''), '@', 1), ''),
+    NULLIF(btrim(u.raw_user_meta_data->>'display_name'), ''),
+    NULLIF(btrim(split_part(COALESCE(u.email, ''), '@', 1)), ''),
     'User'
   )
 FROM auth.users u
