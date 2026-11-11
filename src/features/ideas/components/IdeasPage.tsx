@@ -2,13 +2,12 @@
  * Refactored Ideas page component with better separation of concerns
  */
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { IdeasHeader } from "@/components/IdeasHeader";
 import { SearchBar } from "@/components/SearchBar";
-import { ProductsGrid } from "@/components/ProductsGrid";
 import { PriceFilter } from "@/components/PriceFilter";
+import { CatalogSearchResults } from "@/components/CatalogSearchResults";
 import { AdSlot } from "@/components/AdSlot";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -20,8 +19,6 @@ import { useNavigate } from "react-router-dom";
 import { useI18n } from "@/i18n";
 import { useAddProductForUser, useUserWishlists } from "@/features/wishlist/hooks/useWishlist";
 import { type Product } from "@/services/wishlist";
-import { ApiService } from "@/services/api";
-import { CatalogService, type CatalogSearchResult } from "@/services/catalog";
 
 interface IdeasPageProps {
   showMobileFeed?: boolean;
@@ -34,25 +31,11 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [priceFilter, setPriceFilter] = useState<{min?: number, max?: number}>({});
+  const [searchProvider, setSearchProvider] = useState<string | undefined>();
   
   // Hooks for wishlist operations
   const { data: wishlists = [] } = useUserWishlists();
   const addProductForUser = useAddProductForUser();
-
-  const searchProducts = async (query: string): Promise<CatalogSearchResult> => {
-    if (!query) return { items: [], page: 1, pageSize: 10, total: 0, mock: true };
-    
-    return CatalogService.searchProducts(query, 1, priceFilter.min, priceFilter.max);
-  };
-
-  const { data: searchResults, isLoading, isFetching } = useQuery({
-    queryKey: ['catalog-search', searchQuery, priceFilter.min, priceFilter.max],
-    queryFn: () => searchProducts(searchQuery),
-    enabled: !!searchQuery,
-    staleTime: 0, // Don't serve stale data
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-    refetchOnWindowFocus: false, // Don't refetch on window focus
-  });
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -138,13 +121,11 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
           <div className="flex-1">
             <SearchBar 
               onSearch={handleSearch}
-              disabled={isLoading || isFetching}
             />
           </div>
           <PriceFilter 
             value={priceFilter}
             onFilter={handlePriceFilter}
-            disabled={isLoading || isFetching}
           />
         </div>
 
@@ -157,8 +138,7 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
         ) : (
           <div className="space-y-6">
             <SectionHeader
-              title={`Risultati per "${searchQuery}"${!priceFilter.max ? '' : ` - fino a €${priceFilter.max}`}`}
-              description={searchResults ? `${searchResults.total} prodotti${searchResults.mock ? ' - dati di esempio' : ''}${searchResults.fallback ? ' - servizio temporaneamente non disponibile' : ''}` : undefined}
+              title={`${t('ideas.results_for')} "${searchQuery}"${!priceFilter.max ? '' : ` - fino a €${priceFilter.max}`}`}
             />
             
             {/* Mobile In-Feed Ad */}
@@ -172,10 +152,12 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
               </div>
             )}
             
-            <ProductsGrid
-              products={searchResults?.items.map(item => CatalogService.catalogItemToProduct(item)) || []}
-              loading={isLoading || isFetching}
+            <CatalogSearchResults
+              query={searchQuery}
+              minPrice={priceFilter.min}
+              maxPrice={priceFilter.max}
               onAddToWishlist={handleAddToWishlist}
+              onProviderChange={setSearchProvider}
             />
           </div>
         )}
@@ -183,10 +165,9 @@ export default function IdeasPage({ showMobileFeed = false }: IdeasPageProps) {
         {/* Disclosure Footer */}
         <div className="mt-16 pt-8 border-t border-border/50 text-center">
           <p className="text-xs text-muted-foreground">
-          {searchResults?.provider === 'rainforest' ? 
-            'Risultati forniti da Rainforest API. I prezzi potrebbero non essere aggiornati.' :
-            'Come affiliato Amazon, guadagniamo da acquisti idonei.'
-          }
+            {searchProvider === 'rainforest'
+              ? 'Risultati forniti da Rainforest API. I prezzi potrebbero non essere aggiornati.'
+              : 'Come affiliato Amazon, guadagniamo da acquisti idonei.'}
           </p>
         </div>
       </div>

@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchBar } from "@/components/SearchBar";
 import { PriceFilter } from "@/components/PriceFilter";
-import { ProductsGrid } from "@/components/ProductsGrid";
+import { CatalogSearchResults } from "@/components/CatalogSearchResults";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonGrid } from "@/components/ui/skeleton-grid";
@@ -21,7 +21,6 @@ import { Home, Search, SquarePen, Trash2, Plus, ExternalLink, Heart, Pencil, Che
 import { useI18n } from "@/i18n";
 import { withAffiliateTag, productUrlFromASIN } from "@/lib/amazon";
 import { WishlistItem } from "@/components/WishlistItem";
-import { CatalogService } from "@/services/catalog";
 
 type Product = {
   asin: string;
@@ -160,30 +159,6 @@ export default function Wishlist() {
       setCurrentEventId(null);
     }
   };
-
-  const { data: searchResults, isLoading: isSearchLoading } = useQuery({
-    queryKey: [
-      "catalog-search-wishlist",
-      triggerSearch,
-      priceFilter.min ?? null,
-      priceFilter.max ?? null,
-    ],
-    queryFn: async () => {
-      if (!triggerSearch)
-        return { items: [], page: 1, pageSize: 10, total: 0, mock: true };
-
-      const result = await CatalogService.searchProducts(triggerSearch,1 , priceFilter.min, priceFilter.max);
-      // Convert CatalogItems to the expected format
-      return {
-        items: result.items.map(item => CatalogService.catalogItemToProduct(item)),
-        page: result.page,
-        pageSize: result.pageSize,
-        total: result.total,
-        mock: result.mock
-      };
-    },
-    enabled: !!triggerSearch && isSearchDialogOpen,
-  });
 
   // Debounced search handler
   const handleDebouncedSearch = useCallback((query: string) => {
@@ -973,19 +948,18 @@ export default function Wishlist() {
                   setSearchQuery(query);
                   setTriggerSearch(query);
                 }}
-                disabled={isSearchLoading}
             />
             </div>
             <PriceFilter 
               value={priceFilter}
               onFilter={handlePriceFilter}
-              disabled={isSearchLoading}
             />
           </div>
-            {searchQuery && (
-              <ProductsGrid
-                products={searchResults?.items || []}
-                loading={isSearchLoading}
+            {triggerSearch && (
+              <CatalogSearchResults
+                query={triggerSearch}
+                minPrice={priceFilter.min}
+                maxPrice={priceFilter.max}
                 onAddToWishlist={handleAddFromSearch}
               />
             )}

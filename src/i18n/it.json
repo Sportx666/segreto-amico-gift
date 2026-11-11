@@ -274,6 +274,11 @@
     "products_found": "prodotti",
     "sample_data": "dati di esempio",
     "service_unavailable": "servizio temporaneamente non disponibile",
+    "search_failed": "Ricerca non disponibile. Riprova tra poco.",
+    "retry_search": "Riprova",
+    "previous_page": "Precedente",
+    "next_page": "Successiva",
+    "page_status": "Pagina {page} di {pages}",
     "quick_ideas": "🎁 Idee regalo veloci",
     "quick_ideas_desc": "Trova il regalo perfetto senza uscire dalla pagina",
     "categories": {
