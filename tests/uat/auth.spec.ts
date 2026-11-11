@@ -3,33 +3,30 @@ import { test, expect } from '@playwright/test';
 test.describe('Authentication Flow', () => {
   test('shows auth form elements', async ({ page }) => {
     await page.goto('/auth');
-    
-    // Check form elements are present
-    await expect(page.locator('input[type="email"]')).toBeVisible();
-    await expect(page.locator('text=Invia link di accesso')).toBeVisible();
-    await expect(page.locator('text=Continua con Google')).toBeVisible();
-    
-    // Check help text
-    await expect(page.locator('text=Ti invieremo un link per accedere')).toBeVisible();
+
+    await expect(page.locator('#email-magic')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Invia Link Magico/ })).toBeVisible();
+    await expect(page.getByText('Sign in with Google')).toBeVisible();
+    await expect(page.getByText(/Ti invieremo un link sicuro per accedere/)).toBeVisible();
   });
 
   test('email input accepts valid email', async ({ page }) => {
     await page.goto('/auth');
-    
-    const emailInput = page.locator('input[type="email"]');
+
+    const emailInput = page.locator('#email-magic');
     await emailInput.fill('test@example.com');
     await expect(emailInput).toHaveValue('test@example.com');
   });
 
   test('magic link button is clickable', async ({ page }) => {
     await page.goto('/auth');
-    
-    const emailInput = page.locator('input[type="email"]');
-    const submitButton = page.locator('text=Invia link di accesso');
-    
+
+    const emailInput = page.locator('#email-magic');
+    const submitButton = page.getByRole('button', { name: /Invia Link Magico/ });
+
     await emailInput.fill('test@example.com');
     await expect(submitButton).toBeEnabled();
-    
-    // Note: We don't actually submit to avoid sending real emails in tests
+
+    // Do not submit: that would send a real magic link.
   });
 });

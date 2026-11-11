@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,8 @@ const EventNew = () => {
   const [loading, setLoading] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const location = useLocation();
+  const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const today = new Date().toISOString().split("T")[0];
 
@@ -145,8 +146,15 @@ const EventNew = () => {
     }
   };
 
-  if (!user) {
-    navigate("/auth");
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      const next = `${location.pathname}${location.search}`;
+      navigate(`/auth?next=${encodeURIComponent(next)}`);
+    }
+  }, [authLoading, user, navigate, location.pathname, location.search]);
+
+  if (authLoading || !user) {
     return null;
   }
 

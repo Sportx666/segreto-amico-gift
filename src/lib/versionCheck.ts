@@ -28,6 +28,12 @@ export async function checkForUpdates(): Promise<boolean> {
       return false;
     }
 
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      console.log('[VersionCheck] version.json is not JSON, skipping check');
+      return false;
+    }
+
     const serverVersion: VersionInfo = await response.json();
     const clientVersion = import.meta.env.VITE_BUILD_TIME;
 
