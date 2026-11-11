@@ -7,11 +7,6 @@ interface I18nProviderProps {
 }
 
 export function I18nProvider({ children }: I18nProviderProps) {
-  // If i18n is disabled, just render children without provider context
-  if (!featureFlags.i18n) {
-    return <>{children}</>;
-  }
-
   const [language, setLanguageState] = useState<Language>(getDefaultLanguage);
 
   const setLanguage = (lang: Language) => {
@@ -21,7 +16,6 @@ export function I18nProvider({ children }: I18nProviderProps) {
 
   const t = createTranslator(language);
 
-  // Listen for storage changes to sync across tabs
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'lang' && e.newValue && (e.newValue === 'it' || e.newValue === 'en')) {
@@ -32,6 +26,10 @@ export function I18nProvider({ children }: I18nProviderProps) {
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
+
+  if (!featureFlags.i18n) {
+    return <>{children}</>;
+  }
 
   return (
     <I18nContext.Provider value={{ language, setLanguage, t }}>

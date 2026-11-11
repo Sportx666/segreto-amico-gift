@@ -168,11 +168,13 @@ export function useNotificationSettings() {
     
     setLoading(true);
     try {
-      let { data, error } = await supabase
+      const result = await supabase
         .from('notification_settings')
         .select('*')
         .eq('profile_id', user.id)
         .single();
+      let data = result.data;
+      const error = result.error;
 
       if (error && error.code === 'PGRST116') {
         // No settings found, create default ones
