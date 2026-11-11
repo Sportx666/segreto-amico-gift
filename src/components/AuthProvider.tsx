@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { debugLog } from "@/lib/debug";
+import { displayNameFromUser } from "@/lib/profileName";
 import { pinterestLoad } from "@/lib/pinterest";
 import { toast } from "sonner";
 
@@ -31,45 +32,29 @@ export const useAuth = () => {
  * @param user - The authenticated user
  */
 const ensureProfile = async (user: User) => {
-  try {
-    // Check if profile already exists
-    const { data: existingProfile, error: selectError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', user.id)
-      .maybeSingle();
+  const displayName = displayNameFromUser(user);
+  const row = {
+    id: user.id,
+    display_name: displayName,
+    avatar_url: null,
+  };
 
-    if (selectError) {
-      console.error('Error checking existing profile:', selectError);
-      return;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      // ignoreDuplicates keeps an existing display name. A second attempt
+      // covers a race where the row appears between tries.
+      const { error } = await supabase
+        .from('profiles')
+        .upsert(row, { onConflict: 'id', ignoreDuplicates: true });
+
+      if (!error) {
+        debugLog('AuthProvider', `Profile ensured for ${user.id}`);
+        return;
+      }
+      console.error('Error ensuring profile:', error);
+    } catch (error) {
+      console.error('Error in ensureProfile:', error);
     }
-
-    // If profile already exists, do nothing
-    if (existingProfile) {
-      return;
-    }
-
-    // Extract display name from email (local part before @)
-    const displayName = user.email?.split('@')[0] || 'User';
-
-    // Create new profile with defaults (email removed for security)
-    const { error: insertError } = await supabase
-      .from('profiles')
-      .insert({
-        id: user.id,
-        display_name: displayName,
-        avatar_url: null
-      });
-
-    if (insertError) {
-      console.error('Error creating profile:', insertError);
-      return;
-    }
-
-    debugLog('AuthProvider', `✅ Profile created for new user: ${user.id}, ${displayName}`);
-
-  } catch (error) {
-    console.error('Error in ensureProfile:', error);
   }
 };
 
