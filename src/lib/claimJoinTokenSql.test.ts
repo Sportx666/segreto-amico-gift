@@ -35,7 +35,20 @@ describe('claim_join_token migration', () => {
       expect(sql).toContain(table);
     }
     expect(sql).toContain('ON CONFLICT (wishlist_id, asin) DO NOTHING');
-    expect(sql).toContain('giver_id = blocked_id');
+    expect(sql).toContain('WHERE giver_id = blocked_id AND giver_id = canonical_id');
+    expect(sql).toContain(
+      'WHERE anonymous_participant_id = exposed_participant_id AND anonymous_participant_id = canonical_id',
+    );
+    expect(sql).toContain(
+      'WHERE participant_a_id = participant_b_id AND participant_a_id = $1',
+    );
+    expect(sql).not.toContain('DELETE FROM public.exclusions WHERE giver_id = blocked_id;');
+    expect(sql).not.toContain(
+      'DELETE FROM public.private_chats WHERE anonymous_participant_id = exposed_participant_id;',
+    );
+    expect(sql).not.toContain(
+      'DELETE FROM public.private_chat_names WHERE participant_a_id = participant_b_id;',
+    );
     expect(sql).toContain('purchased_by');
     expect(sql).toContain('recipient_participant_id');
   });

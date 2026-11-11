@@ -213,7 +213,8 @@ BEGIN
       AND c.event_id IS NOT DISTINCT FROM e.event_id
       AND e.id <> c.id;
     UPDATE public.exclusions SET blocked_id = canonical_id WHERE blocked_id = slot_id;
-    DELETE FROM public.exclusions WHERE giver_id = blocked_id;
+    DELETE FROM public.exclusions
+    WHERE giver_id = blocked_id AND giver_id = canonical_id;
 
     UPDATE public.chat_messages
     SET author_participant_id = canonical_id
@@ -244,7 +245,7 @@ BEGIN
     SET exposed_participant_id = canonical_id
     WHERE exposed_participant_id = slot_id;
     DELETE FROM public.private_chats
-    WHERE anonymous_participant_id = exposed_participant_id;
+    WHERE anonymous_participant_id = exposed_participant_id AND anonymous_participant_id = canonical_id;
 
     DELETE FROM public.anonymous_aliases s
     USING public.anonymous_aliases c
@@ -291,7 +292,8 @@ BEGIN
         'UPDATE public.private_chat_names SET participant_b_id = $1 WHERE participant_b_id = $2'
       USING canonical_id, slot_id;
       EXECUTE
-        'DELETE FROM public.private_chat_names WHERE participant_a_id = participant_b_id';
+        'DELETE FROM public.private_chat_names WHERE participant_a_id = participant_b_id AND participant_a_id = $1'
+      USING canonical_id;
     END IF;
 
     DELETE FROM public.participants WHERE id = slot_id;
