@@ -854,6 +854,22 @@ export type Database = {
           member_id: string
         }[]
       }
+      get_my_private_chats: {
+        Args: { _event_id: string; _last_read?: Json }
+        Returns: {
+          chat_id: string
+          created_at: string
+          display_name: string
+          last_message_at: string
+          my_role: string
+          other_participant_id: string | null
+          unread_count: number
+        }[]
+      }
+      get_or_create_private_chat: {
+        Args: { _event_id: string; _recipient_participant_id: string }
+        Returns: string
+      }
       get_own_profile: {
         Args: never
         Returns: {

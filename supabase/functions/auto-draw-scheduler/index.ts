@@ -40,7 +40,8 @@ serve(async (req) => {
     const { data: events, error: eventsError } = await supabaseClient
       .from('events')
       .select('id, name, draw_status')
-      .eq('draw_date', today.toISOString().split('T')[0])
+      // lte, not eq: an event whose run was missed (outage, bad secret) is picked up next time
+      .lte('draw_date', today.toISOString().split('T')[0])
       .eq('draw_status', 'pending')
       .eq('auto_draw_enabled', true)
 
@@ -48,7 +49,7 @@ serve(async (req) => {
       throw eventsError
     }
 
-    console.log(`Found ${events?.length || 0} events scheduled for auto-draw today`)
+    console.log(`Found ${events?.length || 0} events due for auto-draw`)
 
     const results = []
 
@@ -71,8 +72,10 @@ serve(async (req) => {
         }
 
         // Perform the draw by calling the existing draw function
+        // draw authorizes scheduler calls via the same shared secret
         const { data: drawResult, error: drawError } = await supabaseClient.functions.invoke('draw', {
-          body: { eventId: event.id }
+          body: { eventId: event.id },
+          headers: { 'x-scheduler-secret': schedulerSecret },
         })
 
         if (drawError) {

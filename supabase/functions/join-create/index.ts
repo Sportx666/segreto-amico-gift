@@ -53,7 +53,7 @@ serve(async (req) => {
     }
 
     const { eventId, participantId, ttlDays = 30 } = await req.json()
-    if (!eventId || !participantId) {
+    if (!eventId || !participantId || typeof eventId !== 'string' || typeof participantId !== 'string') {
       return new Response(JSON.stringify({ error: 'eventId and participantId required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -80,8 +80,24 @@ serve(async (req) => {
       })
     }
 
+    // The invite must be for a member of this event; otherwise a token for this
+    // event could be used to take over a placeholder participant of another event.
+    const { data: membership } = await supabase
+      .from('event_members')
+      .select('id')
+      .eq('event_id', eventId)
+      .eq('participant_id', participantId)
+      .maybeSingle()
+    if (!membership) {
+      return new Response(JSON.stringify({ error: 'Participant is not a member of this event' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    const days = Math.min(Math.max(Number(ttlDays) || 30, 1), 30)
     const token = generateToken()
-    const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000).toISOString()
+    const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
 
     const { data: tokenData, error: insertError } = await supabase.from('join_tokens').insert({
       event_id: eventId,
@@ -91,7 +107,8 @@ serve(async (req) => {
     }).select('id').single()
 
     if (insertError || !tokenData) {
-      return new Response(JSON.stringify({ error: insertError?.message || 'Failed to create token' }), {
+      console.error('Token insert failed:', insertError)
+      return new Response(JSON.stringify({ error: 'Failed to create token' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
@@ -109,7 +126,7 @@ serve(async (req) => {
       // Don't fail the request, token creation succeeded
     }
 
-    const baseUrl = 'https://amico-segreto.lovable.app'
+    const baseUrl = (Deno.env.get('PUBLIC_BASE_URL') || 'https://amicosegreto.fun').replace(/\/$/, '')
     const url = `${baseUrl}/join/${token}`
 
     return new Response(JSON.stringify({ token, url, expiresAt }), {

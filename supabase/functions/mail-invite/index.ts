@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
+const escapeHtml = (s: string) =>
+  s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -71,13 +74,42 @@ serve(async (req) => {
       })
     }
 
+    // Only send our own invite links, only to the address stored for that member.
+    // Otherwise any user could create an event and relay phishing mail through us.
+    const baseUrl = (Deno.env.get('PUBLIC_BASE_URL') || 'https://amicosegreto.fun').replace(/\/$/, '')
+    let parsedUrl: URL | null = null
+    try { parsedUrl = new URL(String(joinUrl)) } catch { parsedUrl = null }
+    const allowedOrigins = new Set([new URL(baseUrl).origin, 'https://amicosegreto.fun', 'https://www.amicosegreto.fun'])
+    if (!parsedUrl || !allowedOrigins.has(parsedUrl.origin) || !/^\/join\/[A-Za-z0-9]{10,64}$/.test(parsedUrl.pathname)) {
+      return new Response(JSON.stringify({ error: 'Invalid join URL' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase()
+    const { data: member } = await supabase
+      .from('event_members')
+      .select('anonymous_email')
+      .eq('event_id', eventId)
+      .eq('participant_id', participantId)
+      .maybeSingle()
+    if (!member || (member.anonymous_email ?? '').toLowerCase() !== normalizedEmail) {
+      return new Response(JSON.stringify({ error: 'Email does not match this member' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    const safeEventName = escapeHtml(event.name ?? '')
+    const safeJoinUrl = escapeHtml(parsedUrl.toString())
+
     // Check if email service is configured
     const resendApiKey = Deno.env.get('RESEND_API_KEY')
     const sendgridApiKey = Deno.env.get('SENDGRID_API_KEY')
 
     if (!resendApiKey && !sendgridApiKey) {
-      console.log('No email service configured - email would be sent to:', email)
-      console.log('Join URL:', joinUrl)
+      console.log('No email service configured - skipping invite email')
       return new Response('', {
         status: 204,
         headers: corsHeaders
@@ -94,15 +126,15 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           from: 'Amico Segreto <noreply@amicosegreto.lovable.app>',
-          to: [email],
+          to: [normalizedEmail],
           subject: 'Invito Amico Segreto',
           html: `
             <h1>Sei stato invitato a partecipare!</h1>
-            <p>Ciao! Sei stato invitato a partecipare all'evento "<strong>${event.name}</strong>".</p>
+            <p>Ciao! Sei stato invitato a partecipare all'evento "<strong>${safeEventName}</strong>".</p>
             <p>Clicca sul link qui sotto per unirti:</p>
-            <p><a href="${joinUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Unisciti all'evento</a></p>
+            <p><a href="${safeJoinUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Unisciti all'evento</a></p>
             <p>Oppure copia e incolla questo link nel tuo browser:</p>
-            <p>${joinUrl}</p>
+            <p>${safeJoinUrl}</p>
             <p>Non vediamo l'ora di vederti partecipare!</p>
           `,
         }),
@@ -127,7 +159,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           personalizations: [{
-            to: [{ email }],
+            to: [{ email: normalizedEmail }],
             subject: 'Invito Amico Segreto',
           }],
           from: { email: 'noreply@amicosegreto.lovable.app', name: 'Amico Segreto' },
@@ -135,11 +167,11 @@ serve(async (req) => {
             type: 'text/html',
             value: `
               <h1>Sei stato invitato a partecipare!</h1>
-              <p>Ciao! Sei stato invitato a partecipare all'evento "<strong>${event.name}</strong>".</p>
+              <p>Ciao! Sei stato invitato a partecipare all'evento "<strong>${safeEventName}</strong>".</p>
               <p>Clicca sul link qui sotto per unirti:</p>
-              <p><a href="${joinUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Unisciti all'evento</a></p>
+              <p><a href="${safeJoinUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Unisciti all'evento</a></p>
               <p>Oppure copia e incolla questo link nel tuo browser:</p>
-              <p>${joinUrl}</p>
+              <p>${safeJoinUrl}</p>
               <p>Non vediamo l'ora di vederti partecipare!</p>
             `,
           }],

@@ -86,6 +86,15 @@ interface CacheEntry {
 }
 
 const cache = new Map<string, CacheEntry>();
+const CACHE_MAX_ENTRIES = 500;
+// Bounded insert: evict the oldest entry so arbitrary queries can't grow memory without limit
+function cacheSet(key: string, value: CacheEntry) {
+  if (cache.size >= CACHE_MAX_ENTRIES && !cache.has(key)) {
+    const oldest = cache.keys().next().value;
+    if (oldest !== undefined) cache.delete(oldest);
+  }
+  cache.set(key, value);
+}
 const CACHE_TTL = 30 * 60 * 1000;
 
 function jsonResponse(data: object, status = 200): Response {
@@ -357,7 +366,7 @@ serve(async (req: Request) => {
     // mock
     if (CONFIG.provider === "mock") {
       const item = getMockProduct(asin);
-      cache.set(cacheKey, { item, timestamp: Date.now() });
+      cacheSet(cacheKey, { item, timestamp: Date.now() });
       return jsonResponse({ item, provider: "mock", mock: true });
     }
 
@@ -369,7 +378,7 @@ serve(async (req: Request) => {
       }
       try {
         const item = await amazonClient.getProduct(asin);
-        cache.set(cacheKey, { item, timestamp: Date.now() });
+        cacheSet(cacheKey, { item, timestamp: Date.now() });
         return jsonResponse({ item, provider: "amazon" });
       } catch (error: any) {
         console.error("Amazon PA-API getitems error:", error?.message);
@@ -393,7 +402,7 @@ serve(async (req: Request) => {
       }
       try {
         const item = await rainforestClient.getProduct(asin);
-        cache.set(cacheKey, { item, timestamp: Date.now() });
+        cacheSet(cacheKey, { item, timestamp: Date.now() });
         return jsonResponse({ item, provider: "rainforest" });
       } catch (error: any) {
         console.error("Rainforest error:", error?.message);

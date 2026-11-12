@@ -5,162 +5,99 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-Deno.serve(async (req: Request) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
 
-  if (req.method !== 'GET') {
-    return new Response(
-      JSON.stringify({ error: 'Method not allowed' }),
-      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  if (req.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
 
   try {
     const url = new URL(req.url);
     const eventId = url.searchParams.get('eventId');
     const channel = url.searchParams.get('channel');
     const privateChatId = url.searchParams.get('privateChatId');
-    const offset = parseInt(url.searchParams.get('offset') || '0');
-    const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100);
+    const offset = Math.max(0, parseInt(url.searchParams.get('offset') || '0') || 0);
+    const limit = Math.min(Math.max(1, parseInt(url.searchParams.get('limit') || '50') || 50), 100);
 
-    if (!eventId || !channel) {
-      return new Response(
-        JSON.stringify({ error: 'Missing eventId or channel parameter' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (!eventId || !UUID_RE.test(eventId) || !channel) {
+      return json({ error: 'Missing eventId or channel parameter' }, 400);
     }
-
     if (!['event', 'pair'].includes(channel)) {
-      return new Response(
-        JSON.stringify({ error: 'Channel must be "event" or "pair"' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ error: 'Channel must be "event" or "pair"' }, 400);
+    }
+    if (channel === 'pair' && (!privateChatId || !UUID_RE.test(privateChatId))) {
+      return json({ error: 'Pair channel requires privateChatId parameter' }, 400);
     }
 
-    // Get auth token from headers
     const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    if (!authHeader) return json({ error: 'Missing authorization header' }, 401);
 
-    // Create Supabase client
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    // Get user from auth token
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (authError || !user) return json({ error: 'Invalid authentication' }, 401);
 
-    if (authError || !user) {
-      console.error('Auth error:', authError);
-      return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get user's participant ID
-    const { data: userParticipant, error: participantError } = await supabase
+    // Caller must be a joined member of this event
+    const { data: me } = await supabase
       .from('participants')
-      .select('id')
+      .select('id, event_members!inner(event_id, status)')
       .eq('profile_id', user.id)
-      .single();
+      .eq('event_members.event_id', eventId)
+      .eq('event_members.status', 'joined')
+      .maybeSingle();
+    if (!me) return json({ error: 'Not a member of this event' }, 403);
 
-    if (participantError || !userParticipant) {
-      console.error('Participant error:', participantError);
-      return new Response(
-        JSON.stringify({ error: 'User participant not found' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Build query based on channel type
     let query = supabase
       .from('chat_messages')
-      .select(`
-        id,
-        content,
-        alias_snapshot,
-        color_snapshot,
-        created_at,
-        author_participant_id,
-        channel,
-        private_chat_id
-      `)
+      .select('id, content, alias_snapshot, color_snapshot, created_at, author_participant_id, channel, private_chat_id')
       .eq('event_id', eventId)
       .eq('channel', channel);
 
-    // For pair channel, filter by private_chat_id
     if (channel === 'pair') {
-      if (!privateChatId) {
-        return new Response(
-          JSON.stringify({ error: 'Pair channel requires privateChatId parameter' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // Verify user is part of this private chat
-      const { data: privateChat, error: chatError } = await supabase
+      const { data: privateChat } = await supabase
         .from('private_chats')
-        .select('id, anonymous_participant_id, exposed_participant_id')
-        .eq('id', privateChatId)
-        .single();
+        .select('event_id, anonymous_participant_id, exposed_participant_id')
+        .eq('id', privateChatId!)
+        .maybeSingle();
 
-      if (chatError || !privateChat) {
-        return new Response(
-          JSON.stringify({ error: 'Private chat not found' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      if (
+        !privateChat ||
+        privateChat.event_id !== eventId ||
+        (privateChat.anonymous_participant_id !== me.id && privateChat.exposed_participant_id !== me.id)
+      ) {
+        return json({ error: 'Access denied to this private chat' }, 403);
       }
-
-      if (privateChat.anonymous_participant_id !== userParticipant.id && 
-          privateChat.exposed_participant_id !== userParticipant.id) {
-        return new Response(
-          JSON.stringify({ error: 'Access denied to this private chat' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      query = query.eq('private_chat_id', privateChatId);
+      query = query.eq('private_chat_id', privateChatId!);
     }
 
-    query = query
+    const { data: rows, error } = await query
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    const { data: messages, error } = await query;
-
     if (error) {
       console.error('Error fetching messages:', error);
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch messages' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ error: 'Failed to fetch messages' }, 500);
     }
 
-    return new Response(
-      JSON.stringify({ 
-        messages: messages || [],
-        hasMore: messages?.length === limit
-      }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    // Never expose who wrote a message: in a private chat that would reveal
+    // the anonymous Secret Santa. Only tell the caller which ones are theirs.
+    const messages = (rows ?? []).map(({ author_participant_id, ...m }) => ({
+      ...m,
+      is_mine: author_participant_id === me.id,
+    }));
 
+    return json({ messages, hasMore: messages.length === limit });
   } catch (error) {
     console.error('Unexpected error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return json({ error: 'Internal server error' }, 500);
   }
 });

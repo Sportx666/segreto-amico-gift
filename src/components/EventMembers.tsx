@@ -4,11 +4,10 @@ import { useAuth } from "@/components/AuthProvider";
 import { useEventMembers } from "@/hooks/useEventMembers";
 import { useJoinedParticipantCount } from "@/hooks/useJoinedParticipantCount";
 import { toast } from "sonner";
-import { debugLog, isDebug } from "@/lib/debug";
+import { debugLog } from "@/lib/debug";
 import { getOrCreateParticipantId } from "@/lib/participants";
 import { MemberCard } from "./members/MemberCard";
 import { AddMemberDialog } from "./members/AddMemberDialog";
-import { DebugPanel } from "./members/DebugPanel";
 import { EventShareLink } from "./EventShareLink";
 import { useI18n } from "@/i18n";
 
@@ -29,7 +28,7 @@ export const EventMembers = ({ eventId, userRole, eventStatus, joinCode, eventNa
   const { user } = useAuth();
   const { members, loading: isLoading } = useEventMembers(eventId);
   const { count: joinedCount } = useJoinedParticipantCount(eventId);
-  const [diag, setDiag] = useState<DebugData>({});
+  const [, setDiag] = useState<DebugData>({});
   const [currentUserParticipantId, setCurrentUserParticipantId] = useState<string | null>(null);
   const [emailById, setEmailById] = useState<Record<string, string | null>>({});
 
@@ -198,16 +197,6 @@ export const EventMembers = ({ eventId, userRole, eventStatus, joinCode, eventNa
 
   return (
     <div className="space-y-6">
-      {isDebug() && (
-        <DebugPanel 
-          eventId={eventId} 
-          diag={diag} 
-          setDiag={setDiag}
-          newMemberName=""
-          newMemberEmail=""
-        />
-      )}
-
       {/* Event Share Link - show for admins when event is pending */}
       {userRole === 'admin' && eventStatus === 'pending' && joinCode && (
         <EventShareLink 

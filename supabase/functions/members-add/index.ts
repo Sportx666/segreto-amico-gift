@@ -190,7 +190,8 @@ serve(async (req) => {
     // 3) Create join token
     step = 'insert_join_token';
     const token = generateToken();
-    const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000).toISOString();
+    const days = Math.min(Math.max(Number(ttlDays) || 5, 1), 30);
+    const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
     const { data: tokenData, error: tokenErr } = await supabase.from('join_tokens').insert({
       event_id: eventId,
       participant_id: memberRow.participant_id,
@@ -201,7 +202,7 @@ serve(async (req) => {
       console.error('Join token creation failed:', tokenErr);
       throw tokenErr || new Error('Token creation failed');
     }
-    console.log('Created join token:', { token, expiresAt, tokenId: tokenData.id });
+    console.log('Created join token:', { expiresAt, tokenId: tokenData.id });
 
     // 4) Update event member with token ID
     step = 'update_member_token';
@@ -214,7 +215,7 @@ serve(async (req) => {
       // Don't fail the request, token creation succeeded
     }
 
-    const origin = 'https://amico-segreto.lovable.app';
+    const origin = (Deno.env.get('PUBLIC_BASE_URL') || 'https://amicosegreto.fun').replace(/\/$/, '');
     const url = `${origin}/join/${token}`;
 
     console.log('Member added successfully:', { 
@@ -240,7 +241,7 @@ serve(async (req) => {
       details: e?.details || e?.hint,
       code: e?.code
     });
-    return new Response(JSON.stringify({ error: e.message || 'Internal error', step, code: e?.code }), {
+    return new Response(JSON.stringify({ error: 'Internal error', step }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

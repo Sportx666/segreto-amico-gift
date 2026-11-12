@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Gift, ExternalLink, Calendar, ShoppingCart, ShoppingBag, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { getOrCreateParticipantId } from "@/lib/participants";
+import { safeExternalHref } from "@/lib/url";
 
 interface YourAssignmentProps {
   eventId: string;
@@ -269,7 +270,7 @@ export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssign
                         {item.affiliate_url && (
                           <Button size="sm" asChild>
                             <a
-                              href={item.affiliate_url}
+                              href={safeExternalHref(item.affiliate_url)}
                               target="_blank"
                               rel="noopener noreferrer"
                             >
@@ -281,7 +282,7 @@ export const YourAssignment = ({ eventId, eventStatus, onStartChat }: YourAssign
                         {!item.affiliate_url && item.raw_url && (
                           <Button size="sm" variant="outline" asChild>
                             <a
-                              href={item.raw_url}
+                              href={safeExternalHref(item.raw_url)}
                               target="_blank"
                               rel="noopener noreferrer"
                             >

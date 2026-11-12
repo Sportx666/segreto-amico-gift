@@ -22,6 +22,7 @@ import { useI18n } from "@/i18n";
 import { withAffiliateTag, productUrlFromASIN } from "@/lib/amazon";
 import { WishlistItem } from "@/components/WishlistItem";
 import { CatalogService } from "@/services/catalog";
+import { normalizeExternalUrl, safeExternalHref } from "@/lib/url";
 
 type Product = {
   asin: string;
@@ -252,7 +253,8 @@ export default function Wishlist() {
     wishlistId: string,
     payload: { title: string; url: string }
   ) => {
-    const url = payload.url.trim();
+    // Only http(s) links; adds https:// when missing
+    const url = normalizeExternalUrl(payload.url);
     if (!url) {
       toast.error(t('wishlist.invalid_url'));
       return;
@@ -306,7 +308,8 @@ export default function Wishlist() {
       return;
     }
 
-    const raw = emptyManualUrl.trim();
+    // Only http(s) links; adds https:// when missing
+    const raw = normalizeExternalUrl(emptyManualUrl);
     if (!raw) {
       toast.error(t('wishlist.invalid_url'));
       return;
@@ -849,7 +852,7 @@ export default function Wishlist() {
                             asChild
                           >
                             <a
-                              href={item.affiliate_url || item.raw_url || '#'}
+                              href={safeExternalHref(item.affiliate_url || item.raw_url) ?? '#'}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-xs"
