@@ -26,11 +26,14 @@ Deno.serve(async (req: Request) => {
     );
 
     // Two kinds of caller:
-    //  - the auto-draw scheduler, identified by the shared scheduler secret
+    //  - the auto-draw scheduler, identified by the shared secret kept in Vault
     //  - a signed-in user, who must be the event admin
-    const schedulerSecret = Deno.env.get('SCHEDULER_SECRET');
     const providedSecret = req.headers.get('x-scheduler-secret');
-    const isScheduler = !!schedulerSecret && providedSecret === schedulerSecret;
+    let isScheduler = false;
+    if (providedSecret) {
+      const { data: ok } = await supabase.rpc('verify_scheduler_secret', { _secret: providedSecret });
+      isScheduler = ok === true;
+    }
 
     const { data: event, error: eventErr } = await supabase
       .from('events')

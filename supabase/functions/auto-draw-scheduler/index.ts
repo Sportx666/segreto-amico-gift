@@ -11,11 +11,17 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  // Validate scheduler secret for cron job authentication
-  const schedulerSecret = Deno.env.get('SCHEDULER_SECRET')
-  const providedSecret = req.headers.get('x-scheduler-secret')
-  
-  if (!schedulerSecret || providedSecret !== schedulerSecret) {
+  // The cron job sends the secret it reads from Vault; verify it the same way
+  const schedulerSecret = req.headers.get('x-scheduler-secret') ?? ''
+  const verifier = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  )
+  const { data: secretOk } = schedulerSecret
+    ? await verifier.rpc('verify_scheduler_secret', { _secret: schedulerSecret })
+    : { data: false }
+
+  if (secretOk !== true) {
     console.error('Unauthorized scheduler access attempt')
     return new Response(
       JSON.stringify({ error: 'Unauthorized' }),
