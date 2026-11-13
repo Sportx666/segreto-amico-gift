@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import { initDebug } from '@/lib/debug'
@@ -12,7 +13,11 @@ initDebug();
 // Validate environment configuration on startup
 validateEnvironment();
 // Initialize PWA service worker with update detection
-initServiceWorker();
+// The app bundles its own files (dist/ inside the APK); a service worker
+// there would only serve stale code after an app update.
+if (!Capacitor.isNativePlatform()) {
+  initServiceWorker()
+}
 // Initialize Pinterest tag (anonymous; AuthProvider re-loads with email after sign-in)
 pinterestLoad();
 

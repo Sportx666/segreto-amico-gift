@@ -2,7 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { initNativeApp } from "@/lib/nativeApp";
 import { AuthProvider } from "@/components/AuthProvider";
 import { Navbar } from "@/components/Navbar";
 import { ConsentBanner } from "@/components/ConsentBanner";
@@ -37,7 +39,11 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { hasConsent, showBanner, acceptConsent, rejectConsent } = useAdsConsent();
+
+  // Android/iOS app: open invite / magic / OAuth links in-app, handle back button
+  useEffect(() => initNativeApp(navigate), [navigate]);
   const adSlots = getAdSlotsForRoute(location.pathname);
   
   // Check for updates on route changes

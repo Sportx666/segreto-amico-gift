@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { featureFlags } from '@/lib/featureFlags';
 import { PushNotifications, Token, PushNotificationSchema, ActionPerformed } from '@capacitor/push-notifications';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -10,7 +11,7 @@ export interface PushNotificationState {
 
 // Check if push notifications are supported on this platform
 export const isPushSupported = (): boolean => {
-  return Capacitor.isNativePlatform() && Capacitor.isPluginAvailable('PushNotifications');
+  return featureFlags.nativePush && Capacitor.isNativePlatform() && Capacitor.isPluginAvailable('PushNotifications');
 };
 
 // Request permission and register for push notifications

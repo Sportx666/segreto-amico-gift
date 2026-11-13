@@ -15,6 +15,7 @@ import PasswordReset from "@/components/PasswordReset";
 import PasswordSetup from "@/components/PasswordSetup";
 import GoogleButton from 'react-google-button';
 import logo from "@/assets/logo.png";
+import { signInWithOAuthProvider } from "@/lib/nativeApp";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -94,12 +95,7 @@ const Auth = () => {
 
   const handleGoogleLogin = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: getOAuthRedirectUrl(next)
-        }
-      });
+      const { error } = await signInWithOAuthProvider('google', getOAuthRedirectUrl(next));
 
       if (error) throw error;
     } catch (error: unknown) {
@@ -112,12 +108,7 @@ const Auth = () => {
 
   const handleFacebookLogin = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'facebook',
-        options: {
-          redirectTo: getOAuthRedirectUrl(next)
-        }
-      });
+      const { error } = await signInWithOAuthProvider('facebook', getOAuthRedirectUrl(next));
 
       if (error) throw error;
     } catch (error: unknown) {
@@ -130,12 +121,7 @@ const Auth = () => {
 
   const handleDiscordLogin = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'discord',
-        options: {
-          redirectTo: getOAuthRedirectUrl(next)
-        }
-      });
+      const { error } = await signInWithOAuthProvider('discord', getOAuthRedirectUrl(next));
 
       if (error) throw error;
     } catch (error: unknown) {

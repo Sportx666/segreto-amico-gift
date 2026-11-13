@@ -1,0 +1,102 @@
+name: Android build (Google Play)
+
+# Builds the Android App Bundle (.aab) for Google Play.
+# - Manually: Actions > "Android build (Google Play)" > Run workflow
+# - Automatically on pull requests that touch the app, as a build check
+#
+# Signing: add these repository secrets to get an upload-ready signed bundle
+# (without them the bundle is built unsigned, which is fine as a build check):
+#   ANDROID_KEYSTORE_BASE64   base64 of your upload keystore (.jks)
+#   ANDROID_KEYSTORE_PASSWORD
+#   ANDROID_KEY_ALIAS
+#   ANDROID_KEY_PASSWORD
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version name shown in Play (e.g. 1.0.0)'
+        required: false
+        default: '1.0.0'
+  pull_request:
+    paths:
+      - 'android/**'
+      - 'capacitor.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/**'
+      - '.github/workflows/android.yml'
+
+jobs:
+  build:
+    name: Build release AAB
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build
+        env:
+          VITE_BUILD_TIME: android-${{ github.run_number }}
+          VITE_SUPABASE_URL: https://eociecgrdwllggcohmko.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvY2llY2dyZHdsbGdnY29obWtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzODc5ODcsImV4cCI6MjA3MTk2Mzk4N30.frsU_PCHKJdz8lFv2IXqOiUVFwk28hXbZGWZAoYFfBY
+          VITE_SUPABASE_PROJECT_ID: eociecgrdwllggcohmko
+          # In the app the page origin is https://localhost, so links and auth
+          # redirects must point at the real site (opened in-app via App Links).
+          VITE_PUBLIC_BASE_URL: https://amicosegreto.fun
+          VITE_AUTH_REDIRECT_OVERRIDE: https://amicosegreto.fun
+          VITE_AMAZON_PARTNER_TAG: amicosegreto-21
+          VITE_ADS_ENABLED: 'false'
+          VITE_DEBUG: '0'
+          VITE_DB_TRACE: '0'
+
+      - name: Copy web app into the Android project
+        run: npx cap sync android
+
+      - name: Prepare signing key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+            echo "Signing with the upload key from secrets."
+          else
+            echo "::notice::No ANDROID_KEYSTORE_BASE64 secret: building an UNSIGNED bundle (build check only, cannot be uploaded to Play)."
+          fi
+
+      - name: Build release bundle
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          # Play requires a higher versionCode for every upload
+          ANDROID_VERSION_CODE: ${{ github.run_number }}
+          ANDROID_VERSION_NAME: ${{ github.event.inputs.version_name || '1.0.0' }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon bundleRelease
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: amico-segreto-${{ github.run_number }}-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+          retention-days: 30
