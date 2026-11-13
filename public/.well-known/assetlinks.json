@@ -7,7 +7,8 @@
       "namespace": "android_app",
       "package_name": "fun.amicosegreto.app",
       "sha256_cert_fingerprints": [
-        "5E:FB:EB:F9:D6:CD:5C:C5:C8:44:93:C1:B6:E5:29:1A:02:FB:C2:AE:0E:4C:90:98:1C:93:F3:EF:63:9C:2B:58"
+        "5E:FB:EB:F9:D6:CD:5C:C5:C8:44:93:C1:B6:E5:29:1A:02:FB:C2:AE:0E:4C:90:98:1C:93:F3:EF:63:9C:2B:58",
+        "0A:78:DC:B3:06:74:01:76:AC:5A:6E:92:11:0B:43:99:06:DC:7E:91:94:18:7E:CA:C3:27:CB:04:0C:D9:2B:CA"
       ]
     }
   }
