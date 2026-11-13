@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Amico Segreto</string>
+    <string name="title_activity_main">Amico Segreto</string>
+    <string name="package_name">fun.amicosegreto.app</string>
+    <string name="custom_url_scheme">fun.amicosegreto.app</string>
+</resources>

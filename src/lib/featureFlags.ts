@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core';
+
 /**
  * Centralized feature flags configuration
  * 
@@ -10,7 +12,15 @@ export const featureFlags = {
    * Enable/disable Google AdSense ads
    * Set VITE_ADS_ENABLED=true in .env to enable
    */
-  ads: import.meta.env.VITE_ADS_ENABLED === 'true',
+  // Never inside the Android/iOS app: AdSense does not allow ads in app WebViews.
+  ads: import.meta.env.VITE_ADS_ENABLED === 'true' && !Capacitor.isNativePlatform(),
+
+  /**
+   * Native push notifications. Off until Firebase (google-services.json) and the
+   * FCM HTTP v1 sender are set up: registering without Firebase crashes on Android.
+   * Set VITE_PUSH_ENABLED=true at build time to enable.
+   */
+  nativePush: import.meta.env.VITE_PUSH_ENABLED === 'true',
 
   /**
    * Enable/disable internationalization (i18n)

@@ -1,15 +1,20 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+// The app ships the built web app (dist/) inside the APK/AAB.
+// For live-reload during development only, point the native shell at a dev
+// server:  CAP_SERVER_URL=http://192.168.1.10:8080 npx cap run android
+// Never set it for a Play Store build.
+const devServerUrl = process.env.CAP_SERVER_URL;
+
 const config: CapacitorConfig = {
-  appId: 'app.lovable.75ce866ec02645ceb336e9513a194ba3',
-  appName: 'amico-segreto',
+  // Must match public/.well-known/assetlinks.json and can never change
+  // once the app is published on Google Play.
+  appId: 'fun.amicosegreto.app',
+  appName: 'Amico Segreto',
   webDir: 'dist',
-  server: {
-    // For development: use the Lovable preview URL for hot reload
-    // Comment this out for production builds
-    url: 'https://75ce866e-c026-45ce-b336-e9513a194ba3.lovableproject.com?forceHideBadge=true',
-    cleartext: true,
-  },
+  server: devServerUrl
+    ? { url: devServerUrl, cleartext: devServerUrl.startsWith('http://') }
+    : { androidScheme: 'https' },
   plugins: {
     SplashScreen: {
       launchAutoHide: true,
@@ -21,7 +26,7 @@ const config: CapacitorConfig = {
     contentInset: 'automatic',
   },
   android: {
-    allowMixedContent: true,
+    allowMixedContent: false,
   },
 };
 

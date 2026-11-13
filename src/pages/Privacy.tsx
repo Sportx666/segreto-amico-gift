@@ -129,6 +129,37 @@ export default function Privacy() {
           </p>
         </section>
 
+        <section id="eliminazione-account" className="scroll-mt-24">
+          <h2 className="text-2xl font-semibold mb-4">Eliminazione dell&apos;account (sito e app Amico Segreto)</h2>
+          <p className="mb-4">
+            Puoi eliminare il tuo account Amico Segreto in qualsiasi momento, dal sito o dall&apos;app Android:
+          </p>
+          <ol className="list-decimal pl-6 mb-4 space-y-2">
+            <li>Accedi e apri <strong>Profilo</strong>.</li>
+            <li>Nella sezione dell&apos;account premi <strong>&quot;Elimina il mio account&quot;</strong> e conferma.</li>
+          </ol>
+          <p className="mb-4">
+            Se non riesci ad accedere, scrivi a{" "}
+            <a href="mailto:privacy@amicosegreto.fun" className="text-primary underline">privacy@amicosegreto.fun</a>{" "}
+            dall&apos;indirizzo email del tuo account: elimineremo l&apos;account entro 30 giorni.
+          </p>
+          <p className="mb-2"><strong>Dati eliminati subito:</strong></p>
+          <ul className="list-disc pl-6 mb-4 space-y-2">
+            <li>profilo, avatar, indirizzo e dati di contatto;</li>
+            <li>liste dei desideri, messaggi in chat, soprannomi e notifiche;</li>
+            <li>partecipazioni agli eventi e abbinamenti; gli eventi che amministri vengono eliminati per tutti i partecipanti;</li>
+            <li>credenziali di accesso e dispositivi registrati per le notifiche.</li>
+          </ul>
+          <p className="mb-2"><strong>Dati conservati:</strong></p>
+          <ul className="list-disc pl-6 mb-4 space-y-2">
+            <li>
+              il solo indirizzo email, per impedire una nuova registrazione con lo stesso indirizzo dopo
+              l&apos;eliminazione; puoi chiederne la rimozione scrivendo all&apos;indirizzo qui sopra;
+            </li>
+            <li>i backup tecnici del database, sovrascritti automaticamente entro il periodo di conservazione del fornitore.</li>
+          </ul>
+        </section>
+
         <section>
           <h2 className="text-2xl font-semibold mb-4">10. Sicurezza dei Dati</h2>
           <p className="mb-4">

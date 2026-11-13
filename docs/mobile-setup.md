@@ -28,10 +28,9 @@ This guide explains how to build and run the Amico Segreto mobile app for iOS an
    npm install
    ```
 
-3. **Add native platforms**
+3. **Add native platforms** (Android is already in the repo under `android/`)
    ```bash
    npx cap add ios
-   npx cap add android
    ```
 
 4. **Build the web app**
@@ -48,11 +47,14 @@ This guide explains how to build and run the Amico Segreto mobile app for iOS an
 
 ### Hot Reload Development
 
-The `capacitor.config.ts` is configured to use the Lovable preview URL for hot reload during development. This means:
+By default the app ships the built web app (`dist/`) inside the APK/AAB. For live reload
+while developing, point the native shell at a dev server for that run only:
 
-- Changes you make in Lovable will instantly appear on your device/emulator
-- No need to rebuild the app for code changes
-- Perfect for rapid development and testing
+```bash
+CAP_SERVER_URL=http://<your-computer-ip>:8080 npx cap run android
+```
+
+Never set `CAP_SERVER_URL` for a Google Play build. See `docs/google-play-release.md`.
 
 ### Running on iOS
 
