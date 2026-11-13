@@ -169,16 +169,6 @@ serve(async (req) => {
       }
     }
 
-    // Fix any duplicate memberships
-    const { error: fixErr } = await supabase.rpc(
-      'fix_event_membership_duplicates',
-      { _event_id: event.id, _profile_id: user.id }
-    )
-
-    if (fixErr) {
-      console.warn('Failed to fix duplicates:', fixErr)
-    }
-
     // Ensure default wishlist exists
     const { data: existingWishlist } = await supabase
       .from('wishlists')

@@ -27,11 +27,13 @@ interface FCMMessage {
   priority: string;
 }
 
+type SendResult = 'sent' | 'failed' | 'invalid_token';
+
 // Send push notification via FCM
-async function sendFCM(token: string, title: string, body: string, data?: Record<string, string>): Promise<boolean> {
+async function sendFCM(token: string, title: string, body: string, data?: Record<string, string>): Promise<SendResult> {
   if (!FCM_SERVER_KEY) {
     console.warn('FCM_SERVER_KEY not configured, skipping push notification');
-    return false;
+    return 'failed';
   }
 
   const message: FCMMessage = {
@@ -56,20 +58,18 @@ async function sendFCM(token: string, title: string, body: string, data?: Record
     });
 
     const result = await response.json();
-    
-    if (result.success === 1) {
-      console.log('FCM push sent successfully to token:', token.substring(0, 20) + '...');
-      return true;
-    } else if (result.failure === 1) {
-      console.warn('FCM push failed:', result.results?.[0]?.error);
-      // Return the error type for token cleanup
-      return false;
+
+    if (result.success === 1) return 'sent';
+    if (result.failure === 1) {
+      const errorType = result.results?.[0]?.error;
+      console.warn('FCM push failed:', errorType);
+      return ['InvalidRegistration', 'NotRegistered'].includes(errorType) ? 'invalid_token' : 'failed';
     }
-    
-    return true;
+    return 'failed';
   } catch (error) {
+    // Network errors / non-JSON replies must not wipe users' tokens
     console.error('FCM send error:', error);
-    return false;
+    return 'failed';
   }
 }
 
@@ -116,14 +116,13 @@ export async function sendPushNotifications(
   // Send to each token
   for (const tokenRecord of tokens) {
     // Currently only FCM is supported (Android and iOS via Firebase)
-    const success = await sendFCM(tokenRecord.token, title, body, data);
-    
-    if (success) {
+    const result = await sendFCM(tokenRecord.token, title, body, data);
+
+    if (result === 'sent') {
       sent++;
     } else {
       failed++;
-      // Mark token for cleanup if invalid
-      invalidTokens.push(tokenRecord.id);
+      if (result === 'invalid_token') invalidTokens.push(tokenRecord.id);
     }
   }
 
@@ -156,8 +155,9 @@ Deno.serve(async (req: Request) => {
     // Verify service role key for internal calls
     const authHeader = req.headers.get('authorization');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    if (!authHeader?.includes(serviceRoleKey || '')) {
+
+    // Exact match; an unset key must never let everyone through
+    if (!serviceRoleKey || authHeader !== `Bearer ${serviceRoleKey}`) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

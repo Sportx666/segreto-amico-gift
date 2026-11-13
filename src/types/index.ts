@@ -69,10 +69,10 @@ export interface ChatMessage {
   alias_snapshot: string;
   color_snapshot: string;
   created_at: string;
-  author_participant_id: string;
+  /** True for the current user's own messages. Author ids are never sent to clients. */
+  is_mine?: boolean;
   channel: 'event' | 'pair';
-  assignment_id?: string;
-  recipient_participant_id?: string;
+  private_chat_id?: string;
 }
 
 export interface Assignment {

@@ -6,6 +6,7 @@ import { Heart, ExternalLink, Plus, ShoppingBag } from "lucide-react";
 import { useMemberWishlist } from "@/hooks/useMemberWishlist";
 import { useI18n } from "@/i18n";
 import { WishlistDialog } from "./WishlistDialog";
+import { safeExternalHref } from "@/lib/url";
 
 interface MemberWishlistPreviewProps {
   participantId: string;
@@ -148,7 +149,7 @@ export function MemberWishlistPreview({
               )}
               {item.affiliate_url && !isCurrentUser && (
                 <a
-                  href={item.affiliate_url}
+                  href={safeExternalHref(item.affiliate_url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}

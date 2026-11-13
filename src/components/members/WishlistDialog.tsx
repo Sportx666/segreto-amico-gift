@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, ExternalLink, ShoppingBag, Check } from "lucide-react";
 import { useFullMemberWishlist } from "@/hooks/useFullMemberWishlist";
 import { useI18n } from "@/i18n";
+import { safeExternalHref } from "@/lib/url";
 
 interface WishlistDialogProps {
   open: boolean;
@@ -99,7 +100,7 @@ export function WishlistDialog({
                     )}
                     {item.affiliate_url && (
                       <a
-                        href={item.affiliate_url}
+                        href={safeExternalHref(item.affiliate_url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"

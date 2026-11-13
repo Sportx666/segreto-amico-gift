@@ -15,6 +15,7 @@ import { useOptimisticChat } from '@/hooks/useOptimisticChat';
 import { useNickname } from '@/hooks/useNickname';
 import { useJoinedParticipantCount } from '@/hooks/useJoinedParticipantCount';
 import { usePrivateChats, PrivateChat } from '@/hooks/usePrivateChats';
+import { chatService } from '@/services/chatService';
 import { useI18n } from '@/i18n';
 import { NicknameManager } from './NicknameManager';
 import { ChatRecipientSelector } from './ChatRecipientSelector';
@@ -24,7 +25,6 @@ import { it, enUS } from 'date-fns/locale';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/components/AuthProvider';
 
 interface ChatManagerProps {
   eventId: string;
@@ -39,7 +39,6 @@ export interface ChatManagerHandle {
 
 export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ eventId, eventStatus, openChat, onOpenChatConsumed }, ref) => {
   const { t, language } = useI18n();
-  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   
   // URL params as source of truth
@@ -58,7 +57,34 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
   
   const { nickname: nickData } = useNickname(eventId);
   const { count: joinedCount } = useJoinedParticipantCount(eventId);
-  const { chats: privateChats, loading: loadingChats, markAsRead } = usePrivateChats(eventId);
+  const { chats: privateChats, loading: loadingChats, markAsRead, refetch: refetchChats } = usePrivateChats(eventId);
+
+  // Open my anonymous chat with a member, creating it server-side if needed.
+  // The server fills in both names and requires me to have a nickname first.
+  const openOrCreateChat = async (recipientId: string) => {
+    let chatId = privateChats.find(
+      c => c.otherParticipantId === recipientId && c.myRole === 'anonymous'
+    )?.id;
+
+    if (!chatId) {
+      try {
+        chatId = await chatService.getOrCreatePrivateChat(eventId, recipientId);
+        await refetchChats();
+      } catch (error) {
+        const code = error instanceof Error ? error.message : '';
+        console.error('Error opening private chat:', error);
+        toast.error(code.includes('alias_required') ? t('chat.set_nickname_error') : t('chat.error_creating_chat'));
+        return;
+      }
+    }
+
+    setSearchParams((current) => {
+      const params = new URLSearchParams(current);
+      params.set('thread', chatId!);
+      params.set('tab', 'chat');
+      return params;
+    });
+  };
   
   const dateLocale = language === 'it' ? it : enUS;
 
@@ -74,86 +100,12 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
         return;
       }
 
-      const initiateChatFromExternal = async () => {
-        // Check if there's already a chat with this recipient where we're anonymous
-        const existingChat = privateChats.find(
-          c => c.otherParticipantId === openChat.recipientId && c.myRole === 'anonymous'
-        );
-
-        if (existingChat) {
-          setSearchParams((current) => {
-            const params = new URLSearchParams(current);
-            params.set('thread', existingChat.id);
-            params.set('tab', 'chat');
-            return params;
-          });
-        } else {
-          // Create new private chat immediately (same as handleChatStart)
-          try {
-            const { data: myParticipant } = await supabase
-              .from('participants')
-              .select('id')
-              .eq('profile_id', user?.id)
-              .single();
-
-            if (!myParticipant) return;
-
-            const { data: alias } = await supabase
-              .from('anonymous_aliases')
-              .select('nickname')
-              .eq('event_id', eventId)
-              .eq('participant_id', myParticipant.id)
-              .single();
-
-            if (!alias?.nickname) return;
-
-            // Check if chat already exists (race condition protection)
-            const { data: existingChatCheck } = await supabase
-              .from('private_chats')
-              .select('id')
-              .eq('event_id', eventId)
-              .eq('anonymous_participant_id', myParticipant.id)
-              .eq('exposed_participant_id', openChat.recipientId)
-              .maybeSingle();
-
-            let chatId: string;
-
-            if (existingChatCheck) {
-              chatId = existingChatCheck.id;
-            } else {
-              const { data: newChat } = await supabase
-                .from('private_chats')
-                .insert({
-                  event_id: eventId,
-                  anonymous_participant_id: myParticipant.id,
-                  anonymous_alias: alias.nickname,
-                  exposed_participant_id: openChat.recipientId,
-                  exposed_name: openChat.recipientName || t('chat.anonymous_user'),
-                })
-                .select()
-                .single();
-
-              if (!newChat) return;
-              chatId = newChat.id;
-            }
-
-            setSearchParams((current) => {
-              const params = new URLSearchParams(current);
-              params.set('thread', chatId);
-              params.set('tab', 'chat');
-              return params;
-            });
-          } catch (error) {
-            console.error('Error in initiateChatFromExternal:', error);
-          }
-        }
-      };
-
-      initiateChatFromExternal();
+      openOrCreateChat(openChat.recipientId);
       onOpenChatConsumed?.();
       handledOpenChatRef.current = openChat.recipientId;
     }
-  }, [openChat, privateChats, setSearchParams, onOpenChatConsumed, t, eventId, user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openChat, onOpenChatConsumed]);
 
   // Determine chat options based on active state
   const chatOptions = activeChannel === 'event' 
@@ -195,95 +147,8 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
     }
   }, [threadParam, activePrivateChat, markAsRead]);
 
-  const handleChatStart = async (recipientId: string, recipientName?: string) => {
-    // Check if a chat already exists with this recipient where we're anonymous
-    const existingChat = privateChats.find(
-      c => c.otherParticipantId === recipientId && c.myRole === 'anonymous'
-    );
-
-    if (existingChat) {
-      setSearchParams((current) => {
-        const params = new URLSearchParams(current);
-        params.set('thread', existingChat.id);
-        params.set('tab', 'chat');
-        return params;
-      });
-    } else {
-      // Create new private chat immediately
-      try {
-        // Get current user's participant ID
-        const { data: myParticipant } = await supabase
-          .from('participants')
-          .select('id')
-          .eq('profile_id', user?.id)
-          .single();
-
-        if (!myParticipant) {
-          toast.error(t('chat.error_creating_chat'));
-          return;
-        }
-
-        // Get my alias for this event
-        const { data: alias } = await supabase
-          .from('anonymous_aliases')
-          .select('nickname')
-          .eq('event_id', eventId)
-          .eq('participant_id', myParticipant.id)
-          .single();
-
-        if (!alias?.nickname) {
-          toast.error(t('chat.set_nickname_error'));
-          return;
-        }
-
-        // Check if chat already exists (race condition protection)
-        const { data: existingChatCheck } = await supabase
-          .from('private_chats')
-          .select('id')
-          .eq('event_id', eventId)
-          .eq('anonymous_participant_id', myParticipant.id)
-          .eq('exposed_participant_id', recipientId)
-          .maybeSingle();
-
-        let chatId: string;
-
-        if (existingChatCheck) {
-          chatId = existingChatCheck.id;
-        } else {
-          // Create new private chat
-          const { data: newChat, error: createError } = await supabase
-            .from('private_chats')
-            .insert({
-              event_id: eventId,
-              anonymous_participant_id: myParticipant.id,
-              anonymous_alias: alias.nickname,
-              exposed_participant_id: recipientId,
-              exposed_name: recipientName || t('chat.anonymous_user'),
-            })
-            .select()
-            .single();
-
-          if (createError || !newChat) {
-            console.error('Error creating private chat:', createError);
-            toast.error(t('chat.error_creating_chat'));
-            return;
-          }
-
-          chatId = newChat.id;
-        }
-
-        // Navigate to the new chat
-        setSearchParams((current) => {
-          const params = new URLSearchParams(current);
-          params.set('thread', chatId);
-          params.set('tab', 'chat');
-          return params;
-        });
-      } catch (error) {
-        console.error('Error in handleChatStart:', error);
-        toast.error(t('chat.error_creating_chat'));
-      }
-    }
+  const handleChatStart = async (recipientId: string, _recipientName?: string) => {
+    await openOrCreateChat(recipientId);
   };
 
   const handleCloseChat = (chatId: string) => {

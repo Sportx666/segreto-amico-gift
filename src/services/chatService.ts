@@ -6,7 +6,8 @@ export interface ChatMessage {
   alias_snapshot: string;
   color_snapshot: string;
   created_at: string;
-  author_participant_id: string;
+  /** True for messages written by the current user. The author's identity is never sent to clients. */
+  is_mine?: boolean;
   channel: string;
   private_chat_id?: string;
   // Optimistic UI fields
@@ -19,8 +20,8 @@ export interface PrivateChat {
   id: string;
   eventId: string;
   myRole: 'anonymous' | 'exposed';
-  myParticipantId: string;
-  otherParticipantId: string;
+  /** Only known when I'm the anonymous side (the recipient's id). Never revealed to the exposed side. */
+  otherParticipantId: string | null;
   displayName: string;
   unreadCount: number;
   lastMessageAt: string;
@@ -131,61 +132,48 @@ export const chatService = {
   },
 
   /**
-   * Fetch private chats with batched unread counts
+   * Fetch my private chats for an event, with unread counts, in one call.
+   * The server decides what each side may see: the exposed side only gets the alias.
    */
   async fetchPrivateChats(
-    userId: string,
     eventId: string,
     lastReadTimestamps: Record<string, string>
   ): Promise<PrivateChat[]> {
-    // Get participant ID (cached)
-    const participantId = await this.getParticipantId(userId);
-    if (!participantId) return [];
+    const { data, error } = await supabase.rpc('get_my_private_chats', {
+      _event_id: eventId,
+      _last_read: lastReadTimestamps,
+    });
 
-    // Fetch chats and unread counts in parallel
-    const [chatsResult, unreadResult] = await Promise.all([
-      supabase
-        .from('private_chats')
-        .select('*')
-        .eq('event_id', eventId)
-        .or(`anonymous_participant_id.eq.${participantId},exposed_participant_id.eq.${participantId}`)
-        .order('last_message_at', { ascending: false }),
-      
-      supabase.rpc('get_private_chat_unread_counts', {
-        _participant_id: participantId,
-        _event_id: eventId,
-        _last_read_timestamps: lastReadTimestamps,
-      }),
-    ]);
-
-    if (chatsResult.error) {
-      console.error('Error fetching private chats:', chatsResult.error);
+    if (error) {
+      console.error('Error fetching private chats:', error);
       return [];
     }
 
-    // Create unread count map
-    const unreadMap = new Map<string, number>();
-    if (!unreadResult.error && unreadResult.data) {
-      for (const row of unreadResult.data) {
-        unreadMap.set(row.chat_id, Number(row.unread_count));
-      }
-    }
+    return (data || []).map((chat) => ({
+      id: chat.chat_id,
+      eventId,
+      myRole: chat.my_role === 'anonymous' ? 'anonymous' : 'exposed',
+      otherParticipantId: chat.other_participant_id,
+      displayName: chat.display_name,
+      unreadCount: Number(chat.unread_count) || 0,
+      lastMessageAt: chat.last_message_at,
+      createdAt: chat.created_at,
+    }));
+  },
 
-    // Format chats
-    return (chatsResult.data || []).map((chat: any) => {
-      const isAnonymous = chat.anonymous_participant_id === participantId;
-      return {
-        id: chat.id,
-        eventId: chat.event_id,
-        myRole: isAnonymous ? 'anonymous' : 'exposed',
-        myParticipantId: participantId,
-        otherParticipantId: isAnonymous ? chat.exposed_participant_id : chat.anonymous_participant_id,
-        displayName: isAnonymous ? chat.exposed_name : chat.anonymous_alias,
-        unreadCount: unreadMap.get(chat.id) || 0,
-        lastMessageAt: chat.last_message_at,
-        createdAt: chat.created_at,
-      };
+  /**
+   * Open (or create) my anonymous chat with another joined member.
+   * Throws an Error whose message is the server code, e.g. 'alias_required'.
+   */
+  async getOrCreatePrivateChat(eventId: string, recipientParticipantId: string): Promise<string> {
+    const { data, error } = await supabase.rpc('get_or_create_private_chat', {
+      _event_id: eventId,
+      _recipient_participant_id: recipientParticipantId,
     });
+    if (error || !data) {
+      throw new Error(error?.message || 'chat_create_failed');
+    }
+    return data;
   },
 
   /**
@@ -193,7 +181,6 @@ export const chatService = {
    */
   createOptimisticMessage(
     content: string,
-    authorParticipantId: string,
     channel: 'event' | 'pair',
     alias: string,
     privateChatId?: string
@@ -204,7 +191,7 @@ export const chatService = {
       alias_snapshot: alias,
       color_snapshot: '#6366f1',
       created_at: new Date().toISOString(),
-      author_participant_id: authorParticipantId,
+      is_mine: true,
       channel,
       private_chat_id: privateChatId,
       pending: true,

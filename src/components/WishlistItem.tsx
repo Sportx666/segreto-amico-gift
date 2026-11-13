@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Plus, ExternalLink, Trash2 } from "lucide-react";
 import { withAffiliateTag } from "@/lib/amazon";
 import { useI18n } from "@/i18n";
+import { safeExternalHref } from "@/lib/url";
 
 type WishlistItemData = {
   id: string;
@@ -99,7 +100,7 @@ export function WishlistItem({ item, onDelete, onAddManual, onOpenSearch, wishli
             </div>
             <div className="flex flex-wrap gap-2 items-center mb-2 justify-between">
               <a
-              href={affiliateUrl}
+              href={safeExternalHref(affiliateUrl)}
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm underline text-primary focus:outline focus:ring-2 focus:ring-primary rounded px-1"

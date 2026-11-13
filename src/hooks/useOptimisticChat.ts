@@ -112,7 +112,6 @@ export function useOptimisticChat(options: UseOptimisticChatOptions) {
     // Create optimistic message
     const optimisticMessage = chatService.createOptimisticMessage(
       content.trim(),
-      myParticipantId,
       channel,
       channel === 'pair' ? myAlias : myAlias,
       currentChatId || privateChatId
@@ -201,7 +200,9 @@ export function useOptimisticChat(options: UseOptimisticChatOptions) {
           filter,
         },
         (payload) => {
-          const newMessage = payload.new as ChatMessage;
+          // Realtime only carries the columns we may read: no author id, so we
+          // can't tell whose message it is. Own messages are already shown optimistically.
+          const newMessage = { ...(payload.new as ChatMessage), is_mine: false };
           
           // Avoid duplicates (from optimistic updates or own messages)
           setMessages(prev => {

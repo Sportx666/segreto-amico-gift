@@ -144,6 +144,15 @@ interface CacheEntry {
 }
 
 const cache = new Map<string, CacheEntry>();
+const CACHE_MAX_ENTRIES = 500;
+// Bounded insert: evict the oldest entry so arbitrary queries can't grow memory without limit
+function cacheSet(key: string, value: CacheEntry) {
+  if (cache.size >= CACHE_MAX_ENTRIES && !cache.has(key)) {
+    const oldest = cache.keys().next().value;
+    if (oldest !== undefined) cache.delete(oldest);
+  }
+  cache.set(key, value);
+}
 const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
 
 // Optimized retry: max 2 attempts, fast-fail on 4xx
@@ -517,7 +526,9 @@ serve(async (req: Request) => {
     // Early bail for empty query
     if (!query) return errorResponse(400, "Missing search query");
     
-    const page = Number(body.page || 1);
+    if (query.length > 200) return errorResponse(400, "Search query too long");
+
+    const page = Math.min(Math.max(Math.trunc(Number(body.page) || 1), 1), 10);
     const { minPrice, maxPrice } = body;
 
     // Normalize cache key for better hit rate
@@ -542,7 +553,7 @@ serve(async (req: Request) => {
     // Provider: mock
     if (CONFIG.provider === "mock") {
       const result = getMockResults(query, page);
-      cache.set(cacheKey, { ...result, timestamp: Date.now() });
+      cacheSet(cacheKey, { ...result, timestamp: Date.now() });
       return jsonResponse({ ...result, page, pageSize: 10, provider: "mock", mock: true });
     }
 
@@ -555,7 +566,7 @@ serve(async (req: Request) => {
 
       try {
         const result = await rainforestClient.search(query, page, minPrice, maxPrice);
-        cache.set(cacheKey, { ...result, timestamp: Date.now() });
+        cacheSet(cacheKey, { ...result, timestamp: Date.now() });
         return jsonResponse({ ...result, page, pageSize: 10, provider: "rainforest" });
       } catch (error: any) {
         console.error("Rainforest error:", error?.message);
@@ -575,7 +586,7 @@ serve(async (req: Request) => {
 
       try {
         const result = await amazonClient.search(query, page, minPrice, maxPrice);
-        cache.set(cacheKey, { ...result, timestamp: Date.now() });
+        cacheSet(cacheKey, { ...result, timestamp: Date.now() });
         return jsonResponse({ ...result, page, pageSize: 10, provider: "amazon" });
       } catch (error: any) {
         console.error("Amazon PA-API error:", error?.message);
