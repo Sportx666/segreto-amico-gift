@@ -864,6 +864,8 @@ export type Database = {
           my_role: string
           other_participant_id: string | null
           unread_count: number
+          blocked_by_me: boolean
+          blocked_by_other: boolean
         }[]
       }
       get_or_create_private_chat: {
@@ -923,6 +925,19 @@ export type Database = {
         }[]
       }
       merge_duplicate_participants: { Args: never; Returns: Json }
+      report_content: {
+        Args: {
+          _reason: string
+          _message_id?: string | null
+          _private_chat_id?: string | null
+          _details?: string | null
+        }
+        Returns: string
+      }
+      set_private_chat_blocked: {
+        Args: { _private_chat_id: string; _blocked: boolean }
+        Returns: undefined
+      }
       remove_unjoined_participant: {
         Args: { _event_id: string; _participant_id: string }
         Returns: Json

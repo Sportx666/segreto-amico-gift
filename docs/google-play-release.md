@@ -56,17 +56,38 @@ version name, e.g. `1.0.0`). Download the `amico-segreto-…-aab` artifact. The
   - Messages: in-app chat between event members
   - Other user-generated content: wish lists, nicknames
   - App activity: in-app interactions (Plausible analytics, no personal identifiers)
-- **Content rating:** complete the questionnaire. Users can chat with each other.
+- **Content rating:** complete the questionnaire. Users can chat with each other;
+  in-app reporting and blocking are available (see section 4).
 
 ### Store listing assets
 
 - App icon 512×512: `public/android-chrome-512x512.png`
 - Feature graphic 1024×500 and at least 2 phone screenshots: to be prepared
 
-## 4. Known gaps before production
+## 4. Moderation (reports and blocks)
 
-- **Reporting/blocking in chat:** Google Play's user-generated-content policy expects
-  a way to report objectionable messages/users and block them. Not implemented yet.
+Users can report any message (flag icon) or a whole private conversation, and
+block a private conversation (Report / Block above the message box). Blocking
+works per conversation so the anonymous Secret Santa is never revealed.
+
+Reports land in the `content_reports` table (not visible to users). Review them in
+the Supabase dashboard (Table editor → `content_reports`, or SQL editor):
+
+```sql
+select r.created_at, r.reason, r.details, r.message_snapshot, e.name as event,
+       pr.display_name as reported_user
+from content_reports r
+left join events e on e.id = r.event_id
+left join participants p on p.id = r.reported_participant_id
+left join profiles pr on pr.id = p.profile_id
+where r.status = 'open'
+order by r.created_at desc;
+```
+
+Set `status` to `reviewed`, `actioned` or `dismissed` once handled. Google expects
+reports to be acted on promptly; check them regularly.
+
+## 5. Known gaps before production
 - **Push notifications:** off in the app (`VITE_PUSH_ENABLED`). To enable: create a
   Firebase project, add `android/app/google-services.json`, move the server sender
   (`chat-send`, `send-push`) from the retired legacy FCM API to FCM HTTP v1, then

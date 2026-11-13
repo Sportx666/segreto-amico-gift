@@ -26,7 +26,13 @@ export interface PrivateChat {
   unreadCount: number;
   lastMessageAt: string;
   createdAt: string;
+  /** I blocked this conversation (I can unblock it). */
+  blockedByMe: boolean;
+  /** The other person blocked this conversation: no messages can be sent. */
+  blockedByOther: boolean;
 }
+
+export type ReportReason = 'spam' | 'harassment' | 'inappropriate' | 'other';
 
 const SUPABASE_URL = 'https://eociecgrdwllggcohmko.supabase.co';
 
@@ -158,7 +164,32 @@ export const chatService = {
       unreadCount: Number(chat.unread_count) || 0,
       lastMessageAt: chat.last_message_at,
       createdAt: chat.created_at,
+      blockedByMe: !!chat.blocked_by_me,
+      blockedByOther: !!chat.blocked_by_other,
     }));
+  },
+
+  /**
+   * Report a message, or a whole private conversation, for review.
+   * Throws an Error whose message is the server code (e.g. 'too_many_reports').
+   */
+  async reportContent(target: { messageId?: string; privateChatId?: string }, reason: ReportReason, details?: string): Promise<void> {
+    const { error } = await supabase.rpc('report_content', {
+      _reason: reason,
+      _message_id: target.messageId ?? null,
+      _private_chat_id: target.privateChatId ?? null,
+      _details: details?.trim() || null,
+    });
+    if (error) throw new Error(error.message || 'report_failed');
+  },
+
+  /** Block or unblock one of my private conversations. */
+  async setChatBlocked(privateChatId: string, blocked: boolean): Promise<void> {
+    const { error } = await supabase.rpc('set_private_chat_blocked', {
+      _private_chat_id: privateChatId,
+      _blocked: blocked,
+    });
+    if (error) throw new Error(error.message || 'block_failed');
   },
 
   /**

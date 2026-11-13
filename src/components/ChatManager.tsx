@@ -19,7 +19,18 @@ import { chatService } from '@/services/chatService';
 import { useI18n } from '@/i18n';
 import { NicknameManager } from './NicknameManager';
 import { ChatRecipientSelector } from './ChatRecipientSelector';
-import { MessageCircle, Users, Heart, Send, ChevronUp, Plus, X, Glasses, AlertCircle, RotateCcw } from 'lucide-react';
+import { MessageCircle, Users, Heart, Send, ChevronUp, Plus, X, Glasses, AlertCircle, RotateCcw, Flag, Ban } from 'lucide-react';
+import { ReportDialog, type ReportTarget } from './chat/ReportDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { it, enUS } from 'date-fns/locale';
 import { useSearchParams } from 'react-router-dom';
@@ -48,6 +59,8 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
   const [privateMenuOpen, setPrivateMenuOpen] = useState(false);
   const [showRecipientSelector, setShowRecipientSelector] = useState(false);
   const [pendingRecipient, setPendingRecipient] = useState<{ id: string; name: string } | null>(null);
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
+  const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
   
   // Determine active channel based on thread param or pending recipient
   const activeChannel = (threadParam || pendingRecipient) ? 'pair' : 'event';
@@ -104,7 +117,6 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
       onOpenChatConsumed?.();
       handledOpenChatRef.current = openChat.recipientId;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openChat, onOpenChatConsumed]);
 
   // Determine chat options based on active state
@@ -186,6 +198,18 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
   useImperativeHandle(ref, () => ({
     handleChatStart
   }));
+
+  const setActiveChatBlocked = async (blocked: boolean) => {
+    if (!activePrivateChat) return;
+    try {
+      await chatService.setChatBlocked(activePrivateChat.id, blocked);
+      await refetchChats();
+      toast.success(blocked ? t('chat.blocked_toast') : t('chat.unblocked_toast'));
+    } catch (error) {
+      console.error('Error changing block state:', error);
+      toast.error(t('chat.block_error'));
+    }
+  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -307,6 +331,18 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                   <span className="text-xs text-muted-foreground">
                     {message.pending ? t('chat.sending') : formatMessageTime(message.created_at)}
                   </span>
+                  {!message.is_mine && !message.pending && !message.failed && !String(message.id).startsWith('temp-') && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="ml-auto h-6 w-6 text-muted-foreground hover:text-destructive"
+                      onClick={() => setReportTarget({ messageId: message.id })}
+                      aria-label={t('chat.report_message')}
+                      title={t('chat.report_message')}
+                    >
+                      <Flag className="w-3 h-3" />
+                    </Button>
+                  )}
                   {message.failed && (
                     <Badge variant="destructive" className="text-xs px-1.5 py-0">
                       {t('chat.failed')}
@@ -358,15 +394,41 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
   const renderMessageInput = () => {
     const isPairMode = activeChannel === 'pair';
     const needsNickname = isPairMode && !nickData?.nickname;
+    const isBlocked = isPairMode && !!activePrivateChat && (activePrivateChat.blockedByMe || activePrivateChat.blockedByOther);
     
     return (
       <div className="border-t bg-background/50 p-4">
         {isPairMode && activePrivateChat && (
           <div className="mb-2 text-xs text-muted-foreground flex items-center gap-2">
             <Glasses className="w-3 h-3" />
-            {activePrivateChat.myRole === 'anonymous' 
-              ? t('chat.you_are_anonymous')
-              : t('chat.you_are_visible')}
+            <span className="flex-1">
+              {activePrivateChat.myRole === 'anonymous' 
+                ? t('chat.you_are_anonymous')
+                : t('chat.you_are_visible')}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => setReportTarget({ privateChatId: activePrivateChat.id })}
+            >
+              <Flag className="w-3 h-3 mr-1" />
+              {t('chat.report')}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => (activePrivateChat.blockedByMe ? setActiveChatBlocked(false) : setBlockConfirmOpen(true))}
+            >
+              <Ban className="w-3 h-3 mr-1" />
+              {activePrivateChat.blockedByMe ? t('chat.unblock') : t('chat.block')}
+            </Button>
+          </div>
+        )}
+        {isBlocked && (
+          <div className="mb-2 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground" role="status">
+            {activePrivateChat?.blockedByMe ? t('chat.blocked_by_me_notice') : t('chat.blocked_by_other_notice')}
           </div>
         )}
         {isPairMode && pendingRecipient && !activePrivateChat && (
@@ -386,11 +448,11 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                 : t('chat.placeholder')
             }
             maxLength={500}
-            disabled={sending || needsNickname}
+            disabled={sending || needsNickname || isBlocked}
           />
           <Button 
             type="submit" 
-            disabled={!messageText.trim() || sending || needsNickname}
+            disabled={!messageText.trim() || sending || needsNickname || isBlocked}
             className="touch-target focus-ring"
             aria-label={t('chat.send_message')}
           >
@@ -424,6 +486,27 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
 
   return (
     <div className="space-y-6">
+      <ReportDialog target={reportTarget} onClose={() => setReportTarget(null)} />
+      <AlertDialog open={blockConfirmOpen} onOpenChange={setBlockConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('chat.block_title')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('chat.block_description')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setBlockConfirmOpen(false);
+                setActiveChatBlocked(true);
+              }}
+            >
+              {t('chat.block')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <NicknameManager eventId={eventId} compact />
 
       <Card>
@@ -503,6 +586,11 @@ export const ChatManager = forwardRef<ChatManagerHandle, ChatManagerProps>(({ ev
                             <span className="text-xs text-muted-foreground ml-2">
                               {chat.myRole === 'anonymous' ? `(${t('chat.anonymous')})` : `(${t('chat.visible')})`}
                             </span>
+                            {'blockedByMe' in chat && (chat.blockedByMe || chat.blockedByOther) && (
+                              <Badge variant="outline" className="ml-2 h-5 px-1.5 text-xs">
+                                {t('chat.blocked_label')}
+                              </Badge>
+                            )}
                             {'unreadCount' in chat && chat.unreadCount > 0 && (
                               <Badge variant="destructive" className="ml-2 h-5 px-1.5 text-xs">
                                 {chat.unreadCount}

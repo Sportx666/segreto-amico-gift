@@ -229,6 +229,15 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // A blocked private chat accepts no messages from either side
+    if (messagePrivateChatId) {
+      const { count: blocks } = await supabase
+        .from('chat_blocks')
+        .select('private_chat_id', { count: 'exact', head: true })
+        .eq('private_chat_id', messagePrivateChatId);
+      if (blocks) return json({ error: 'chat_blocked' }, 403);
+    }
+
     const { data: inserted, error: insertError } = await supabase
       .from('chat_messages')
       .insert({
